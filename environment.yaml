@@ -1,0 +1,9 @@
+name: media-empire
+channels:
+  - defaults
+dependencies:
+  - python=3.8.16
+  - pip
+  - pip:
+    - moviepy
+    - python-dotenv
