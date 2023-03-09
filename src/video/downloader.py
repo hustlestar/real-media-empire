@@ -30,7 +30,8 @@ def search_videos(query, orientation=None, size=None, page=1):
       - duration: float
       - user: dict
     """
-    params = {'query': query, 'per_page': 100, 'page': page}
+    # looks like 80 perp_page is max
+    params = {'query': query, 'per_page': 80, 'page': page}
     if orientation is not None:
         params['orientation'] = orientation
     if size is not None:
@@ -141,7 +142,16 @@ if __name__ == '__main__':
     # 'Enter a size (small, medium, large, or leave blank): '
     size = 'small'
 
+    PexelsDownloadTask(query="brotherhood", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
+    PexelsDownloadTask(query="city", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
+    PexelsDownloadTask(query="new york", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
+    PexelsDownloadTask(query="sights", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
+    PexelsDownloadTask(query="attractions", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
     PexelsDownloadTask(query="nature", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
+    PexelsDownloadTask(query="mountain", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
+    PexelsDownloadTask(query="river", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
+    PexelsDownloadTask(query="sunrise", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
+    PexelsDownloadTask(query="road", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
     PexelsDownloadTask(query="motivation", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
     PexelsDownloadTask(query="inspiration", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
     PexelsDownloadTask(query="win", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=100).run()
