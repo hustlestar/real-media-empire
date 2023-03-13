@@ -1,25 +1,98 @@
+from typing import List
+
+from moviepy.editor import *
 from moviepy.video.compositing.transitions import *
+
+
+def first_fade_out_second_fade_in(clip1: VideoClip, clip2, duration):
+    return concatenate_videoclips([
+        clip1.subclip(0, clip1.duration - duration),
+        clip1.subclip(clip1.duration - duration).fx(vfx.fadeout, duration),
+        clip2.subclip(0, duration).fx(vfx.fadein, duration),
+        clip2.subclip(duration)
+    ])
+
+
+def first_fade_out_second_fade_in_all(clips: List[VideoClip], duration):
+    result = []
+    for i, clip in enumerate(clips):
+        if not i:
+            result.append(clip.subclip(0, clip.duration - duration))
+            result.append(clip.subclip(clip.duration - duration).fx(vfx.fadeout, duration))
+        else:
+            result.append(clip.subclip(0, duration).fx(vfx.fadein, duration))
+            result.append(clip.subclip(duration, clip.duration - duration))
+            result.append(clip.subclip(clip.duration - duration).fx(vfx.fadeout, duration))
+    return concatenate_videoclips(result)
+
+
+def first_fade_out_all(clips: List[VideoClip], duration):
+    result = []
+    for i, clip in enumerate(clips):
+        result.append(clip.subclip(0, clip.duration - duration))
+        result.append(clip.subclip(clip.duration - duration).fx(vfx.fadeout, duration))
+    return concatenate_videoclips(result)
+
+
+def first_fade_in_all(clips: List[VideoClip], duration):
+    result = []
+    for i, clip in enumerate(clips):
+        result.append(clip.subclip(0, duration).fx(vfx.fadein, duration))
+        result.append(clip.subclip(duration))
+    return concatenate_videoclips(result)
+
+
+def first_fade_out(clip1: VideoClip, clip2: VideoClip, duration):
+    """
+    Fades in clip2 over duration, then fades out clip1 over duration.
+    """
+    return CompositeVideoClip([clip1.subclip(0, clip1.duration - duration), clip1.subclip(clip1.duration - duration).fadeout(duration), clip2])
 
 
 def fadeinout(clip1, clip2, duration):
     """
     Fades in clip2 over duration, then fades out clip1 over duration.
     """
-    return CompositeVideoClip([clip1.fadeout(duration), clip2.fadein(duration)])
+    return CompositeVideoClip([fadeout(clip1, duration), fadein(clip2, duration)])
 
 
-def crossfade(clip1, clip2, duration):
+def slide_in_left_all(clips: List[VideoClip], duration=3):
     """
-    Cross-fades between clip1 and clip2 over duration.
+    Slides from right to left over duration to replace clip1.
     """
-    return clip1.crossfadein(clip2, duration)
+    return slide_in_to_all(clips, duration)
+
+
+def slide_in_top_all(clips: List[VideoClip], duration=2):
+    """
+    Slides from right to left over duration to replace clip1.
+    """
+    return slide_in_to_all(clips, duration, side='top')
+
+
+def slide_in_bottom_all(clips: List[VideoClip], duration=2):
+    """
+    Slides from right to left over duration to replace clip1.
+    """
+    return slide_in_to_all(clips, duration, side='bottom')
+
+
+def slide_in_to_all(clips, duration, side='left'):
+    slided_clips = []
+    for i, clip in enumerate(clips):
+        if not i:
+            slided_clips.append(clip)
+        else:
+            slided_clips.append(CompositeVideoClip([clip.fx(transfx.slide_in, duration=duration, side=side)]))
+    return concatenate_videoclips(slided_clips, method='compose', padding=-1 * duration)
 
 
 def slideleft(clip1, clip2, duration):
     """
     Slides clip2 from right to left over duration to replace clip1.
     """
-    return CompositeVideoClip([clip1, clip2.set_position(("right", "top")).slide_in("left", duration)])
+
+    return CompositeVideoClip([slide_out(clip1, duration, 'left'), slide_in(clip2, duration, 'right')])
 
 
 def slideright(clip1, clip2, duration):
@@ -95,13 +168,14 @@ def warp(clip1, clip2, duration):
     return WarpIn(clip1, clip2, duration=duration)
 
 
-TRANSITIONS = {
+TRANSITIONS_BETWEEN_TWO = {
+    "first_fade_out_second_fade_in": first_fade_out_second_fade_in,
     "fadeinout": fadeinout,
-    "crossfade": crossfade,
     "slideleft": slideleft,
     "slideright": slideright,
     "slideup": slideup,
     "slidedown": slidedown,
+    "first_fade_out": first_fade_out,
     # "dissolve": dissolve,
     # "diagonal": diagonal,
     # "iris": iris,
@@ -117,14 +191,8 @@ TRANSITIONS = {
     # "warp": warp
 }
 
-# Example usage
-from moviepy.editor import VideoFileClip
+TRANSITIONS_FOR_LIST = {
 
-clip1 = VideoFileClip("clip1.mp4")
-clip2 = VideoFileClip("clip2.mp4")
+}
 
-# Apply transition between clips
-transition = TRANSITIONS["iris"](clip1, clip2, duration=1)
-final_clip = clip1.fx(transition)
-
-final_clip.write_videofile("output.mp4")
+DEFAULT_TRANSITION = fadeinout

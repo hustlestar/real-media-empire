@@ -7,3 +7,6 @@ dependencies:
   - pip:
     - moviepy
     - python-dotenv
+    - gTTS
+    - openai
+    - google-cloud-texttospeech
