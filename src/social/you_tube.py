@@ -1,82 +1,90 @@
-import httplib2
-import os
+import os.path
 import random
 import sys
 import time
 
-import httplib
 import httplib2
-
-from apiclient.discovery import build
-from apiclient.errors import HttpError
-from apiclient.http import MediaFileUpload
-from oauth2client.client import flow_from_clientsecrets
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaFileUpload
 from oauth2client.file import Storage
-from oauth2client.tools import argparser, run_flow
+
+from config import CONFIG
+
+httplib2.RETRIES = 1
+
+MAX_RETRIES = 10
+
+RETRIABLE_EXCEPTIONS = (httplib2.HttpLib2Error, IOError)
+
+RETRIABLE_STATUS_CODES = [500, 502, 503, 504]
+
+YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
+YOUTUBE_API_SERVICE_NAME = "youtube"
+YOUTUBE_API_VERSION = "v3"
+
+MISSING_CLIENT_SECRETS_MESSAGE = """WARNING: Please configure OAuth 2.0"""
+
+VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
 
 
 class YouTubeUploader:
-    def __init__(self, client_secrets_file, oauth2_file):
+    def __init__(self, client_secrets_file: str, channel_name: str, oath_storage_dir: str = CONFIG.get("OAUTH_2_DIR")):
         self.client_secrets_file = client_secrets_file
-        self.oauth2_file = oauth2_file
-        self.youtube_api_service_name = "youtube"
-        self.youtube_api_version = "v3"
-        self.missing_client_secrets_message = """
-            WARNING: Please configure OAuth 2.0
-        """
-        self.valid_privacy_statuses = ("public", "private", "unlisted")
-        self.max_retries = 10
-        self.retriable_status_codes = [500, 502, 503, 504]
-        self.retriable_exceptions = (httplib2.HttpLib2Error, IOError, httplib.NotConnected,
-                                                            httplib.IncompleteRead, httplib.ImproperConnectionState,
-                                                            httplib.CannotSendRequest, httplib.CannotSendHeader,
-                                                            httplib.ResponseNotReady, httplib.BadStatusLine)
-        self.flow = flow_from_clientsecrets(
-            self.client_secrets_file,
-            scope="https://www.googleapis.com/auth/youtube.upload",
-            message=self.missing_client_secrets_message,
-        )
-        self.storage = Storage(self.oauth2_file)
-        self.credentials = self.storage.get()
+        self.channel_name = str(channel_name).lower().replace("\\s+", "_")
+        self.credentials_file = os.path.join(oath_storage_dir, f"{self.channel_name}_oauth2.json")
         self.youtube = None
 
-    def get_authenticated_service(self):
-        if self.credentials is None or self.credentials.invalid:
-            self.credentials = run_flow(self.flow, self.storage, self.args)
-        self.youtube = build(
-            self.youtube_api_service_name,
-            self.youtube_api_version,
-            http=self.credentials.authorize(httplib2.Http()),
-        )
+    def upload(
+            self,
+            file_path,
+            title="Test Title",
+            description="Test Description",
+            category="22",
+            tags=None,
+            privacy_status=VALID_PRIVACY_STATUSES[1]
+    ):
+        self.authenticate()
+        if isinstance(tags, str):
+            tags = tags.split(",")
+        elif not tags:
+            tags = []
+        print(f"Uploading video to channel {self.channel_name} from file {file_path}\n"
+              f"\tTitle: {title}"
+              f"\tDescription: {description}"
+              f"\tTags: {tags}"
+              f"\tCategory: {category}"
+              f"\tPrivacy: {privacy_status}")
+        body = {
+            "snippet": {
+                "title": title,
+                "description": description,
+                "tags": tags,
+                "categoryId": category
+            },
+            "status": {
+                "privacyStatus": privacy_status
+            }
+        }
 
-    def initialize_upload(self):
-        tags = None
-        if self.args.keywords:
-            tags = self.args.keywords.split(",")
-
-        body = dict(
-            snippet=dict(
-                title=self.args.title,
-                description=self.args.description,
-                tags=tags,
-                categoryId=self.args.category,
-            ),
-            status=dict(privacyStatus=self.args.privacyStatus),
-        )
-
-        # Call the API's videos.insert method to create and upload the video.
         insert_request = self.youtube.videos().insert(
             part=",".join(body.keys()),
             body=body,
-            media_body=MediaFileUpload(
-                self.args.file, chunksize=-1, resumable=True
-            ),
+            media_body=MediaFileUpload(file_path, chunksize=-1, resumable=True)
         )
-
         self.resumable_upload(insert_request)
 
-    # This method implements an exponential backoff strategy to resume a
-    # failed upload.
+    def authenticate(self):
+        flow = InstalledAppFlow.from_client_secrets_file(self.client_secrets_file, scopes=[YOUTUBE_UPLOAD_SCOPE])
+        credentials = Credentials.from_authorized_user_file(self.credentials_file, []) if os.path.exists(self.credentials_file) else None
+        if not credentials:
+            credentials = flow.run_local_server(port=0)
+            storage = Storage(self.credentials_file)
+            storage.put(credentials)
+        self.youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+
     def resumable_upload(self, insert_request):
         response = None
         error = None
@@ -86,22 +94,31 @@ class YouTubeUploader:
                 print("Uploading file...")
                 status, response = insert_request.next_chunk()
                 if response is not None:
-                    if "id" in response:
-                        print(
-                            "Video id '%s' was successfully uploaded."
-                            % response["id"]
-                        )
+                    if 'id' in response:
+                        print(f"Video id '{response['id']}' was successfully uploaded.")
                     else:
-                        exit(
-                            "The upload failed with an unexpected response: %s"
-                            % response
-                        )
+                        exit(f"The upload failed with an unexpected response: {response}")
             except HttpError as e:
-                if e.resp.status in self.retriable_status_codes:
-                    error = "A retriable HTTP error %d occurred:\n%s" % (
-                        e.resp.status,
-                        e.content,
-                    )
+                if e.resp.status in RETRIABLE_STATUS_CODES:
+                    error = f"A retriable HTTP error {e.resp.status} occurred:\n{e.content}"
                 else:
                     raise
+            except RETRIABLE_EXCEPTIONS as e:
+                error = "A retriable error occurred: %s" % e
 
+            if error is not None:
+                print(error)
+                retry += 1
+                if retry > MAX_RETRIES:
+                    exit("No longer attempting to retry.")
+
+                max_sleep = 2 ** retry
+                sleep_seconds = random.random() * max_sleep
+                print(f"Sleeping {sleep_seconds} seconds and then retrying...")
+                time.sleep(sleep_seconds)
+
+
+if __name__ == '__main__':
+    uploader = YouTubeUploader(client_secrets_file=CONFIG.get("YOUTUBE_CHANNEL_API_KEY_PATH"))
+
+    uploader.upload("D:\\Projects\\media-empire\\tmp\\2023-03-10T15-25-33_slide_in_top_all.mp4")

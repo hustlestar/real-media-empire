@@ -1,4 +1,6 @@
 import colorgram
+import requests
+from colorgram.colorgram import Rgb
 
 
 def get_image_main_colors(image, number_of_colors=10):
@@ -7,8 +9,9 @@ def get_image_main_colors(image, number_of_colors=10):
     print(f"Top {number_of_colors} image colors: {main_colors}")
     return main_colors
 
-def map_color_to_category(color):
-    r, g, b = color.rgb[0], color.rgb[1], color.rgb[2]
+
+def map_color_to_category(color: Rgb):
+    r, g, b = color.r, color.g, color.b
     if r >= 220 and g >= 220 and b >= 220:
         return "White"
     elif r >= 190 and g <= 50 and b <= 50:
@@ -42,9 +45,10 @@ def map_color_to_category(color):
     else:
         return "Other"
 
-if __name__ == '__main__':
 
-    colors = colorgram.extract('image.jpg', 10)
+if __name__ == '__main__':
+    colors = get_image_main_colors(requests.get('http://images.cocodataset.org/val2017/000000039769.jpg', stream=True).raw)
+
     for color in colors:
         category = map_color_to_category(color)
-        print(color.rgb, category)
+        print(category)

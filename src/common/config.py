@@ -1,0 +1,2 @@
+class ConfigTemplate():
+    pass
