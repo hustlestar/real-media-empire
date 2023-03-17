@@ -63,10 +63,10 @@ def print_models():
 
 
 if __name__ == '__main__':
-    # print_models()
-    prompt = "Provide me with 1000 words motivational story about Achieving Goals in the style of Tony Robbins. " \
-             "Represent your answer as ssml for google text to speech api." \
-             "Use 5 seconds breaks between different parts, emphasize important parts by increasing or decreasing pitch." \
-             "Prosody rate should be slow." \
-             "Your answer should contain only xml"
-    print(process_chatgpt_results(prompt))
+    print_models()
+    # prompt = "Provide me with 1000 words motivational story about Achieving Goals in the style of Tony Robbins. " \
+    #          "Represent your answer as ssml for google text to speech api." \
+    #          "Use 5 seconds breaks between different parts, emphasize important parts by increasing or decreasing pitch." \
+    #          "Prosody rate should be slow." \
+    #          "Your answer should contain only xml"
+    # print(process_chatgpt_results(prompt))

@@ -91,7 +91,7 @@ class YouTubeVideoTask:
         voice_with_delay = audio_with_voice.set_start(self.start_end_voice_delay)
         voice_with_delay = voice_with_delay.volumex(2)
         final_duration = math.ceil(self.start_end_voice_delay + voice_with_delay.duration + self.start_end_voice_delay)
-        background_audio = read_audio_clip(self.background_audio_file).volumex(0.4)
+        background_audio = read_audio_clip(self.background_audio_file).volumex(0.3)
 
         if background_audio.duration < final_duration:
             number_of_loops = math.ceil(final_duration * 1.0 / background_audio.duration)
@@ -123,7 +123,7 @@ class YouTubeVideoTask:
             clip = trim_video_duration(clip, self.single_video_duration)
             results.append(clip)
             used_video_clips.append(clip.filename)
-            video = first_fade_out_second_fade_in_all(results, 2)
+            video = first_fade_out_second_fade_in_all(results, 1)
             if video.duration > final_duration:
                 print("Achieved desired duration of video. Stopping")
                 break
@@ -211,11 +211,14 @@ if __name__ == '__main__':
     # concatenate_videoclips(results_with_transition, method='compose').write_videofile(res_file)
     # concatenate_videoclips(video_clips).write_videofile(res_file_without_tr)
     # print(results_with_transition)
-    prompt = "Provide me with 2000 words motivational speech about having positive mindset in the style of Tony Robbins. " \
+    prompt = "Provide me with 2000 words motivational speech for video about the right way to start your day in style of Brian Tracey. "
+    prompt = prompt + \
+             "Avoid using word I, be concise and inspiring." \
              "Represent your answer as ssml for google text to speech api." \
              "Use 5 seconds breaks between different parts, emphasize important parts by increasing or decreasing pitch." \
              "Prosody rate should be slow." \
              "Your answer should contain only xml"
+    print(prompt)
     voice_name = 'en-US-Wavenet-J'
     audio_file_path = os.path.join(CONFIG.get('MEDIA_GALLERY_DIR'), "VOICE", f"{get_now()}_{voice_name}.mp3")
     YouTubeVideoTask(
