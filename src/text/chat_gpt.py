@@ -9,24 +9,25 @@ openai.api_key = CONFIG.get("OPEN_AI_API_KEY")
 
 
 class ChatGPTTask:
-    def __init__(self, prompt, model_name="text-davinci-003"):
+    def __init__(self, prompt, model_name="text-davinci-003", tokens_number=4000):
         self.prompt = prompt
         self.model_name = model_name
         self.text = None
         self.filename = None
         self.task_time = None
+        self.tokens_number = tokens_number
 
     def run(self):
-        self.text, self.filename, self.task_time = process_chatgpt_results(self.prompt, model_name=self.model_name)
+        self.text, self.filename, self.task_time = process_chatgpt_results(self.prompt, model_name=self.model_name, tokens_number=self.tokens_number)
         return self
 
 
-def ask_chatgpt(prompt, model_name="text-davinci-003"):
+def ask_chatgpt(prompt, model_name="text-davinci-003", tokens_number=4000):
     model_engine = model_name
     response = openai.Completion.create(
         engine=model_engine,
         prompt=prompt,
-        max_tokens=4000,
+        max_tokens=tokens_number,
         n=1,
         stop=None,
         temperature=0.7,
@@ -52,8 +53,8 @@ def save_results(prompt, text):
     return filename, now
 
 
-def process_chatgpt_results(prompt, model_name=None):
-    res = ask_chatgpt(prompt, model_name)
+def process_chatgpt_results(prompt, model_name=None, tokens_number=4000):
+    res = ask_chatgpt(prompt, model_name, tokens_number=tokens_number)
     filename, now = save_results(prompt, res)
     return res, filename, now
 

@@ -1,56 +1,81 @@
-import os
-from PIL import Image, ImageDraw, ImageFont
 from enum import Enum
 
-class Position(Enum):
-    TOP_LEFT = "top-left"
-    TOP_CENTER = "top-center"
-    TOP_RIGHT = "top-right"
-    CENTER_LEFT = "center-left"
-    CENTER = "center"
-    CENTER_RIGHT = "center-right"
-    BOTTOM_LEFT = "bottom-left"
-    BOTTOM_CENTER = "bottom-center"
-    BOTTOM_RIGHT = "bottom-right"
+from PIL import Image, ImageDraw, ImageFont
 
 
-def add_text_to_image(image_path,
-                      text,
-                      font_path=None,
-                      font_size=25,
-                      font_color=(0, 0, 0),
-                      position=Position.BOTTOM_RIGHT):
-    with Image.open(image_path) as img:
+class TextPosition(Enum):
+    TOP_LEFT = 'top-left'
+    TOP_CENTER = 'top-center'
+    TOP_RIGHT = 'top-right'
+    CENTER_LEFT = 'center-left'
+    CENTER = 'center'
+    CENTER_RIGHT = 'center-right'
+    BOTTOM_LEFT = 'bottom-left'
+    BOTTOM_CENTER = 'bottom-center'
+    BOTTOM_RIGHT = 'bottom-right'
+
+
+def calculate_text_position(image_width, image_height, text_width, text_height, position):
+    if position == TextPosition.TOP_LEFT:
+        x = int(image_width * 0.1)
+        y = int(image_height * 0.1)
+    elif position == TextPosition.TOP_CENTER:
+        x = int((image_width - text_width) / 2)
+        y = int(image_height * 0.1)
+    elif position == TextPosition.TOP_RIGHT:
+        x = int(image_width * 0.9 - text_width)
+        y = int(image_height * 0.1)
+    elif position == TextPosition.CENTER_LEFT:
+        x = int(image_width * 0.1)
+        y = int((image_height - text_height) / 2)
+    elif position == TextPosition.CENTER:
+        x = int((image_width - text_width) / 2)
+        y = int((image_height - text_height) / 2)
+    elif position == TextPosition.CENTER_RIGHT:
+        x = int(image_width * 0.9 - text_width)
+        y = int((image_height - text_height) / 2)
+    elif position == TextPosition.BOTTOM_LEFT:
+        x = int(image_width * 0.1)
+        y = int(image_height * 0.9 - text_height)
+    elif position == TextPosition.BOTTOM_CENTER:
+        x = int((image_width - text_width) / 2)
+        y = int(image_height * 0.9 - text_height)
+    elif position == TextPosition.BOTTOM_RIGHT:
+        x = int(image_width * 0.9 - text_width)
+        y = int(image_height * 0.9 - text_height)
+    return x, y
+
+
+def add_text_to_image(input_image_path, output_image_path, text, font_path, font_size, font_color, position):
+    with Image.open(input_image_path) as img:
+        # calculate text dimensions
+        font = ImageFont.truetype(font_path, font_size)
+        text_width, text_height = font.getsize(text)
+        # calculate text position
+        text_x, text_y = calculate_text_position(img.width, img.height, text_width, text_height, position)
+        # add text to image
         draw = ImageDraw.Draw(img)
+        draw.text((text_x, text_y), text, font=font, fill=font_color)
+        # img.show()
+        img.save(output_image_path)
 
-        width, height = img.size
 
-        if font_path:
-            font = ImageFont.truetype(font_path, font_size)
-        else:
-            font = ImageFont.load_default()
+if __name__ == '__main__':
+    add_text_to_image('E:\\MEDIA_GALLERY\\PHOTO\\landscape\\large2x\\1121477.jpg',
+                      'E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg',
+                      'POWER',
+                      'E:\\MEDIA_GALLERY\\FONTS\\LeagueSpartan-ExtraBold.ttf',
+                      300, (255, 255, 255), TextPosition.TOP_CENTER)
 
-        textwidth, textheight = draw.textsize(text, font)
+    add_text_to_image('E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg',
+                      'E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg',
+                      'OF',
+                      'E:\\MEDIA_GALLERY\\FONTS\\LeagueSpartan-ExtraBold.ttf',
+                      300, (255, 255, 255), TextPosition.CENTER)
 
-        # calculate x,y position
-        if position == Position.TOP_LEFT:
-            x, y = 0, 0
-        elif position == Position.TOP_CENTER:
-            x, y = (width - textwidth) / 2, 0
-        elif position == Position.TOP_RIGHT:
-            x, y = width - textwidth, 0
-        elif position == Position.CENTER_LEFT:
-            x, y = 0, (height - textheight) / 2
-        elif position == Position.CENTER:
-            x, y = (width - textwidth) / 2, (height - textheight) / 2
-        elif position == Position.CENTER_RIGHT:
-            x, y = width - textwidth, (height - textheight) / 2
-        elif position == Position.BOTTOM_LEFT:
-            x, y = 0, height - textheight
-        elif position == Position.BOTTOM_CENTER:
-            x, y = (width - textwidth) / 2, height - textheight
-        elif position == Position.BOTTOM_RIGHT:
-            x, y = width - textwidth, height - textheight
+    add_text_to_image('E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg',
+                      'E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg',
+                      'HABIT',
+                      'E:\\MEDIA_GALLERY\\FONTS\\LeagueSpartan-ExtraBold.ttf',
+                      300, (255, 255, 255), TextPosition.BOTTOM_CENTER)
 
-        draw.text((x, y), text, font_color, font=font)
-        img.save(os.path.splitext(image_path)[0] + "_with_text.png")

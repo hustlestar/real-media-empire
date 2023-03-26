@@ -4,9 +4,19 @@ import re
 from google.cloud import texttospeech
 from google.cloud.texttospeech_v1 import SsmlVoiceGender, AudioEncoding
 
+from audio.text_to_speech import TextToSpeech
 from config import CONFIG
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CONFIG.get("GOOGLE_TEXT_TO_SPEECH_API_KEY_PATH")
+
+
+class GoogleTextToSpeech(TextToSpeech):
+    def synthesize_ssml(self, ssml=None, output_file=None, voice_language_code='en-US', voice_name='en-US-Wavenet-D', gender=SsmlVoiceGender.MALE):
+        synthesize_ssml(ssml, output_file, voice_language_code, voice_name, gender)
+
+    def synthesize_text(self, text=None, output_file=None, voice_language_code='en-US', voice_name='en-US-Wavenet-D', gender=SsmlVoiceGender.MALE,
+                        audio_config=texttospeech.AudioConfig(audio_encoding=AudioEncoding.MP3)):
+        synthesize_text(text, output_file, voice_language_code, voice_name, gender, audio_config)
 
 
 def synthesize_ssml(ssml=None,
@@ -27,7 +37,6 @@ def synthesize_ssml(ssml=None,
     response = client.synthesize_speech(input=input_text, voice=voice, audio_config=audio_config)
     with open(output_file, 'wb') as out:
         out.write(response.audio_content)
-
 
 
 def synthesize_text(text=None,

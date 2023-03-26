@@ -3,7 +3,9 @@ import random
 import sys
 import time
 
+import google
 import httplib2
+from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -37,7 +39,26 @@ class YouTubeUploader:
         self.credentials_file = os.path.join(oath_storage_dir, f"{self.channel_name}_oauth2.json")
         self.youtube = None
 
-    def upload(
+    def authenticate(self):
+        flow = InstalledAppFlow.from_client_secrets_file(self.client_secrets_file, scopes=[YOUTUBE_UPLOAD_SCOPE])
+        credentials = Credentials.from_authorized_user_file(self.credentials_file, []) if os.path.exists(self.credentials_file) else None
+        if not credentials or credentials.expired:
+            is_refresh_failed = False
+            if credentials and credentials.refresh_token:
+                print("Trying to refresh token")
+                try:
+                    credentials.refresh(Request())
+                    print("Successfully refreshed token")
+                except:
+                    print("Failed to refresh token")
+                    is_refresh_failed = True
+            if credentials and credentials.refresh_token and is_refresh_failed:
+                credentials = flow.run_local_server(port=0)
+            storage = Storage(self.credentials_file)
+            storage.put(credentials)
+        self.youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+
+    def upload_video(
             self,
             file_path,
             title="Test Title",
@@ -74,16 +95,23 @@ class YouTubeUploader:
             body=body,
             media_body=MediaFileUpload(file_path, chunksize=-1, resumable=True)
         )
-        self.resumable_upload(insert_request)
+        return self.resumable_upload(insert_request)
 
-    def authenticate(self):
-        flow = InstalledAppFlow.from_client_secrets_file(self.client_secrets_file, scopes=[YOUTUBE_UPLOAD_SCOPE])
-        credentials = Credentials.from_authorized_user_file(self.credentials_file, []) if os.path.exists(self.credentials_file) else None
-        if not credentials:
-            credentials = flow.run_local_server(port=0)
-            storage = Storage(self.credentials_file)
-            storage.put(credentials)
-        self.youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+    def upload_thumbnail(self, file_path, video_id):
+        self.authenticate()
+        print(f"Uploading thumbnail from file {file_path}")
+        thumbnail_url = None
+        try:
+            response = self.youtube.thumbnails().set(
+                videoId=video_id,
+                media_body=MediaFileUpload(file_path, chunksize=-1, resumable=True)
+            ).execute()
+            if response and 'items' in response and len(response['items']) > 0:
+                thumbnail_url = response['items'][0]['default']['url']
+                print(f"Thumbnail successfully uploaded. URL: {thumbnail_url}")
+        except HttpError as e:
+            print(f"An HTTP error {e.resp.status} occurred:\n{e.content}")
+        return thumbnail_url
 
     def resumable_upload(self, insert_request):
         response = None
@@ -95,6 +123,7 @@ class YouTubeUploader:
                 status, response = insert_request.next_chunk()
                 if response is not None:
                     if 'id' in response:
+                        return response['id']
                         print(f"Video id '{response['id']}' was successfully uploaded.")
                     else:
                         exit(f"The upload failed with an unexpected response: {response}")
@@ -119,6 +148,10 @@ class YouTubeUploader:
 
 
 if __name__ == '__main__':
-    uploader = YouTubeUploader(client_secrets_file=CONFIG.get("YOUTUBE_CHANNEL_API_KEY_PATH"))
+    uploader = YouTubeUploader(
+        client_secrets_file=CONFIG.get("YOUTUBE_CHANNEL_API_KEY_PATH"),
+        channel_name='daily_mindset'
+    )
 
-    uploader.upload("D:\\Projects\\media-empire\\tmp\\2023-03-10T15-25-33_slide_in_top_all.mp4")
+    uploader.authenticate()
+    # uploader.upload_video("D:\\Projects\\media-empire\\tmp\\2023-03-10T15-25-33_slide_in_top_all.mp4")

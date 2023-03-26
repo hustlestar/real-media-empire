@@ -4,12 +4,8 @@ from typing import List
 
 from moviepy.editor import VideoFileClip, vfx, concatenate_videoclips
 
-MEDIA_DIR = "/Users/yauhenim/MEDIA"
-
 RES_1920_1080 = repr([1920, 1080])
 RES_3840_2160 = repr([3840, 2160])
-
-print(dir(vfx))
 
 DIR_CACHE = {}
 
@@ -32,6 +28,10 @@ def read_n_video_clips(path_to_dir, number, video_format='mp4'):
     return result
 
 
+def read_video_clip(path_to_clip):
+    return VideoFileClip(path_to_clip).without_audio()
+
+
 def create_all_video_clips(list_of_files):
     return [VideoFileClip(f).without_audio() for f in list_of_files]
 
@@ -48,7 +48,7 @@ def map_clips_to_buckets_by_size(clips: List[VideoFileClip]):
 
 
 def prepare_video_sublcip(clip: VideoFileClip):
-    clip = trim_video_duration(clip)
+    clip = trim_clip_duration(clip)
 
     clip = concatenate_videoclips([
         clip.subclip(0, clip.duration - 2),
@@ -58,11 +58,13 @@ def prepare_video_sublcip(clip: VideoFileClip):
     return clip
 
 
-def trim_video_duration(clip, to_max_duration_of=10):
+def trim_clip_duration(clip, to_max_duration_of=10):
     return clip if clip.duration < to_max_duration_of else clip.subclip(0, to_max_duration_of)
 
 
 if __name__ == '__main__':
+    MEDIA_DIR = "/Users/yauhenim/MEDIA"
+
     clips = read_all_video_clips(MEDIA_DIR)
 
     clips_buckets = map_clips_to_buckets_by_size(clips)
