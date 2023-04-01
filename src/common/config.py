@@ -10,6 +10,7 @@ class VideoBackgroundPreset:
         self.colors: List[str] = None
         self.colors_to_avoid: List[str] = None
         self.topics: List[str] = None
+        self.topics_to_avoid: List[str] = None
 
 
 class ChannelConfigTemplate:
@@ -23,6 +24,8 @@ class ChannelConfigTemplate:
         self.video_orientation: str = 'landscape'  # portrait
         self.video_width: int = 1920
         self.video_height: int = 1080
+        self.video_transition: str = None
+        self.video_transition_duration: int = None
         self.video_start_end_delay: int = None
         self.video_single_video_duration: int = None
         self.video_background_presets: List[VideoBackgroundPreset] = None
@@ -33,6 +36,9 @@ class ChannelConfigTemplate:
 
         self.main_text_type: str = 'text'  # ssml
         self.main_prompt_topics_file = None
+        self.main_prompt_narrative_types: List[str] = None
+        self.main_prompt_number_of_engagement_techniques: int = None
+        self.main_prompt_engagement_techniques: List[str] = None
         self.main_prompt_template = None
         self.main_ttt_api: str = None
         self.main_ttt_model_name: str = None
@@ -52,6 +58,7 @@ class ChannelConfigTemplate:
         self.tts_type: str = None
         self.tts_voice_name: str = None
         self.tts_api_key_or_path: str = None
+        self.voice_over_speed: float = None
 
 
 class ChannelConfig(Munch, ChannelConfigTemplate):

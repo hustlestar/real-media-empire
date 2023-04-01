@@ -4,6 +4,7 @@ import random
 from typing import Dict
 
 from moviepy.editor import *
+from moviepy.video.fx.speedx import speedx
 
 from audio import google_tts
 from audio.text_to_speech import TextToSpeech
@@ -14,18 +15,8 @@ TTS_APIS: Dict[str, TextToSpeech] = {
 
 
 class AudioTasks:
-    def __init__(
-            self,
-            audio_background_dir_path=None,
-            audio_background_api=None,
-            audio_background_api_key_or_path=None,
-            tts_api='google_tts',
-            tts_type='ssml',
-            tts_voice_name="en-US-Wavenet-J",
-            tts_api_key_or_path=None,
-            start_end_delay=None,
-            results_dir=None
-    ):
+    def __init__(self, audio_background_dir_path=None, audio_background_api=None, audio_background_api_key_or_path=None, tts_api='google_tts', tts_type='ssml',
+                 tts_voice_name="en-US-Wavenet-J", tts_api_key_or_path=None, start_end_delay=None, results_dir=None, voice_over_speed=None):
         self.audio_background_dir_path = audio_background_dir_path
         self.audio_background_api = audio_background_api
         self.audio_background_api_key_or_path = audio_background_api_key_or_path
@@ -36,6 +27,7 @@ class AudioTasks:
         self.tts_voice_name = tts_voice_name
         self.tts_api_key_or_path = tts_api_key_or_path
         self.results_dir = results_dir
+        self.voice_over_speed = voice_over_speed
 
     def create_audio_background(self):
         if self.audio_background_dir_path:
@@ -58,6 +50,8 @@ class AudioTasks:
 
     def create_final_audio(self, voice_over_audio, background_audio):
         voice_with_delay = voice_over_audio.set_start(self.start_end_delay)
+        if self.voice_over_speed and self.voice_over_speed != 1:
+            voice_with_delay = speedx(voice_with_delay, self.voice_over_speed)
         voice_with_delay = voice_with_delay.volumex(2.2)
         final_duration = math.ceil(self.start_end_delay + voice_with_delay.duration + self.start_end_delay)
         background_audio = background_audio.volumex(0.3)

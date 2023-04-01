@@ -1,3 +1,4 @@
+import logging
 import math
 import os
 
@@ -7,6 +8,7 @@ from config import CONFIG
 
 PEXELS_API_KEY = CONFIG.get("PEXEL_API_KEY")
 
+logger = logging.getLogger(__name__)
 
 def search_photos(query, orientation=None, size=None, color=None, page=1):
     """
@@ -238,7 +240,7 @@ if __name__ == '__main__':
         query="mountain range",
         orientation='landscape', height=1920, width=1080,
         download_dir=CONFIG.get('PHOTO_DOWNLOAD_DIR'),
-        number_of_downloads=200,
+        number_of_downloads=500,
         is_video_download=False,
         photo_size='large2x'
     ).run()
@@ -246,7 +248,7 @@ if __name__ == '__main__':
         query="city skyline",
         orientation='landscape', height=1920, width=1080,
         download_dir=CONFIG.get('PHOTO_DOWNLOAD_DIR'),
-        number_of_downloads=200,
+        number_of_downloads=500,
         is_video_download=False,
         photo_size='large2x'
     ).run()
@@ -254,7 +256,7 @@ if __name__ == '__main__':
         query="forest",
         orientation='landscape', height=1920, width=1080,
         download_dir=CONFIG.get('PHOTO_DOWNLOAD_DIR'),
-        number_of_downloads=200,
+        number_of_downloads=5000,
         is_video_download=False,
         photo_size='large2x'
     ).run()
@@ -262,11 +264,20 @@ if __name__ == '__main__':
         query="sunshine",
         orientation='landscape', height=1920, width=1080,
         download_dir=CONFIG.get('PHOTO_DOWNLOAD_DIR'),
-        number_of_downloads=200,
+        number_of_downloads=500,
         is_video_download=False,
         photo_size='large2x'
     ).run()
-    # PexelsDownloadTask(query="city skyline", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
+    PexelsDownloadTask(query="beach", download_dir=CONFIG.get('DOWNLOAD_DIR'),
+                       size='medium',
+                       height=2160,
+                       width=3840,
+                       number_of_downloads=500).run()
+    PexelsDownloadTask(query="summer", download_dir=CONFIG.get('DOWNLOAD_DIR'),
+                       size='medium',
+                       height=2160,
+                       width=3840,
+                       number_of_downloads=500).run()
     # PexelsDownloadTask(query="stormy sky", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
     # PexelsDownloadTask(query="vibrant sunset", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
     # PexelsDownloadTask(query="winding road", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()

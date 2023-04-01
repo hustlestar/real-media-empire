@@ -1,15 +1,14 @@
+import logging
 import os.path
 import random
-import sys
 import time
 
-import google
 import httplib2
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+from googleapiclient.errors import HttpError, ResumableUploadError
 from googleapiclient.http import MediaFileUpload
 from oauth2client.file import Storage
 
@@ -19,7 +18,7 @@ httplib2.RETRIES = 1
 
 MAX_RETRIES = 10
 
-RETRIABLE_EXCEPTIONS = (httplib2.HttpLib2Error, IOError)
+RETRIABLE_EXCEPTIONS = (httplib2.HttpLib2Error, IOError, ResumableUploadError, HttpError)
 
 RETRIABLE_STATUS_CODES = [500, 502, 503, 504]
 
@@ -30,6 +29,7 @@ YOUTUBE_API_VERSION = "v3"
 MISSING_CLIENT_SECRETS_MESSAGE = """WARNING: Please configure OAuth 2.0"""
 
 VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
+logger = logging.getLogger(__name__)
 
 
 class YouTubeUploader:
@@ -45,12 +45,12 @@ class YouTubeUploader:
         if not credentials or credentials.expired:
             is_refresh_failed = False
             if credentials and credentials.refresh_token:
-                print("Trying to refresh token")
+                logger.info("Trying to refresh token")
                 try:
                     credentials.refresh(Request())
-                    print("Successfully refreshed token")
+                    logger.info("Successfully refreshed token")
                 except:
-                    print("Failed to refresh token")
+                    logger.info("Failed to refresh token")
                     is_refresh_failed = True
             if credentials and credentials.refresh_token and is_refresh_failed:
                 credentials = flow.run_local_server(port=0)
@@ -72,12 +72,12 @@ class YouTubeUploader:
             tags = tags.split(",")
         elif not tags:
             tags = []
-        print(f"Uploading video to channel {self.channel_name} from file {file_path}\n"
-              f"\tTitle: {title}"
-              f"\tDescription: {description}"
-              f"\tTags: {tags}"
-              f"\tCategory: {category}"
-              f"\tPrivacy: {privacy_status}")
+        logger.info(f"Uploading video to channel {self.channel_name} from file {file_path}"
+                    f"\nTitle: {title}"
+                    f"\nDescription: {description}"
+                    f"\nTags: {tags}"
+                    f"\nCategory: {category}"
+                    f"\nPrivacy: {privacy_status}")
         body = {
             "snippet": {
                 "title": title,
@@ -97,34 +97,18 @@ class YouTubeUploader:
         )
         return self.resumable_upload(insert_request)
 
-    def upload_thumbnail(self, file_path, video_id):
-        self.authenticate()
-        print(f"Uploading thumbnail from file {file_path}")
-        thumbnail_url = None
-        try:
-            response = self.youtube.thumbnails().set(
-                videoId=video_id,
-                media_body=MediaFileUpload(file_path, chunksize=-1, resumable=True)
-            ).execute()
-            if response and 'items' in response and len(response['items']) > 0:
-                thumbnail_url = response['items'][0]['default']['url']
-                print(f"Thumbnail successfully uploaded. URL: {thumbnail_url}")
-        except HttpError as e:
-            print(f"An HTTP error {e.resp.status} occurred:\n{e.content}")
-        return thumbnail_url
-
     def resumable_upload(self, insert_request):
         response = None
         error = None
         retry = 0
         while response is None:
             try:
-                print("Uploading file...")
+                logger.info("Uploading file...")
                 status, response = insert_request.next_chunk()
                 if response is not None:
                     if 'id' in response:
+                        logger.info(f"Video id '{response['id']}' was successfully uploaded.")
                         return response['id']
-                        print(f"Video id '{response['id']}' was successfully uploaded.")
                     else:
                         exit(f"The upload failed with an unexpected response: {response}")
             except HttpError as e:
@@ -136,15 +120,31 @@ class YouTubeUploader:
                 error = "A retriable error occurred: %s" % e
 
             if error is not None:
-                print(error)
+                logger.info(error)
                 retry += 1
                 if retry > MAX_RETRIES:
                     exit("No longer attempting to retry.")
 
                 max_sleep = 2 ** retry
                 sleep_seconds = random.random() * max_sleep
-                print(f"Sleeping {sleep_seconds} seconds and then retrying...")
+                logger.info(f"Sleeping {sleep_seconds} seconds and then retrying...")
                 time.sleep(sleep_seconds)
+
+    def upload_thumbnail(self, file_path, video_id):
+        self.authenticate()
+        logger.info(f"Uploading thumbnail from file {file_path}")
+        thumbnail_url = None
+        try:
+            response = self.youtube.thumbnails().set(
+                videoId=video_id,
+                media_body=MediaFileUpload(file_path, chunksize=-1, resumable=True)
+            ).execute()
+            if response and 'items' in response and len(response['items']) > 0:
+                thumbnail_url = response['items'][0]['default']['url']
+                logger.info(f"Thumbnail successfully uploaded. URL: {thumbnail_url}")
+        except HttpError as e:
+            logger.info(f"An HTTP error {e.resp.status} occurred:\n{e.content}")
+        return thumbnail_url
 
 
 if __name__ == '__main__':

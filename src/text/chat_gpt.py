@@ -9,7 +9,7 @@ openai.api_key = CONFIG.get("OPEN_AI_API_KEY")
 
 
 class ChatGPTTask:
-    def __init__(self, prompt, model_name="text-davinci-003", tokens_number=4000):
+    def __init__(self, prompt, model_name="text-davinci-003", tokens_number=3700):
         self.prompt = prompt
         self.model_name = model_name
         self.text = None
@@ -22,7 +22,7 @@ class ChatGPTTask:
         return self
 
 
-def ask_chatgpt(prompt, model_name="text-davinci-003", tokens_number=4000):
+def ask_chatgpt(prompt, model_name="text-davinci-003", tokens_number=3700):
     model_engine = model_name
     response = openai.Completion.create(
         engine=model_engine,
@@ -53,7 +53,7 @@ def save_results(prompt, text):
     return filename, now
 
 
-def process_chatgpt_results(prompt, model_name=None, tokens_number=4000):
+def process_chatgpt_results(prompt, model_name=None, tokens_number=3700):
     res = ask_chatgpt(prompt, model_name, tokens_number=tokens_number)
     filename, now = save_results(prompt, res)
     return res, filename, now

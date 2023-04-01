@@ -46,7 +46,7 @@ def extract_video_colors_and_topics(clip, colors, topics):
     return all_colors, all_topics
 
 
-def is_video_matching(clip, colors, colors_to_avoid, topics):
+def is_video_matching(clip, colors, colors_to_avoid, topics, topics_to_avoid):
     if topics or colors or colors_to_avoid:
         all_colors, all_topics = extract_video_colors_and_topics(clip, colors, topics)
         if colors and not any(color in colors for color in all_colors):
@@ -55,6 +55,8 @@ def is_video_matching(clip, colors, colors_to_avoid, topics):
             raise WrongMediaException(f"Video colors are in forbidden {colors_to_avoid}")
         if topics and not any(topic in topics for topic in all_topics):
             raise WrongMediaException(f"Video topics are not in required {topics}")
+        if topics_to_avoid and any(topic in topics_to_avoid for topic in all_topics):
+            raise WrongMediaException(f"Video topics are in forbidden {topics_to_avoid}")
 
 
 def build_video_dir_path(orientation=DEFAULT_ORIENTATION, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
@@ -153,6 +155,7 @@ class CommonTasks:
             topics: List[str] = None,
             colors: List[str] = None,
             colors_to_avoid: List[str] = None,
+            topics_to_avoid: List[str] = None,
             is_should_download=False,
             video_dir=build_video_dir_path(),
             orientation=DEFAULT_ORIENTATION,
@@ -170,7 +173,7 @@ class CommonTasks:
             if not self.is_allow_duplicate_clips and clip.filename in used_video_clips:
                 continue
             try:
-                is_video_matching(clip, colors, colors_to_avoid, topics)
+                is_video_matching(clip, colors, colors_to_avoid, topics, topics_to_avoid)
             except WrongMediaException as x:
                 print(x)
                 continue

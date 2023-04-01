@@ -42,7 +42,7 @@ def synthesize_ssml(ssml=None,
 def synthesize_text(text=None,
                     output_file=None,
                     voice_language_code='en-US',
-                    voice_name='en-US-Wavenet-D',
+                    voice_name='en-US-Studio-M',
                     gender=SsmlVoiceGender.MALE,
                     audio_config=texttospeech.AudioConfig(audio_encoding=AudioEncoding.MP3)):
     """
@@ -82,7 +82,7 @@ def remove_extra_spaces(text):
 
 
 def extract_only_ssml(text):
-    ssml = re.search(r'<speak>.*</speak>', text).group(0)
+    ssml = re.search(r'<speak.*>.*</speak>', text).group(0)
     return ssml
 
 
@@ -95,11 +95,20 @@ def sample_all_voices(ssml):
 
 
 if __name__ == '__main__':
-    sample_text = ''
-    with open('..\\..\\tmp\\test_text_small.xml', 'r') as f:
-        read = f.read()
-
-    ssml_speak = extract_only_ssml(remove_extra_spaces(read))
-    print(ssml_speak)
-
-    # sample_all_voices(ssml_speak)
+    # sample_text = ''
+    # with open('..\\..\\tmp\\test_text_small.xml', 'r') as f:
+    #     read = f.read()
+    #
+    # ssml_speak = extract_only_ssml(remove_extra_spaces(read))
+    # print(ssml_speak)
+    # list_voices()
+    synthesize_text(
+        "Let's see what this api gives us - with some longer line of text",
+        output_file='../../tmp/gtts_voices/en-US-Studio-M_sp055_pitch20_sample.mp3',
+        voice_name='en-US-Studio-M',
+        audio_config=texttospeech.AudioConfig(
+            audio_encoding=AudioEncoding.MP3,
+            speaking_rate=0.55,  # decrease the speed
+            pitch=20,  # increase the pitch
+        )
+    )

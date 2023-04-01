@@ -32,7 +32,7 @@ class ImageTasks:
                 result_image,
                 text=all_groups[0],
                 font_path=font,
-                font_size=300,
+                font_size=300 if len(all_groups[0]) < 12 else 200,
                 font_color=(255, 255, 255),
                 position=TextPosition.TOP_CENTER
             )
@@ -41,7 +41,7 @@ class ImageTasks:
                 result_image,
                 text=all_groups[1],
                 font_path=font,
-                font_size=300,
+                font_size=300 if len(all_groups[1]) < 12 else 200,
                 font_color=(255, 255, 255),
                 position=TextPosition.BOTTOM_CENTER
             )
@@ -51,7 +51,7 @@ class ImageTasks:
                 result_image,
                 text=all_groups[0],
                 font_path=font,
-                font_size=250,
+                font_size=250 if len(all_groups[0]) < 12 else 180,
                 font_color=(255, 255, 255),
                 position=TextPosition.TOP_CENTER
             )
@@ -60,7 +60,7 @@ class ImageTasks:
                 result_image,
                 text=all_groups[1],
                 font_path=font,
-                font_size=250,
+                font_size=250 if len(all_groups[1]) < 12 else 180,
                 font_color=(255, 255, 255),
                 position=TextPosition.CENTER
             )
@@ -69,7 +69,7 @@ class ImageTasks:
                 result_image,
                 text=all_groups[2],
                 font_path=font,
-                font_size=250,
+                font_size=250 if len(all_groups[2]) < 12 else 180,
                 font_color=(255, 255, 255),
                 position=TextPosition.BOTTOM_CENTER
             )

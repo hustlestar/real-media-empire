@@ -50,7 +50,7 @@ class VideoTasks:
         print(self.used_video_clips)
         return self.video
 
-    def save_final_video(self, video, final_audio):
+    def save_final_video(self, video, final_audio) -> str:
         final_video_path = os.path.join(self.results_dir, '0_result_video.mp4')
         self.video_task.prepare_and_save_final_video(video, final_audio, final_audio.duration, final_video_path)
         return final_video_path

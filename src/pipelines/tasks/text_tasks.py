@@ -5,7 +5,27 @@ from typing import Tuple
 
 from pipelines.tasks.common_tasks import CommonTasks
 from text.chat_gpt import ChatGPTTask
-from text.util import extract_json_as_dict
+from text.helpers import extract_json_as_dict
+
+
+def has_json(result_text):
+    return '{' in result_text and '}' in result_text
+
+
+def create_thoughts_list(topic="from Michael Hyatt's Your Best Year Ever book", what=None):
+    thoughts = "thoughts" if not what else what
+    prompt = f'Main {thoughts} {topic} as json with key "{thoughts}" with array of strings'
+    result_text = ChatGPTTask(prompt=prompt, tokens_number=3700).run().text
+
+    retry_counter = 0
+    while retry_counter < 5:
+        if has_json(result_text):
+            result_dict = extract_json_as_dict(result_text)
+            if thoughts in result_dict:
+                return result_dict[thoughts]
+        print(f"Invalid ChatGPT response in try {retry_counter}, going on retry")
+        retry_counter = retry_counter + 1
+    raise Exception("Failed to create required json using ChatGPT")
 
 
 class TextTasks:
@@ -37,6 +57,8 @@ class TextTasks:
         self.text_for_voiceover, self.is_ssml = helper.prepare_text_for_voiceover()
         with open(os.path.join(self.results_dir, '1_text_script.txt'), 'w') as f:
             f.write(self.text_for_voiceover)
+        with open(os.path.join(self.results_dir, '0_prompt.txt'), 'w') as k:
+            k.write(prompt)
         return self.text_for_voiceover, self.is_ssml
 
     def create_description(self, text, prompt=None):
@@ -52,22 +74,20 @@ class TextTasks:
         self.cleaned_text = re.sub(r'<.*?>', '', text) if '<speak>' in text else text
         if not prompt:
             prompt = """
-            please fill this json
+            Provide json with following data: title,  2 to 5 sentences description, 2 to 4 words thumbnail clickbait phrase.
+            in the following format:
             {
                 "title": "",
                 "description_from_2_to_5_sentences": "",
                 "thumbnail_from_2_to_4_words_clickbait_phrase": ""
             }
-            with:
-            title,
-            2 to 5 sentences description, 
-            2 to 4 words thumbnail clickbait phrase
+            Your response should contain only json.
             for the following video script:\n""" + self.cleaned_text
             retry_counter = 0
             while retry_counter < 5:
                 result_text = ChatGPTTask(prompt=prompt, tokens_number=500).run().text
                 print(f"CHAT GPT response \n{result_text}")
-                if '{' in result_text and '}' in result_text:
+                if has_json(result_text):
                     result_dict = extract_json_as_dict(result_text)
                     if ("title" in result_dict.keys()
                             and "description_from_2_to_5_sentences" in result_dict.keys()
@@ -98,10 +118,11 @@ class TextTasks:
 
 
 if __name__ == '__main__':
-    text_tasks = TextTasks()
-    with open("D:\\Projects\\media-empire\\tmp\\test_text.xml", 'r') as f:
-        text = f.read()
-
-    print(text)
-    print(text_tasks.create_title_description_thumbnail_title(text))
-    print(text_tasks.cleaned_text)
+    # text_tasks = TextTasks()
+    # with open("D:\\Projects\\media-empire\\tmp\\test_text.xml", 'r') as f:
+    #     text = f.read()
+    #
+    # print(text)
+    # print(text_tasks.create_title_description_thumbnail_title(text))
+    # print(text_tasks.cleaned_text)
+    print(create_thoughts_list())

@@ -1,8 +1,17 @@
 import os
 import random
 from typing import List
+from moviepy.editor import VideoFileClip
 
-from moviepy.editor import VideoFileClip, vfx, concatenate_videoclips
+from moviepy.config import get_setting
+
+import moviepy.config as cfg
+import numpy as np
+from config import CONFIG
+
+cfg.IMAGEMAGICK_BINARY = CONFIG.get("IMAGEMAGICK_BINARY")
+
+print(get_setting("IMAGEMAGICK_BINARY"))
 
 RES_1920_1080 = repr([1920, 1080])
 RES_3840_2160 = repr([3840, 2160])
@@ -63,18 +72,52 @@ def trim_clip_duration(clip, to_max_duration_of=10):
 
 
 if __name__ == '__main__':
-    MEDIA_DIR = "/Users/yauhenim/MEDIA"
+    from moviepy.editor import *
 
-    clips = read_all_video_clips(MEDIA_DIR)
+    # Define the size and duration of the video clip
+    duration = 5
 
-    clips_buckets = map_clips_to_buckets_by_size(clips)
+    # Create a black background clip with three color channels
+    # bg = ImageClip(np.zeros((height, width, 3), dtype=np.uint8), duration=duration)
+    bg = read_n_video_clips(os.path.join(CONFIG.get('MEDIA_GALLERY_DIR'),
+                                         "VIDEO",
+                                         'landscape',
+                                         f"1920_1080"), 1)[0]
+    lines = [
+        "This is first line and it's long",
+        "This is second line",
+        "Guess what now?",
+        "Here comes the 4th line"
+    ]
 
-    print(clips_buckets)
+    res = []
 
-    fhd_clips = clips_buckets.get(RES_1920_1080)
+    current = 0
+    for i, l in enumerate(lines):
+        if len(l) <= 20:
+            txt = TextClip(l, fontsize=70, color='white').set_pos(('center', 'center')).set_duration(duration).set_start(current)
+            # create a color clip with rounded corners
+            bg = ColorClip(txt.size, color='black', corner_radius=50)
+            res.append(bg)
+        else:
+            split_at = l.find(' ', 20)
+            if split_at == -1:
+                clip = TextClip(l, fontsize=70, color='white', bg_color='black').set_pos(('center', 'center')).set_duration(duration).set_start(current)
+                res.append(clip)
+            else:
+                first_part = l[:split_at]
+                second_part = l[split_at + 1:]
+                clip = TextClip(first_part, fontsize=70, color='white', bg_color='black').set_pos(('center', 'center')).set_duration(duration).set_start(current)
+                res.append(clip)
+                clip = TextClip(second_part, fontsize=70, color='white', bg_color='black').set_pos(('center', 'bottom')).set_duration(duration).set_start(current)
+                res.append(clip)
+                print(first_part)
+                print(second_part)
+        current += duration
 
-    ready_fhd_clips = [prepare_video_sublcip(c) for c in fhd_clips]
+    # from moviepy.video.tools.subtitles import SubtitlesClip
+    # Composite the text clip onto the background clip
+    final_clip = CompositeVideoClip([bg, *res])
 
-    ready = concatenate_videoclips(ready_fhd_clips)
-
-    ready.write_videofile(os.path.join(MEDIA_DIR, "xxx.mp4"))
+    # Write the final clip to a file
+    final_clip.write_videofile('text_on_black_bg.mp4', fps=30)
