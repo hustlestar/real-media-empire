@@ -16,10 +16,12 @@ class VideoBackgroundPreset:
 class ChannelConfigTemplate:
     def __init__(self):
         self.youtube_channel_name: str = None
+        self.youtube_channel_id: str = None
         self.youtube_client_secrets_file: str = None
         self.youtube_category: str = None
         self.youtube_tags: List[str] = None
         self.youtube_title_suffix: str = None
+        self.youtube_privacy_status: str = None
 
         self.video_orientation: str = 'landscape'  # portrait
         self.video_width: int = 1920

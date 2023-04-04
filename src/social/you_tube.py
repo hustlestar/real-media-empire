@@ -1,3 +1,4 @@
+import json
 import logging
 import os.path
 import random
@@ -22,7 +23,11 @@ RETRIABLE_EXCEPTIONS = (httplib2.HttpLib2Error, IOError, ResumableUploadError, H
 
 RETRIABLE_STATUS_CODES = [500, 502, 503, 504]
 
-YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
+YOUTUBE_SCOPES = [
+    "https://www.googleapis.com/auth/youtube",
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
+]
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 
@@ -33,14 +38,15 @@ logger = logging.getLogger(__name__)
 
 
 class YouTubeUploader:
-    def __init__(self, client_secrets_file: str, channel_name: str, oath_storage_dir: str = CONFIG.get("OAUTH_2_DIR")):
+    def __init__(self, client_secrets_file: str, channel_name: str, channel_id: str, oath_storage_dir: str = CONFIG.get("OAUTH_2_DIR")):
         self.client_secrets_file = client_secrets_file
+        self.channel_id = channel_id
         self.channel_name = str(channel_name).lower().replace("\\s+", "_")
         self.credentials_file = os.path.join(oath_storage_dir, f"{self.channel_name}_oauth2.json")
         self.youtube = None
 
     def authenticate(self):
-        flow = InstalledAppFlow.from_client_secrets_file(self.client_secrets_file, scopes=[YOUTUBE_UPLOAD_SCOPE])
+        flow = InstalledAppFlow.from_client_secrets_file(self.client_secrets_file, scopes=YOUTUBE_SCOPES)
         credentials = Credentials.from_authorized_user_file(self.credentials_file, []) if os.path.exists(self.credentials_file) else None
         if not credentials or credentials.expired:
             is_refresh_failed = False
@@ -54,6 +60,13 @@ class YouTubeUploader:
                     is_refresh_failed = True
             if credentials and credentials.refresh_token and is_refresh_failed:
                 credentials = flow.run_local_server(port=0)
+            elif not credentials:
+                credentials = flow.run_local_server(port=0)
+
+            if not os.path.exists(self.credentials_file):
+                with open(self.credentials_file, 'w') as _:
+                    pass
+
             storage = Storage(self.credentials_file)
             storage.put(credentials)
         self.youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
@@ -146,12 +159,41 @@ class YouTubeUploader:
             logger.info(f"An HTTP error {e.resp.status} occurred:\n{e.content}")
         return thumbnail_url
 
+    def insert_comment(self, video_id, comment_text, channel_id=None):
+        self.authenticate()
+        # Call the YouTube API to insert the comment
+        comment_insert_response = self.youtube.commentThreads().insert(
+            part="snippet",
+            body=dict(
+                snippet=dict(
+                    channelId=channel_id if channel_id else self.channel_id,
+                    videoId=video_id,
+                    topLevelComment=dict(
+                        snippet=dict(
+                            textOriginal=comment_text
+                        )
+                    ),
+                    isPublic=True,
+                    isPinned=True
+                )
+            )
+        ).execute()
+
+        print("Comment successful!")
+        return comment_insert_response['id']
+
 
 if __name__ == '__main__':
     uploader = YouTubeUploader(
         client_secrets_file=CONFIG.get("YOUTUBE_CHANNEL_API_KEY_PATH"),
-        channel_name='daily_mindset'
+        channel_name='daily_mindset',
+        channel_id="UCPZrsHvG-XxorsXWtC3i6AA"
     )
 
-    uploader.authenticate()
+    comment = 'test comment new'
+    video_id = '9aKOFqVoXic'
+    res = uploader.insert_comment(video_id=video_id, comment_text=comment)
+    print(res)
+
+    # uploader.authenticate()
     # uploader.upload_video("D:\\Projects\\media-empire\\tmp\\2023-03-10T15-25-33_slide_in_top_all.mp4")

@@ -3,7 +3,7 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - python
+  - python=3.9
   - pip
 #  - pytorch::pytorch
 #  - pytorch::torchvision
@@ -16,12 +16,15 @@ dependencies:
     - python-dotenv
     - gTTS
     - openai
+    - google_auth_oauthlib
     - google-cloud-texttospeech
     - google-api-python-client
     - opencv-python
-    - cchardet
+#    - cchardet
     - colorgram.py
     - accelerate
     - oauth2client
     - munch
     - scipy
+    - zenml
+    - fastapi

@@ -30,6 +30,7 @@ class YouTubeChannel:
             "RESULTS",
             neat_chanel_name
         )
+        self.youtube_privacy_status = config.youtube_privacy_status
         self.this_run_result_dir = os.path.join(
             self.channel_root_dir,
             get_now() if not execution_date else execution_date
@@ -74,6 +75,7 @@ class YouTubeChannel:
         self.socials_manager = SocialTasks(
             youtube_api_key_path=config.youtube_client_secrets_file,
             youtube_channel_name=neat_chanel_name,
+            youtube_channel_id=config.youtube_channel_id,
             youtube_tags=config.youtube_tags,
             youtube_category=config.youtube_category
         )
@@ -103,7 +105,7 @@ class YouTubeChannel:
     def create_thumbnail(self, title):
         return self.image_manager.create_thumbnail(title)
 
-    def create_title_description_thumbnail_title(self, text, prompt=None) -> Tuple[str, str, str]:
+    def create_title_description_thumbnail_title(self, text, prompt=None) -> Tuple[str, str, str, str]:
         return self.text_manager.create_title_description_thumbnail_title(text, prompt=prompt)
 
     def create_basic_youtube_video(self, text_script, is_ssml) -> str:
@@ -115,7 +117,7 @@ class YouTubeChannel:
         return final_video
 
     def upload_to_youtube(self, final_video, text_script):
-        title, description, thumbnail_title = self.create_title_description_thumbnail_title(text_script)
+        title, description, thumbnail_title, comment = self.create_title_description_thumbnail_title(text_script)
         thumbnail_image_path = self.create_thumbnail(thumbnail_title)
         logger.info(f"Before YouTube upload\n{title}\n{description}\n{thumbnail_title}")
         video_id = self.socials_manager.upload_video_to_youtube(final_video, title, description, privacy_status=VALID_PRIVACY_STATUSES[1])

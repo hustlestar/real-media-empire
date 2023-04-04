@@ -192,7 +192,12 @@ TRANSITIONS_BETWEEN_TWO = {
 }
 
 TRANSITIONS_FOR_LIST = {
-
+    first_fade_out_second_fade_in_all.__name__: first_fade_out_second_fade_in_all,
+    first_fade_out_all.__name__: first_fade_out_all,
+    first_fade_in_all.__name__: first_fade_in_all,
+    slide_in_left_all.__name__: slide_in_left_all,
+    slide_in_top_all.__name__: slide_in_top_all,
+    slide_in_bottom_all.__name__: slide_in_bottom_all
 }
 
 DEFAULT_TRANSITION = fadeinout

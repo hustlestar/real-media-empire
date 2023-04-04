@@ -6,6 +6,7 @@ class SocialTasks:
             self,
             youtube_api_key_path,
             youtube_channel_name,
+            youtube_channel_id,
             youtube_tags,
             youtube_category
     ):
@@ -13,7 +14,8 @@ class SocialTasks:
         self.youtube_category = youtube_category
         self.youtube_uploader = YouTubeUploader(
             client_secrets_file=youtube_api_key_path,
-            channel_name=str(youtube_channel_name).lower().replace(" ", "_")
+            channel_name=str(youtube_channel_name).lower().replace(" ", "_"),
+            channel_id=youtube_channel_id
         )
 
     def upload_video_to_youtube(
@@ -34,3 +36,6 @@ class SocialTasks:
 
     def upload_thumbnail_for_youtube(self, thumbnail_path, video_id):
         return self.youtube_uploader.upload_thumbnail(thumbnail_path, video_id)
+
+    def add_comment_to_youtube(self, comment_text, video_id):
+        return self.youtube_uploader.insert_comment(video_id, comment_text=comment_text)

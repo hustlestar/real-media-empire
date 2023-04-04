@@ -1,18 +1,17 @@
 import os
 import random
-from typing import List
-from moviepy.editor import VideoFileClip
-
-from moviepy.config import get_setting
+from typing import List, NamedTuple
+from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 
 import moviepy.config as cfg
-import numpy as np
+from moviepy.editor import *
+from moviepy.editor import VideoFileClip
+from moviepy.video.VideoClip import TextClip
+
+from audio.audio_processor import read_audio_clip
 from config import CONFIG
 
 cfg.IMAGEMAGICK_BINARY = CONFIG.get("IMAGEMAGICK_BINARY")
-
-print(get_setting("IMAGEMAGICK_BINARY"))
-
 RES_1920_1080 = repr([1920, 1080])
 RES_3840_2160 = repr([3840, 2160])
 
@@ -20,10 +19,10 @@ DIR_CACHE = {}
 
 
 def read_all_video_clips(path_to_dir, video_format='mp4'):
-    return [VideoFileClip(os.path.join(path_to_dir, f)).without_audio() for f in os.listdir(path_to_dir) if f.endswith(video_format)]
+    return [VideoFileClip(os.path.join(path_to_dir, f)).setout_audio() for f in os.listdir(path_to_dir) if f.endswith(video_format)]
 
 
-def read_n_video_clips(path_to_dir, number, video_format='mp4'):
+def read_n_video_clips(path_to_dir, number, video_format='mp4') -> List[VideoFileClip]:
     dir_files = DIR_CACHE.get(path_to_dir)
     if not dir_files:
         dir_files = os.listdir(path_to_dir)
@@ -71,53 +70,88 @@ def trim_clip_duration(clip, to_max_duration_of=10):
     return clip if clip.duration < to_max_duration_of else clip.subclip(0, to_max_duration_of)
 
 
-if __name__ == '__main__':
-    from moviepy.editor import *
-
+def video_with_text(
+        bg_video,
+        line_to_voice_list: List[NamedTuple('LineToMp3File', [('line', str), ('audio_file', str)])],
+        big_pause_duration=1,
+        small_pause_duration=0.3
+):
     # Define the size and duration of the video clip
-    duration = 5
 
     # Create a black background clip with three color channels
     # bg = ImageClip(np.zeros((height, width, 3), dtype=np.uint8), duration=duration)
-    bg = read_n_video_clips(os.path.join(CONFIG.get('MEDIA_GALLERY_DIR'),
-                                         "VIDEO",
-                                         'landscape',
-                                         f"1920_1080"), 1)[0]
-    lines = [
-        "This is first line and it's long",
-        "This is second line",
-        "Guess what now?",
-        "Here comes the 4th line"
-    ]
 
-    res = []
+    text_clips = []
+    audio_clips = []
 
-    current = 0
-    for i, l in enumerate(lines):
-        if len(l) <= 20:
-            txt = TextClip(l, fontsize=70, color='white').set_pos(('center', 'center')).set_duration(duration).set_start(current)
-            # create a color clip with rounded corners
-            bg = ColorClip(txt.size, color='black', corner_radius=50)
-            res.append(bg)
+    # if bg_video.w < bg_video.h:
+    #     font_size = 70
+    #     pos_1 = (0.1, 0.7)
+    #     pos_2 = (0.1, 0.8)
+    # else:
+    #     font_size = 100
+    #     pos_1 = (0.3, 0.5)
+    #     pos_2 = (0.3, 0.7)
+    font_size = 70
+    pos_1 = (0.5, 0.6)
+    pos_2 = (0.5, 0.6)
+    print(f"Font size {font_size}")
+    bg_width = bg_video.w
+    bg_width_half = bg_width * pos_1[0]
+    previous_end = 0
+    for i, line_and_audio in enumerate(line_to_voice_list):
+        audio = read_audio_clip(line_and_audio.audio_file)
+        # audio = audio.fx(vfx.speedx, factor=0.9)
+        duration = audio.duration
+        text_line = line_and_audio.line
+        if '.' in text_line:
+            duration = duration + big_pause_duration
         else:
-            split_at = l.find(' ', 20)
-            if split_at == -1:
-                clip = TextClip(l, fontsize=70, color='white', bg_color='black').set_pos(('center', 'center')).set_duration(duration).set_start(current)
-                res.append(clip)
-            else:
-                first_part = l[:split_at]
-                second_part = l[split_at + 1:]
-                clip = TextClip(first_part, fontsize=70, color='white', bg_color='black').set_pos(('center', 'center')).set_duration(duration).set_start(current)
-                res.append(clip)
-                clip = TextClip(second_part, fontsize=70, color='white', bg_color='black').set_pos(('center', 'bottom')).set_duration(duration).set_start(current)
-                res.append(clip)
-                print(first_part)
-                print(second_part)
-        current += duration
+            duration = duration + small_pause_duration
+        # if len(line_and_audio) <= 20:
+        txt_clip = build_txt_clip(text_line, bg_width, bg_width_half, duration, font_size, pos_1, previous_end)
+        # .set_position(pos_1, relative=True)
+
+        text_clips.append(txt_clip)
+        audio = audio.set_start(previous_end)
+        audio_clips.append(audio)
+        # else:
+        #     split_at = line_and_audio.line.find(' ', 20)
+        #     if split_at == -1:
+        #         clip = TextClip(
+        #             line_and_audio.line,
+        #             fontsize=font_size,
+        #             color='white',
+        #         ).set_position(pos_1, relative=True).set_duration(duration).set_start(previous_end)
+        #         text_clips.append(clip)
+        #     else:
+        #         first_part = line_and_audio.line[:split_at]
+        #         second_part = line_and_audio.line[split_at + 1:]
+        #         clip = TextClip(first_part, fontsize=font_size, color='white') \
+        #             .set_position(pos_1, relative=True).set_duration(duration).set_start(previous_end)
+        #         text_clips.append(clip)
+        #         clip = TextClip(second_part, fontsize=font_size, color='white') \
+        #             .set_position(pos_2, relative=True).set_duration(duration).set_start(previous_end)
+        #         text_clips.append(clip)
+        previous_end += duration
 
     # from moviepy.video.tools.subtitles import SubtitlesClip
     # Composite the text clip onto the background clip
-    final_clip = CompositeVideoClip([bg, *res])
+    final_audio = CompositeAudioClip(audio_clips)
+    # final_audio = concatenate_audioclips(audio_clips)
+
+    final_clip = CompositeVideoClip([bg_video, *text_clips])
+    final_clip = final_clip.set_audio(final_audio)
 
     # Write the final clip to a file
     final_clip.write_videofile('text_on_black_bg.mp4', fps=30)
+
+
+def build_txt_clip(text_line, bg_width, bg_width_half, duration, font_size, pos_1, previous_end):
+    txt_clip = TextClip(text_line, fontsize=font_size, color='white').set_duration(duration).set_start(previous_end)
+    txt_width = txt_clip.w
+    if txt_width > bg_width:
+        raise Exception("Line text is too long")
+    pos_w_rel = (bg_width_half - txt_width / 2) / bg_width
+    txt_clip = txt_clip.set_position((pos_w_rel, pos_1[1]), relative=True)
+    return txt_clip

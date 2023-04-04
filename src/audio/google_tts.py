@@ -103,12 +103,23 @@ if __name__ == '__main__':
     # print(ssml_speak)
     # list_voices()
     synthesize_text(
-        "Let's see what this api gives us - with some longer line of text",
-        output_file='../../tmp/gtts_voices/en-US-Studio-M_sp055_pitch20_sample.mp3',
-        voice_name='en-US-Studio-M',
-        audio_config=texttospeech.AudioConfig(
-            audio_encoding=AudioEncoding.MP3,
-            speaking_rate=0.55,  # decrease the speed
-            pitch=20,  # increase the pitch
-        )
+        "The only way",
+        output_file='../video/1.mp3',
+        voice_name='en-US-Wavenet-J',
     )
+    synthesize_text(
+        "to do great work",
+        output_file='../video/2.mp3',
+        voice_name='en-US-Wavenet-J',
+    )
+    synthesize_text(
+        "is to love what you do",
+        output_file='../video/3.mp3',
+        voice_name='en-US-Wavenet-J',
+    )
+    synthesize_text(
+        "Steve Jobs",
+        output_file='../video/4.mp3',
+        voice_name='en-US-Wavenet-J',
+    )
+
