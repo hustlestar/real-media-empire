@@ -36,6 +36,23 @@ def ask_chatgpt(prompt, model_name="text-davinci-003", tokens_number=3700):
     return message
 
 
+def chat_completion(prompt, model_name="gpt-3.5-turbo", tokens_number=3700):
+    messages = [
+        {"role": "system", "content": "You are an REST API that responds with JSON to user"},
+        {"role": "user", "content": prompt},
+    ]
+    response = openai.ChatCompletion.create(
+        model=model_name,
+        messages=messages,
+        max_tokens=tokens_number,
+        n=1,
+        stop=None,
+        temperature=0.7,
+    )
+    message = response.choices[0]['message']['content'].strip()
+    return message
+
+
 def save_results(prompt, text):
     prompt_dir = os.path.join(CONFIG.get("MEDIA_GALLERY_DIR"), 'TEXT')
     prompt_index_file = os.path.join(prompt_dir, '.chatGPT_prompt_index.txt')

@@ -5,27 +5,7 @@ from typing import Tuple
 
 from pipelines.tasks.common_tasks import CommonTasks
 from text.chat_gpt import ChatGPTTask
-from text.helpers import extract_json_as_dict
-
-
-def has_json(result_text):
-    return '{' in result_text and '}' in result_text
-
-
-def create_thoughts_list(topic="from Michael Hyatt's Your Best Year Ever book", what=None):
-    thoughts = "thoughts" if not what else what
-    prompt = f'Main {thoughts} {topic} as json with key "{thoughts}" with array of strings'
-    result_text = ChatGPTTask(prompt=prompt, tokens_number=3700).run().text
-
-    retry_counter = 0
-    while retry_counter < 5:
-        if has_json(result_text):
-            result_dict = extract_json_as_dict(result_text)
-            if thoughts in result_dict:
-                return result_dict[thoughts]
-        print(f"Invalid ChatGPT response in try {retry_counter}, going on retry")
-        retry_counter = retry_counter + 1
-    raise Exception("Failed to create required json using ChatGPT")
+from text.helpers import extract_json_as_dict, create_quote_and_author, has_json
 
 
 class TextTasks:
@@ -128,4 +108,4 @@ if __name__ == '__main__':
     # print(text)
     # print(text_tasks.create_title_description_thumbnail_title(text))
     # print(text_tasks.cleaned_text)
-    print(create_thoughts_list())
+    pass

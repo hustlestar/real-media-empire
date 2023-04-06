@@ -144,7 +144,13 @@ def video_with_text(
     final_clip = final_clip.set_audio(final_audio)
 
     # Write the final clip to a file
-    final_clip.write_videofile('text_on_black_bg.mp4', fps=30)
+    final_clip.write_videofile(
+        'text_on_black_bg.mp4',
+        fps=30,
+        codec='libx264',
+        audio_codec='aac',
+        temp_audiofile='temp-audio.m4a'
+    )
 
 
 def build_txt_clip(text_line, bg_width, bg_width_half, duration, font_size, pos_1, previous_end):
