@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class YouTubeChannel:
     def __init__(self, channel_config_path, execution_date=None, is_recover=False) -> None:
         config: ChannelConfig = read_config(channel_config_path)
-        logger.info(f"Starting with following config:\n{json.dumps(config, indent=4)}")
+        logger.debug(f"Starting with following config:\n{json.dumps(config, indent=4)}")
         self.config = config
         neat_chanel_name = str(config.youtube_channel_name).lower().strip().replace(" ", "_")
         self.channel_root_dir = os.path.join(
@@ -80,14 +80,18 @@ class YouTubeChannel:
             youtube_category=config.youtube_category
         )
 
+    @property
+    def result_dir(self):
+        return self.this_run_result_dir
+
     def create_text_script(self, prompt) -> Tuple[str, bool]:
         return self.text_manager.create_text(prompt)
 
     def create_video(self, duration=None):
         return self.video_manager.create_video_background(duration=duration)
 
-    def create_audio_voice_over(self, text_script, is_ssml):
-        voice_over_filename = self.audio_manager.create_audio_voice_over(text_script, is_ssml)
+    def create_audio_voice_over(self, text_script, is_ssml, result_file=f"2_voiceover.mp3"):
+        voice_over_filename = self.audio_manager.create_audio_voice_over(text_script, is_ssml, result_file=result_file)
         return read_audio_clip(voice_over_filename)
 
     def create_audio_background(self):

@@ -1,5 +1,4 @@
 import logging
-import os.path
 
 import click
 from zenml.pipelines import pipeline
@@ -7,7 +6,7 @@ from zenml.pipelines import pipeline
 from pipelines.params.params_for_pipeline import PipelineParams, prepare_and_get_pipeline_params
 from pipelines.steps.library import build_prompt, create_text_script, create_basic_youtube_video, create_title_description_thumbnail_title, create_thumbnail, \
     upload_video_to_youtube, upload_thumbnail_to_youtube, add_comment_to_youtube
-from pipelines.you_tube_channel import YouTubeChannel
+from pipelines.utils import recover_last_run_if_required
 from util.time import get_now
 
 logger = logging.getLogger(__name__)
@@ -32,16 +31,6 @@ def safe_simple_video_pipeline(
     thumbnail_image_path = create_thumbnail(thumbnail_title)
     thumbnail_url = upload_thumbnail_to_youtube(thumbnail_image_path, video_id)
     add_comment_to_youtube(comment, video_id)
-
-
-def recover_last_run_if_required(channel_config_path, pipeline_params, recover):
-    if recover:
-        channel = YouTubeChannel(channel_config_path=channel_config_path, is_recover=True)
-        channel_dir = os.listdir(channel.channel_root_dir)
-        channel_dir.sort(reverse=True)
-        logger.info(f"RECOVERING last pipeline run is {channel_dir[0]}")
-        pipeline_params = pipeline_params.copy(update={"execution_date": channel_dir[0]})
-    return pipeline_params
 
 
 @click.command(context_settings=dict(ignore_unknown_options=True))

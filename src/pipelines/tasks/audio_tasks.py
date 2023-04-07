@@ -38,9 +38,9 @@ class AudioTasks:
         else:
             raise NotImplementedError("Api for audio background is not there yet")
 
-    def create_audio_voice_over(self, text_script, is_ssml):
+    def create_audio_voice_over(self, text_script, is_ssml, result_file=None):
         api = TTS_APIS[self.tts_api]
-        result_audio_file = os.path.join(self.results_dir, f"2_voiceover.mp3")
+        result_audio_file = os.path.join(self.results_dir, result_file)
         if is_ssml:
             api.synthesize_ssml(text_script, output_file=result_audio_file, voice_name=self.tts_voice_name)
         else:

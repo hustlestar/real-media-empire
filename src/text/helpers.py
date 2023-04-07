@@ -113,7 +113,7 @@ def chatgpt_answer_as_a_dict(template, arguments: dict):
     pass
 
 
-def create_quote_and_author(author_file, topic_list, model_name='gpt-3.5-turbo', results_dir=None) -> Dict[str, str]:
+def create_quote_and_author(prompt_template: str, author_file, topic_list, model_name='gpt-3.5-turbo', results_dir=None) -> Dict[str, str]:
     author = pick_random_from_list(json.loads(open(author_file).read())['authors'])
     topic = pick_random_from_list(topic_list)
     params = {
@@ -133,7 +133,7 @@ def create_quote_and_author(author_file, topic_list, model_name='gpt-3.5-turbo',
             value='\"\"'
         ),
     ]
-    prompt = create_prompt_from_template(args, params, quote_template)
+    prompt = create_prompt_from_template(args, params, prompt_template)
     retry_counter = 0
     while retry_counter < 5:
         result_text = chat_completion(prompt, model_name=model_name, tokens_number=500)
@@ -195,26 +195,50 @@ def create_prompt_from_template(args: List[TemplateArg], params: Dict[str, str],
     return res
 
 
-def find_split_index(line):
-    split_at = -1
+def find_split_index(line, max_line_length):
     but_index = line.find('but') if 'but' in line.lower() else -1
-    print(f"but index {but_index}")
+    if 15 < but_index < 25:
+        print(f"but index {but_index}")
+        return but_index
     and_index = line.find('and') if 'and' in line.lower() else -1
-    print(f"and index {and_index}")
+    if 15 < and_index < 25:
+        print(f"and index {and_index}")
+        return and_index
     comma_index = line.find(',') if ',' in line else -1
-    print(f"comma index {comma_index}")
-    space_index = line.find(" ", 25)
+    if 15 < comma_index < 25:
+        print(f"comma index {comma_index}")
+        return comma_index
+    space_index = line.find(" ", max_line_length)
     print(f"space index {space_index}")
-    return
+    return space_index if space_index > 0 and space_index + 9 < len(line) else len(line)
 
 
-def method_name():
-    for l in quote_lines:
-        if len(l) < 25:
-            result.append(l)
+def prepare_short_lines(quote_lines, max_line_length=22):
+    result = []
+    for line in quote_lines:
+        if len(line) < max_line_length:
+            result.append(line)
             continue
-        print(f"line length {len(l)}")
-        split_idnex = find_split_index(l)
+        print(f"line length {len(line)}")
+        split_index = find_split_index(line, max_line_length)
+        print(f"split index is {split_index} for {line}")
+        if split_index < 0:
+            result.append(line)
+        else:
+            result.append(line[:split_index].strip())
+            remaining = line[split_index:]
+            while len(remaining) > max_line_length:
+                split_index = find_split_index(remaining, max_line_length)
+                print(f"split index is {split_index} for {remaining}")
+                line_part = remaining[:split_index].strip()
+                remaining = remaining[split_index:]
+                if not remaining:
+                    result.append(f"{line_part}.")
+                else:
+                    result.append(line_part)
+            else:
+                result.append(remaining.strip())
+    return [l for l in result if l]
 
 
 if __name__ == '__main__':
@@ -246,14 +270,21 @@ if __name__ == '__main__':
     #                                    model_name='gpt-3.5-turbo', )
     # print(res_dict)
     quote_dict = {
-        "quote": "Beliefs have the power to create and the power to destroy. Human beings have the awesome ability to take any experience of their lives and create a meaning that disempowers them or one that can literally save their lives.",
+        "quote": "Strength does not come from physical capacity. It comes from an indomitable will.",
         "author": "Tony Robbins"
     }
 
     quote = quote_dict.get("quote")
     print(quote)
-    quote_lines = [s for s in quote.split(".") if s]
-    result = []
-    method_name()
+    quote_lines = [f"{s}." for s in quote.split(".") if s]
+
+    result = prepare_short_lines(quote_lines)
 
     print(f"final result {result}")
+
+
+def finish_line(s: str):
+    if s.endswith("!") or s.endswith(";") or s.endswith(":") or s.endswith(",") or s.endswith("?"):
+        return s
+    else:
+        return f"{s}."

@@ -1,12 +1,15 @@
 import logging
-from typing import Optional, Any
+import os
+from typing import List
 
 from zenml.steps import step, Output
 
+from config import CONFIG
 from pipelines.params.params_for_pipeline import PipelineParams
 from pipelines.you_tube_channel import YouTubeChannel
-from social.you_tube import VALID_PRIVACY_STATUSES
 from text import helpers
+from text.helpers import pick_random_from_list, finish_line
+from video.movie import read_n_video_clips, LineToMp3File, video_with_text
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +25,46 @@ def build_prompt(params: PipelineParams) -> str:
         engagement_techniques=channel.config.main_prompt_engagement_techniques,
     )
     return prompt
+
+
+@step
+def create_quote_by_author(params: PipelineParams) -> List[str]:
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    channel.socials_manager.youtube_uploader.authenticate()
+    quote_dict = helpers.create_quote_and_author(
+        channel.config.main_prompt_template,
+        author_file=channel.config.main_prompt_topics_file,
+        topic_list=channel.config.main_prompt_narrative_types,
+    )
+    quote = quote_dict.get("quote")
+    logger.info(f"Result quote is {quote}")
+    quote_lines = [finish_line(s) for s in quote.split(".") if s]
+    result = helpers.prepare_short_lines(quote_lines)
+    result.append(quote_dict.get("author"))
+    for l in result:
+        logger.info(l)
+    return result
+
+
+@step
+def create_voice_overs(text_lines: List[str], params: PipelineParams) -> List[str]:
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    channel.socials_manager.youtube_uploader.authenticate()
+    return [channel.audio_manager.create_audio_voice_over(line, is_ssml=False, result_file=f"{i}_voiceover.mp3") for i, line in enumerate(text_lines)]
+
+
+@step
+def create_shorts_with_voice(text_lines: List[str], voice_over_files: List[str], params: PipelineParams) -> str:
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    bg_video = read_n_video_clips(os.path.join(CONFIG.get('MEDIA_GALLERY_DIR'),
+                                               "VIDEO",
+                                               channel.config.video_orientation,
+                                               f"{channel.config.video_width}_{channel.config.video_height}"), 1)[0]
+    result_video_filename = os.path.join(channel.result_dir, "0_result.mp4")
+    lines = [LineToMp3File(k, v) for k, v in zip(text_lines, voice_over_files)]
+    bg_audio_filename = os.path.join(channel.config.audio_background_dir_path, pick_random_from_list(os.listdir(channel.config.audio_background_dir_path)))
+    video_with_text(bg_video, lines, result_file=result_video_filename, fonts_dir=channel.config.thumbnail_fonts_dir, bg_audio_filename=bg_audio_filename)
+    return result_video_filename
 
 
 @step
@@ -54,6 +97,12 @@ def create_title_description_thumbnail_title(text_script: str, params: PipelineP
 
 
 @step
+def create_title_description_thumbnail_title_for_list(text_script: List[str], params: PipelineParams) -> Output(title=str, description=str, thumbnail_title=str, comment=str):
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    return channel.create_title_description_thumbnail_title(" ".join(text_script))
+
+
+@step
 def create_thumbnail(thumbnail_title: str, params: PipelineParams) -> str:
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     return channel.create_thumbnail(thumbnail_title)
@@ -75,7 +124,7 @@ def upload_thumbnail_to_youtube(thumbnail_image_path: str, video_id: str, params
 
 
 @step
-def add_comment_to_youtube(thumbnail_image_path: str, video_id: str, params: PipelineParams) -> Optional[str]:
+def add_comment_to_youtube(thumbnail_image_path: str, video_id: str, params: PipelineParams) -> str:
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     if channel.youtube_privacy_status == 'public':
         comment_id = channel.socials_manager.add_comment_to_youtube(thumbnail_image_path, video_id)

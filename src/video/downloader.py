@@ -268,12 +268,12 @@ if __name__ == '__main__':
     #     is_video_download=False,
     #     photo_size='large2x'
     # ).run()
-    PexelsDownloadTask(query="beach", download_dir=CONFIG.get('DOWNLOAD_DIR'),
+    PexelsDownloadTask(query="forest", download_dir=CONFIG.get('DOWNLOAD_DIR'),
                        size='medium',
                        height=1920,
                        width=1080,
                        orientation='portrait',
-                       number_of_downloads=1).run()
+                       number_of_downloads=5000).run()
     # PexelsDownloadTask(query="stormy sky", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
     # PexelsDownloadTask(query="vibrant sunset", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
     # PexelsDownloadTask(query="winding road", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()

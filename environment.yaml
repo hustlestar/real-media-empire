@@ -18,6 +18,7 @@ dependencies:
     - openai
     - google_auth_oauthlib
     - google-cloud-texttospeech
+    - google-cloud-speech
     - google-api-python-client
     - opencv-python
 #    - cchardet
