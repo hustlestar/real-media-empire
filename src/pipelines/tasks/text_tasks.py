@@ -5,7 +5,7 @@ from typing import Tuple
 
 from pipelines.tasks.common_tasks import CommonTasks
 from text.chat_gpt import ChatGPTTask
-from text.helpers import extract_json_as_dict, create_quote_and_author, has_json
+from text.helpers import extract_json_as_dict, has_json
 
 
 class TextTasks:

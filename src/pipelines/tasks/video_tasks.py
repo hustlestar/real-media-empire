@@ -11,6 +11,7 @@ class VideoTasks:
             topics: List[str] = None,
             colors: List[str] = None,
             colors_to_avoid: List[str] = None,
+            topics_to_avoid: List[str] = None,
             start_end_delay: int = DEFAULT_START_END_DELAY,
             orientation=DEFAULT_ORIENTATION,
             height=DEFAULT_HEIGHT,
@@ -21,6 +22,7 @@ class VideoTasks:
         self.topics = topics
         self.colors = colors
         self.colors_to_avoid = colors_to_avoid
+        self.topics_to_avoid = topics_to_avoid
         self.start_end_delay = start_end_delay
         self.orientation = orientation
         self.height = height

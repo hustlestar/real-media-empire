@@ -113,11 +113,11 @@ def video_with_text(
         if '.' in text_line:
             duration = duration + big_pause_duration
         elif text_line.startswith(',') or text_line.lower().startswith('and') or text_line.lower().startswith('or'):
-            duration = duration + 0.3
+            duration = duration + 0.25
         elif text_line.lower().startswith('but'):
-            duration = duration + 0.5
+            duration = duration + 0.4
         else:
-            duration = duration + 0.1
+            duration = duration + 0.05
 
         text_line = text_line.strip(',').strip()
         # if len(line_and_audio) <= 20:
@@ -159,7 +159,7 @@ def video_with_text(
 
     if bg_audio_filename:
         bg_audio_clip = read_audio_clip(bg_audio_filename)
-        bg_audio_clip = bg_audio_clip.set_duration(final_duration)
+        bg_audio_clip = bg_audio_clip.set_duration(final_duration).volumex(0.6)
         audio_clips.append(bg_audio_clip)
 
     # from moviepy.video.tools.subtitles import SubtitlesClip
@@ -191,6 +191,7 @@ def build_txt_clip(text_line, bg_width, bg_width_half, duration, font_size, pos_
     if txt_width > bg_width:
         raise Exception(f"Line text is too long {txt_width}")
     pos_w_rel = (bg_width_half - txt_width / 2) / bg_width
+    print(f"Text Clip position is {pos_w_rel} {pos_1[1]}")
     txt_clip = txt_clip.set_position((pos_w_rel, pos_1[1]), relative=True)
     return txt_clip
 

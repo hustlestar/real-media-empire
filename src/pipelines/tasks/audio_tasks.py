@@ -3,6 +3,8 @@ import os.path
 import random
 from typing import Dict
 
+from google.cloud import texttospeech
+from google.cloud.texttospeech_v1 import AudioEncoding
 from moviepy.editor import *
 from moviepy.video.fx.speedx import speedx
 
@@ -38,13 +40,17 @@ class AudioTasks:
         else:
             raise NotImplementedError("Api for audio background is not there yet")
 
-    def create_audio_voice_over(self, text_script, is_ssml, result_file=None):
+    def create_audio_voice_over(self, text_script, is_ssml, result_file=None, speaking_rate=0.0):
         api = TTS_APIS[self.tts_api]
         result_audio_file = os.path.join(self.results_dir, result_file)
         if is_ssml:
             api.synthesize_ssml(text_script, output_file=result_audio_file, voice_name=self.tts_voice_name)
         else:
-            api.synthesize_text(text_script, output_file=result_audio_file, voice_name=self.tts_voice_name)
+            api.synthesize_text(text_script, output_file=result_audio_file, voice_name=self.tts_voice_name,
+                                audio_config=texttospeech.AudioConfig(
+                                    audio_encoding=AudioEncoding.MP3,
+                                    speaking_rate=speaking_rate
+                                ))
 
         return result_audio_file
 

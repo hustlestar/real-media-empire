@@ -81,7 +81,7 @@ class ImageTasks:
         while True:
             random_photo = photos[random.randint(0, len(photos) - 1)]
             colors = get_image_main_colors(raw_image=random_photo, number_of_colors=6)
-            if any(color in ['white', 'silver', 'gray'] for color in colors):
+            if any(color in ['white', 'silver', 'gray', 'beige'] for color in colors):
                 continue
             if any(color in self.thumbnail_background_colors for color in colors):
                 return random_photo

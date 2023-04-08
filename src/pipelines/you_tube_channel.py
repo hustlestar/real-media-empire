@@ -59,6 +59,7 @@ class YouTubeChannel:
             topics=video_preset.topics,
             colors=video_preset.colors,
             colors_to_avoid=video_preset.colors_to_avoid,
+            topics_to_avoid=video_preset.topics_to_avoid,
             start_end_delay=config.video_start_end_delay,
             orientation=config.video_orientation,
             height=config.video_height,

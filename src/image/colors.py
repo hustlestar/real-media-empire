@@ -6,29 +6,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
-def get_image_main_colors_raw(image, number_of_colors=6):
-    colors = colorgram.extract(image, number_of_colors)  # Extract 10 colors from the image
-    main_colors = [color.rgb for color in colors]  # Get the RGB values of the extracted colors
-    logger.debug(f"Top {number_of_colors} image colors: {main_colors}")
-    return main_colors
-
-
-def get_image_main_colors_ndarray(image_ndarray, number_of_colors=6):
-    main_colors = get_image_main_colors_raw(Image.fromarray(image_ndarray), number_of_colors)
-    return [map_rgb_to_human(f) for f in main_colors]
-
-
-def get_image_main_colors(raw_image=None, image_ndarray=None, number_of_colors=6):
-    if raw_image is None and image_ndarray is None:
-        raise
-    if raw_image:
-        image = Image.open(raw_image)
-    else:
-        image = Image.fromarray(image_ndarray)
-    main_colors = get_image_main_colors_raw(image, number_of_colors)
-    return [map_rgb_to_human(f) for f in main_colors]
-
 color_map = {
     (255, 255, 255): 'white',
     (0, 0, 0): 'black',
@@ -55,6 +32,28 @@ color_map = {
     (255, 127, 80): 'coral',
     (64, 224, 208): 'turquoise'
 }
+
+def get_image_main_colors_raw(image, number_of_colors=6):
+    colors = colorgram.extract(image, number_of_colors)  # Extract 10 colors from the image
+    main_colors = [color.rgb for color in colors]  # Get the RGB values of the extracted colors
+    logger.debug(f"Top {number_of_colors} image colors: {main_colors}")
+    return main_colors
+
+
+def get_image_main_colors_ndarray(image_ndarray, number_of_colors=6):
+    main_colors = get_image_main_colors_raw(Image.fromarray(image_ndarray), number_of_colors)
+    return [map_rgb_to_human(f) for f in main_colors]
+
+
+def get_image_main_colors(raw_image=None, image_ndarray=None, number_of_colors=6):
+    if raw_image is None and image_ndarray is None:
+        raise
+    if raw_image:
+        image = Image.open(raw_image)
+    else:
+        image = Image.fromarray(image_ndarray)
+    main_colors = get_image_main_colors_raw(image, number_of_colors)
+    return [map_rgb_to_human(f) for f in main_colors]
 
 def map_rgb_to_human(color: Rgb):
     # Map each color to a basic color

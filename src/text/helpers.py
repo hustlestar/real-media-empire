@@ -4,7 +4,7 @@ import os
 import random
 import re
 from collections import namedtuple
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 
 from text.chat_gpt import ChatGPTTask, chat_completion
 
@@ -113,30 +113,11 @@ def chatgpt_answer_as_a_dict(template, arguments: dict):
     pass
 
 
-def create_quote_and_author(prompt_template: str, author_file, topic_list, model_name='gpt-3.5-turbo', results_dir=None) -> Dict[str, str]:
-    author = pick_random_from_list(json.loads(open(author_file).read())['authors'])
-    topic = pick_random_from_list(topic_list)
-    params = {
-        "topic": topic,
-        "author": author,
-        "main_idea": ""
-    }
-    args = [
-        TemplateArg(
-            text_definition="[[topic]] by [[author]]",
-            json_field_name='quote',
-            value='\"\"'
-        ),
-        TemplateArg(
-            text_definition="author of quote",
-            json_field_name='author',
-            value='\"\"'
-        ),
-    ]
+def create_quote_and_author(prompt_template: str, args, params, model_name='gpt-3.5-turbo', results_dir=None, tokens_number=500) -> Dict[str, Any]:
     prompt = create_prompt_from_template(args, params, prompt_template)
     retry_counter = 0
     while retry_counter < 5:
-        result_text = chat_completion(prompt, model_name=model_name, tokens_number=500)
+        result_text = chat_completion(prompt, model_name=model_name, tokens_number=tokens_number)
         print(f"CHAT GPT response \n{result_text}")
         if has_json(result_text):
             result_dict = extract_json_as_dict(result_text)
@@ -241,34 +222,44 @@ def prepare_short_lines(quote_lines, max_line_length=22):
     return [l for l in result if l]
 
 
-if __name__ == '__main__':
-    # topic = 'motivational quote'
-    # author = 'author'
-    # params = {
-    #     "topic": "motivational quote",
-    #     "author": "Les Brown",
-    #     "main_idea": ""
-    # }
-    # args = [
-    #     TemplateArg(
-    #         text_definition="[[topic]] by [[author]] where each logical quote part is a different string in array about 30 characters long",
-    #         json_field_name='quote',
-    #         value='["","","","",""]'
-    #     ),
-    #     TemplateArg(
-    #         text_definition="author of quote",
-    #         json_field_name='author',
-    #         value='\"\"'
-    #     ),
-    # ]
-    #
-    # res = create_prompt_from_template(args, params, quote_template)
-    # print(res)
+def finish_line(s: str):
+    s = s.strip()
+    if s.endswith("..") and not s.endswith("..."):
+        return f"{s}."
+    if s.endswith(".") or s.endswith("!") or s.endswith(";") or s.endswith(":") or s.endswith(",") or s.endswith("?"):
+        return s
+    else:
+        return f"{s}."
 
-    # res_dict = create_quote_and_author(topic_list=['motivational quote'],
-    #                                    author_file='/Users/yauhenim/JACK/media-empire/jack/topic_list.json',
-    #                                    model_name='gpt-3.5-turbo', )
-    # print(res_dict)
+
+if __name__ == '__main__':
+    topic = 'motivational quote'
+    author = 'author'
+    params = {
+        "topic": "motivational quote",
+        "author": "Les Brown",
+        "main_idea": ""
+    }
+    args = [
+        TemplateArg(
+            text_definition="[[topic]] by [[author]] where each logical quote part is a different string in array about 30 characters long",
+            json_field_name='quote',
+            value='["","","","",""]'
+        ),
+        TemplateArg(
+            text_definition="author of quote",
+            json_field_name='author',
+            value='\"\"'
+        ),
+    ]
+
+    res = create_prompt_from_template(args, params, quote_template)
+    print(res)
+
+    res_dict = create_quote_and_author(topic_list=['motivational quote'],
+                                       author_file='/Users/yauhenim/JACK/media-empire/jack/topic_list.json',
+                                       model_name='gpt-3.5-turbo', )
+    print(res_dict)
     quote_dict = {
         "quote": "Strength does not come from physical capacity. It comes from an indomitable will.",
         "author": "Tony Robbins"
@@ -281,10 +272,3 @@ if __name__ == '__main__':
     result = prepare_short_lines(quote_lines)
 
     print(f"final result {result}")
-
-
-def finish_line(s: str):
-    if s.endswith("!") or s.endswith(";") or s.endswith(":") or s.endswith(",") or s.endswith("?"):
-        return s
-    else:
-        return f"{s}."

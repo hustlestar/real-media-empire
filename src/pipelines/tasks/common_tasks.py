@@ -1,3 +1,4 @@
+import logging
 import math
 import random
 from typing import List, Tuple
@@ -18,6 +19,8 @@ from video.downloader import PexelsDownloadTask
 from video.movie import read_n_video_clips, trim_clip_duration, read_video_clip
 from video.video_transitions import first_fade_out_second_fade_in_all
 
+logger = logging.getLogger(__name__)
+
 
 def prepare_clip(video_dir, is_should_download, topics, orientation, width, height):
     if is_should_download and topics:
@@ -36,13 +39,13 @@ def extract_video_colors_and_topics(clip, colors, topics):
         for i in images:
             image_classes = get_image_classes(image_ndarray=i, number_of_classes=6)
             all_topics.update(image_classes)
-        print(f"All TOPICS from video {all_topics}")
+        logger.info(f"All TOPICS from video {all_topics}")
 
     if colors:
         for i in images:
             image_colors = get_image_main_colors(image_ndarray=i, number_of_colors=6)
             all_colors.update(image_colors)
-        print(f"All COLORS from video: {all_colors}")
+        logger.info(f"All COLORS from video: {all_colors}")
     return all_colors, all_topics
 
 
@@ -136,7 +139,7 @@ class CommonTasks:
 
         if background_audio.duration < final_duration:
             number_of_loops = math.ceil(final_duration * 1.0 / background_audio.duration)
-            print(f"Looping background audio for {number_of_loops} times")
+            logger.info(f"Looping background audio for {number_of_loops} times")
             background_audio = background_audio.fx(afx.audio_loop, number_of_loops).set_duration(final_duration)
         else:
             background_audio = background_audio.set_duration(final_duration)
@@ -146,7 +149,7 @@ class CommonTasks:
         final_audio = final_audio.audio_fadeout(1)
         # Fade in the audio at the end of the clip
         final_audio = final_audio.audio_fadein(1)
-        print(f"Audio with voice duration {final_audio.duration}")
+        logger.info(f"Audio with voice duration {final_audio.duration}")
         return final_audio, final_duration
 
     def prepare_video(
@@ -168,14 +171,14 @@ class CommonTasks:
         counter = 0
         while True:
             counter += 1
-            print(f"Reading video clip {counter}")
+            logger.info(f"Reading video clip {counter}")
             clip = prepare_clip(video_dir, is_should_download, topics, orientation, width, height)
             if not self.is_allow_duplicate_clips and clip.filename in used_video_clips:
                 continue
             try:
                 is_video_matching(clip, colors, colors_to_avoid, topics, topics_to_avoid)
             except WrongMediaException as x:
-                print(x)
+                logger.info(x)
                 continue
 
             if clip.duration < self.single_video_duration / 2:
@@ -185,14 +188,14 @@ class CommonTasks:
             used_video_clips.add(clip.filename)
             video = first_fade_out_second_fade_in_all(videos_list, 1)
             if video.duration > final_duration:
-                print("Achieved desired duration of video. Stopping")
+                logger.info("Achieved desired duration of video. Stopping")
                 break
         return video, used_video_clips
 
     def prepare_and_save_final_video(self, video, final_audio, final_duration, result_filename):
         video = video.set_audio(final_audio)
         video = video.set_duration(final_duration)
-        print(f"Final video duration would be {video.duration}")
+        logger.info(f"Final video duration would be {video.duration}")
         res_filename = result_filename
         video.write_videofile(res_filename,
                               codec='libx264',
@@ -201,14 +204,14 @@ class CommonTasks:
                               threads=6,
                               remove_temp=True)
         self.result_video_clips.append(res_filename)
-        print(f"Final video saved to {res_filename}")
+        logger.info(f"Final video saved to {res_filename}")
 
     def run(self):
         audio_with_voice = self.prepare_text_and_audio_with_voice()
         final_audio, final_duration = self.prepare_final_audio(audio_with_voice)
 
         for i in range(self.number_of_trials):
-            print(f"Starting trial {i}")
+            logger.info(f"Starting trial {i}")
             video, used_video_clips = self.prepare_video(final_duration)
             used_videos_str = "_".join([os.path.splitext(os.path.basename(f))[0] for f in used_video_clips])
             filename = f"{self.now}_{i}_N_{used_videos_str}"
