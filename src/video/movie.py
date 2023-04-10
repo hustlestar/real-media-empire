@@ -117,15 +117,15 @@ def video_with_text(
         elif text_line.lower().startswith('but'):
             duration = duration + 0.4
         else:
-            duration = duration + 0.05
+            duration = duration
 
+        print(f"Duration is {duration}")
         text_line = text_line.strip(',').strip()
         # if len(line_and_audio) <= 20:
         txt_clip = build_txt_clip(text_line, bg_width, bg_width_half, duration, font_size, pos_1, previous_end, font)
         # Make the text bold by overlaying a slightly shifted version of the text
         # in black with a small opacity
-        shadow = build_txt_clip(text_line, bg_width, bg_width_half, duration, font_size, (pos_1[0] + 0.005, pos_1[1] + 0.005), previous_end, font, color='black')\
-            .set_opacity(0.7)
+        shadow = build_txt_clip(text_line, bg_width, bg_width_half, duration, font_size, (pos_1[0] + 0.005, pos_1[1] + 0.005), previous_end, font, color='black')
         # .set_position(pos_1, relative=True)
 
         # text_clips.append(CompositeVideoClip([txt_clip, shadow]))
@@ -190,7 +190,8 @@ def build_txt_clip(text_line, bg_width, bg_width_half, duration, font_size, pos_
     txt_width = txt_clip.w
     if txt_width > bg_width:
         raise Exception(f"Line text is too long {txt_width}")
-    pos_w_rel = (bg_width_half - txt_width / 2) / bg_width
+    # pos_w_rel = (bg_width_half - txt_width / 2) / bg_width
+    pos_w_rel = (bg_width_half - txt_width / 2) / bg_width + (pos_1[0] - 0.5)
     print(f"Text Clip position is {pos_w_rel} {pos_1[1]}")
     txt_clip = txt_clip.set_position((pos_w_rel, pos_1[1]), relative=True)
     return txt_clip

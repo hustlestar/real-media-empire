@@ -35,8 +35,18 @@ class YouTubeChannel:
             self.channel_root_dir,
             get_now() if not execution_date else execution_date
         )
+        self.swamp_result_dir = os.path.join(
+            self.channel_root_dir,
+            "0_SWAMP"
+        )
+        self.lake_result_dir = os.path.join(
+            self.channel_root_dir,
+            "0_LAKE"
+        )
         if not is_recover:
             os.makedirs(self.this_run_result_dir, exist_ok=True)
+            os.makedirs(self.swamp_result_dir, exist_ok=True)
+            os.makedirs(self.lake_result_dir, exist_ok=True)
         self.text_manager = TextTasks(
             title_suffix=config.youtube_title_suffix,
             results_dir=self.this_run_result_dir
@@ -85,6 +95,17 @@ class YouTubeChannel:
     def result_dir(self):
         return self.this_run_result_dir
 
+    @property
+    def swamp_dir(self):
+        return self.swamp_result_dir
+
+    @property
+    def lake_dir(self):
+        return self.lake_dir
+
+    def build_result_dir(self, date):
+        return os.path.join(self.channel_root_dir, date)
+
     def create_text_script(self, prompt) -> Tuple[str, bool]:
         return self.text_manager.create_text(prompt)
 
@@ -121,7 +142,7 @@ class YouTubeChannel:
         final_video = self.create_final_video(video, final_audio)
         return final_video
 
-    def upload_to_youtube(self, final_video, text_script):
+    def upload_to_youtube_video_and_thumbnail(self, final_video, text_script):
         title, description, thumbnail_title, comment = self.create_title_description_thumbnail_title(text_script)
         thumbnail_image_path = self.create_thumbnail(thumbnail_title)
         logger.info(f"Before YouTube upload\n{title}\n{description}\n{thumbnail_title}")
@@ -141,5 +162,5 @@ if __name__ == '__main__':
     text_script, is_ssml = channel.create_text_script(prompt)
     final_video = channel.create_basic_youtube_video(text_script, is_ssml)
     logger.info(f"Video {final_video} \ntext{text_script}")
-    video_id, thumbnail_url = channel.upload_to_youtube(final_video, text_script)
+    video_id, thumbnail_url = channel.upload_to_youtube_video_and_thumbnail(final_video, text_script)
     logger.info(f"Video id {video_id} thumbnail url {thumbnail_url}")

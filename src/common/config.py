@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any, Dict
 
 import yaml
 from munch import Munch
@@ -22,6 +22,8 @@ class ChannelConfigTemplate:
         self.youtube_tags: List[str] = None
         self.youtube_title_suffix: str = None
         self.youtube_privacy_status: str = None
+
+        self.all_extras: Dict[str, Any] = None
 
         self.video_orientation: str = 'landscape'  # portrait
         self.video_width: int = 1920

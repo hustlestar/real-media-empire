@@ -6,7 +6,7 @@ import re
 from collections import namedtuple
 from typing import List, Tuple, Dict, Any
 
-from text.chat_gpt import ChatGPTTask, chat_completion
+from text.chat_gpt import ChatGPTTask, chat_completion, ask_chatgpt
 
 logger = logging.getLogger(__name__)
 
@@ -113,12 +113,15 @@ def chatgpt_answer_as_a_dict(template, arguments: dict):
     pass
 
 
-def create_quote_and_author(prompt_template: str, args, params, model_name='gpt-3.5-turbo', results_dir=None, tokens_number=500) -> Dict[str, Any]:
+def create_result_dict_from_prompt_template(prompt_template: str, args, params, model_name='gpt-3.5-turbo', results_dir=None, tokens_number=500) -> Dict[str, Any]:
     prompt = create_prompt_from_template(args, params, prompt_template)
     retry_counter = 0
     while retry_counter < 5:
-        result_text = chat_completion(prompt, model_name=model_name, tokens_number=tokens_number)
-        print(f"CHAT GPT response \n{result_text}")
+        if model_name and model_name.startswith('gpt-3.5-turbo'):
+            result_text = chat_completion(prompt, model_name=model_name, tokens_number=tokens_number)
+        else:
+            result_text = ask_chatgpt(prompt, model_name=model_name, tokens_number=tokens_number)
+        print(f"CHAT GPT {model_name} response \n{result_text}")
         if has_json(result_text):
             result_dict = extract_json_as_dict(result_text)
             for arg in args:
@@ -153,7 +156,7 @@ in the following format:
 {{
     "${{arg2}}": ${{arg3}}
 }}
-Your response should contain only json.
+Your response should contain only json. Json must be valid.
 """
 TemplateArg = namedtuple('QuoteArg', ['text_definition', 'json_field_name', 'value'])
 
@@ -177,18 +180,30 @@ def create_prompt_from_template(args: List[TemplateArg], params: Dict[str, str],
 
 
 def find_split_index(line, max_line_length):
-    but_index = line.find('but') if 'but' in line.lower() else -1
-    if 15 < but_index < 25:
-        print(f"but index {but_index}")
-        return but_index
-    and_index = line.find('and') if 'and' in line.lower() else -1
-    if 15 < and_index < 25:
-        print(f"and index {and_index}")
-        return and_index
-    comma_index = line.find(',') if ',' in line else -1
-    if 15 < comma_index < 25:
-        print(f"comma index {comma_index}")
-        return comma_index
+    index = line.find('but') if 'but' in line.lower() else -1
+    if 11 < index < 25:
+        print(f"but index {index}")
+        return index
+    index = line.find('and') if 'and' in line.lower() else -1
+    if 11 < index < 25:
+        print(f"and index {index}")
+        return index
+    index = line.find(',') if ',' in line else -1
+    if 11 < index < 25:
+        print(f"comma index {index}")
+        return index
+    index = line.find(';') if ';' in line else -1
+    if 11 < index < 25:
+        print(f"semicolom index {index}")
+        return index
+    index = line.find(' is ') if ' is ' in line else -1
+    if 11 < index < 25:
+        print(f"is index {index}")
+        return index
+    index = line.find(' are ') if ' are ' in line else -1
+    if 11 < index < 25:
+        print(f"are index {index}")
+        return index
     space_index = line.find(" ", max_line_length)
     print(f"space index {space_index}")
     return space_index if space_index > 0 and space_index + 9 < len(line) else len(line)
@@ -214,7 +229,7 @@ def prepare_short_lines(quote_lines, max_line_length=22):
                 line_part = remaining[:split_index].strip()
                 remaining = remaining[split_index:]
                 if not remaining:
-                    result.append(f"{line_part}.")
+                    result.append(f"{line_part}")
                 else:
                     result.append(line_part)
             else:
@@ -232,43 +247,248 @@ def finish_line(s: str):
         return f"{s}."
 
 
-if __name__ == '__main__':
-    topic = 'motivational quote'
-    author = 'author'
-    params = {
-        "topic": "motivational quote",
-        "author": "Les Brown",
-        "main_idea": ""
-    }
-    args = [
-        TemplateArg(
-            text_definition="[[topic]] by [[author]] where each logical quote part is a different string in array about 30 characters long",
-            json_field_name='quote',
-            value='["","","","",""]'
-        ),
-        TemplateArg(
-            text_definition="author of quote",
-            json_field_name='author',
-            value='\"\"'
-        ),
+def prepare_all_quotes():
+    categories = [
+        # "philosophers",
+        # "historical figures",
+        # "poets", #skipped
+        # "novelists and writers", #skipped
+        # "journalists", #skipped
+        "businessman",  # failed
+        "psychologists",
+        "business coaches",
+        "leaders",
+        # "scientists", #skipped
+        "speakers",
+        # "engineers" #skipped
     ]
+    # with open("G:\OLD DISK D - LOL\Projects\media-empire\jack\speakers_list.json") as f:
+    #     authors = json.loads(f.read())['authors']
+    all_authors_and_quotes = {}
+    for c in categories:
+        category_args = [
+            TemplateArg(
+                text_definition=f"100 {c} names as strings in array field called authors",
+                json_field_name='authors',
+                value='[]'
+            ),
+        ]
+        category_params = {
+            "main_idea": ""
+        }
+        authors_dict = create_result_dict_from_prompt_template(
+            quote_template,
+            category_args,
+            category_params,
+            model_name='text-davinci-003',
+            tokens_number=3500
+        )
+        # authors_dict = {
+        #     "authors": [
+        #         "Jeff Bezos",
+        #         "Elon Musk",
+        #         "Bill Gates",
+        #         "Warren Buffett",
+        #         "Mark Zuckerberg",
+        #         "Larry Ellison",
+        #         "Michael Bloomberg",
+        #         "Larry Page",
+        #         "Sergey Brin",
+        #         "Jack Ma",
+        #         "Steve Ballmer",
+        #         "Richard Branson",
+        #         "Phil Knight",
+        #         "Paul Allen",
+        #         "Sheldon Adelson",
+        #         "Mukesh Ambani",
+        #         "Carl Icahn",
+        #         "George Soros",
+        #         "Aliko Dangote",
+        #         "Ma Huateng",
+        #         "Steve Wynn",
+        #         "Amancio Ortega",
+        #         "David Tepper",
+        #         "Roman Abramovich",
+        #         "Leonardo Del Vecchio",
+        #         "Azim Premji",
+        #         "Li Ka-shing",
+        #         "Joseph Safra",
+        #         "Gautam Adani",
+        #         "Luis Carlos Sarmiento",
+        #         "Michael Dell",
+        #         "Carlos Slim",
+        #         "Charles Koch",
+        #         "David Koch",
+        #         "Francois Pinault",
+        #         "Jacqueline Mars",
+        #         "Kiran Mazumdar-Shaw",
+        #         "Lakshmi Mittal",
+        #         "Hasso Plattner",
+        #         "Stefan Persson",
+        #         "David Geffen",
+        #         "Dilip Shanghvi",
+        #         "Theo Albrecht",
+        #         "Beate Heister",
+        #         "Kerry Packer",
+        #         "Anne Cox Chambers",
+        #         "Michael Hartono",
+        #         "Eike Batista",
+        #         "John Paulson",
+        #         "Len Blavatnik",
+        #         "John Fredriksen",
+        #         "Ralph Lauren",
+        #         "Kumar Mangalam Birla",
+        #         "Vagit Alekperov",
+        #         "Anil Ambani",
+        #         "Fridtjof Detzner",
+        #         "Brian Acton",
+        #         "Rinat Akhmetov",
+        #         "Stephen Schwarzman",
+        #         "Vladimir Potanin",
+        #         "Gennadi Timchenko",
+        #         "Leonardo Farkas",
+        #         "Alexander Abramov",
+        #         "Viktor Vekselberg",
+        #         "Albert Frere",
+        #         "Ernesto Bertarelli",
+        #         "Dhanin Chearavanont",
+        #         "Otto Beisheim",
+        #         "Andre Esteves",
+        #         "Li Hejun",
+        #         "Thomas Frist",
+        #         "Carlos Rodriguez",
+        #         "Alain Wertheimer",
+        #         "Ginni Rometty",
+        #         "Uday Kotak",
+        #         "Kwek Leng Beng",
+        #         "Shiv Nadar",
+        #         "Philippe Dauman",
+        #         "Vladimir Lisin",
+        #         "Ted Lerner",
+        #         "John Menard",
+        #         "Ramesh Chandra",
+        #         "Gustavo Cisneros",
+        #         "Theodor Weimer",
+        #         "Yuri Milner",
+        #         "Thomas Peterffy",
+        #         "Paul Singer",
+        #         "Frank Lowy",
+        #         "George Kaiser",
+        #         "Lu Guanqiu",
+        #         "Hui Ka Yan",
+        #         "Leonid Mikhelson",
+        #         "Thomas & Raymond Kwok",
+        #         "Patrice Motsepe",
+        #         "Alexander Frolov",
+        #         "Shahid Khan",
+        #         "John Mars",
+        #         "Tadashi Yanai",
+        #         "John Grayken",
+        #         "David Green",
+        #         "Charles Ergen",
+        #         "Ma Yun",
+        #         "Stephen Ross",
+        #         "Torbjorn Tornqvist",
+        #         "Robson Walton",
+        #         "Estee Lauder",
+        #         "Jorge Paulo Lemann",
+        #         "Abigail Johnson",
+        #         "Harold Hamm",
+        #         "Reed Hastings",
+        #         "Ajay Piramal",
+        #         "Brian Roberts",
+        #         "Masayoshi Son",
+        #         "Gina Rinehart",
+        #         "Tadashi Okamura",
+        #         "Iris Fontbona",
+        #         "Adi Godrej",
+        #         "Shari Arison",
+        #         "Pallonji Mistry",
+        #         "David Thomson",
+        #         "Anne Lauvergeon",
+        #         "Giovanni Ferrero",
+        #         "Christy Walton",
+        #         "Stephen Bisciotti",
+        #         "John Morris",
+        #         "Iskander Makhmudov",
+        #         "Kushal Pal Singh",
+        #         "Viktor Rashnikov",
+        #         "Michel & Marguerite Leclercq",
+        #         "Dilip Shanghvi",
+        #         "John Catsimatidis",
+        #         "Prasert Prasarttong-Osoth",
+        #         "Alexander Nesis",
+        #         "Juan Roig",
+        #         "Dhanin Chearavanont",
+        #         "George Kaiser",
+        #         "Vladimir Kim",
+        #         "John Malone",
+        #         "Vijay Shekhar Sharma"
+        #     ]
+        # }
+        print(authors_dict)
+        all_quotes_in_category = []
+        for a in authors_dict.get('authors'):
+            params = {
+                "topic": "quotes",
+                "author": a,
+                "main_idea": ""
+            }
+            args = [
+                TemplateArg(
+                    text_definition="100 [[topic]] by [[author]] in array field called quotes",
+                    json_field_name='quotes',
+                    value='[]'
+                ),
+                TemplateArg(
+                    text_definition="author of quote",
+                    json_field_name='author',
+                    value='\"\"'
+                ),
+            ]
+            try:
+                if a in all_authors_and_quotes.keys():
+                    print("-" * 100)
+                    print(f"Cache hit for author {a}")
+                    print("-" * 100)
+                    all_quotes_in_category.append({
+                        "author": a,
+                        "quotes": all_authors_and_quotes[a]
+                    })
+                else:
+                    quotes_by_author = create_result_dict_from_prompt_template(quote_template,
+                                                                               args,
+                                                                               params,
+                                                                               model_name='text-davinci-003',
+                                                                               tokens_number=3500)
+                    quotes_by_author['quotes'] = list(set(quotes_by_author['quotes']))
+                    all_authors_and_quotes[quotes_by_author['author']] = quotes_by_author['quotes']
+                    all_quotes_in_category.append(quotes_by_author)
+            except:
+                print(f"Failed to get quotes by {a}")
 
-    res = create_prompt_from_template(args, params, quote_template)
-    print(res)
+        with open(f"G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes\\{c.lower().replace(' ', '_')}.json", 'w') as r:
+            r.write(json.dumps(all_quotes_in_category))
 
-    res_dict = create_quote_and_author(topic_list=['motivational quote'],
-                                       author_file='/Users/yauhenim/JACK/media-empire/jack/topic_list.json',
-                                       model_name='gpt-3.5-turbo', )
-    print(res_dict)
-    quote_dict = {
-        "quote": "Strength does not come from physical capacity. It comes from an indomitable will.",
-        "author": "Tony Robbins"
-    }
 
-    quote = quote_dict.get("quote")
-    print(quote)
-    quote_lines = [f"{s}." for s in quote.split(".") if s]
+if __name__ == '__main__':
+    # prepare_all_quotes()
 
-    result = prepare_short_lines(quote_lines)
+    # quote_lines = [f"{s}." for s in quote.split(".") if s]
+    #
+    # result = prepare_short_lines(quote_lines)
+    #
+    # print(f"final result {result}")
 
-    print(f"final result {result}")
+    jack_quotes = "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes"
+    for q in os.listdir(jack_quotes):
+        with open(os.path.join(jack_quotes, q)) as f:
+            quotes = json.loads(f.read())
+        new_quotes = []
+        for k in quotes:
+            new_quotes.append({
+                "author": k.get('author'),
+                "quotes": list(set(k.get('quotes')))
+            })
+        with open(os.path.join(jack_quotes, f"clean_{q}"), 'w') as o:
+            o.write(json.dumps(new_quotes))
