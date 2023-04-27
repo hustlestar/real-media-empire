@@ -1,3 +1,4 @@
+import logging
 import math
 import os.path
 import random
@@ -15,6 +16,7 @@ TTS_APIS: Dict[str, TextToSpeech] = {
     'google_tts': google_tts.GoogleTextToSpeech()
 }
 
+logger = logging.getLogger(__name__)
 
 class AudioTasks:
     def __init__(self, audio_background_dir_path=None, audio_background_api=None, audio_background_api_key_or_path=None, tts_api='google_tts', tts_type='ssml',
@@ -41,6 +43,7 @@ class AudioTasks:
             raise NotImplementedError("Api for audio background is not there yet")
 
     def create_audio_voice_over(self, text_script, is_ssml, result_file=None, speaking_rate=0.0):
+        logger.info(f"Creating audio voice over for {text_script}, is_ssml={is_ssml}, result_file={result_file}, speaking_rate={speaking_rate}")
         api = TTS_APIS[self.tts_api]
         result_audio_file = os.path.join(self.results_dir, result_file)
         if is_ssml:
@@ -60,7 +63,7 @@ class AudioTasks:
             voice_with_delay = speedx(voice_with_delay, self.voice_over_speed)
         voice_with_delay = voice_with_delay.volumex(2.2)
         final_duration = math.ceil(self.start_end_delay + voice_with_delay.duration + self.start_end_delay)
-        background_audio = background_audio.volumex(0.3)
+        background_audio = background_audio.volumex(0.2)
 
         if background_audio.duration < final_duration:
             number_of_loops = math.ceil(final_duration * 1.0 / background_audio.duration)

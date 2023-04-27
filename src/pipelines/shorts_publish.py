@@ -4,7 +4,7 @@ import click
 from zenml.pipelines import pipeline
 
 from pipelines.params.params_for_pipeline import PipelineParams, prepare_and_get_pipeline_params
-from pipelines.steps.library import find_shorts_in_swamp, create_title_description_thumbnail_title, upload_video_to_youtube, add_comment_to_youtube, \
+from pipelines.steps.library import find_shorts_in_swamp, create_video_meta, upload_video_to_youtube, add_comment_to_youtube, \
     move_to_lake
 from pipelines.utils import recover_last_run_if_required
 from util.time import get_now
@@ -21,7 +21,7 @@ def shorts_publish_pipeline(
         move_to_lake
 ):
     final_video, quote = find_shorts_in_swamp()
-    title, description, thumbnail_title, comment = create_title_description_thumbnail_title(quote)
+    title, description, thumbnail_title, comment, tags = create_title_description_thumbnail_title(quote)
     video_id = upload_video_to_youtube(final_video, title, description)
     add_comment_to_youtube(comment, video_id)
     move_to_lake(final_video, video_id)
@@ -40,7 +40,7 @@ def main(click_context, execution_date: str, channel_config_path, recover, other
 
     pipeline = shorts_publish_pipeline(
         find_shorts_in_swamp(pipeline_params),
-        create_title_description_thumbnail_title(pipeline_params),
+        create_video_meta(pipeline_params),
         upload_video_to_youtube(pipeline_params),
         add_comment_to_youtube(pipeline_params),
         move_to_lake(pipeline_params)

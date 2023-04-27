@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 class PipelineParams(BaseParameters):
     channel_config_path: str = None
     execution_date: str = None
+    number_of_videos: int = None
+    is_split_quote: bool = False
 
 
 def prepare_and_get_pipeline_params(click_ctx, _pipeline_params_class: Callable):

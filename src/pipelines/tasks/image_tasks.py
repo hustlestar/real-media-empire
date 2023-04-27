@@ -23,7 +23,7 @@ class ImageTasks:
         result_image = os.path.join(self.results_dir, f"5_thumbnail.jpg")
         all_groups = split_string_into_three_groups_max(title)
 
-        fonts = [os.path.join(self.thumbnail_fonts_dir, f) for f in os.listdir(self.thumbnail_fonts_dir) if f.endswith('.ttf')]
+        fonts = [os.path.join(self.thumbnail_fonts_dir, f) for f in os.listdir(self.thumbnail_fonts_dir) if f.endswith('.ttf') or f.endswith(".otf")]
         font = fonts[random.randint(0, len(fonts) - 1)]
 
         if len(all_groups) == 2:

@@ -239,7 +239,7 @@ if __name__ == '__main__':
     # PexelsDownloadTask(
     #     query="mountain range",
     #     orientation='landscape', height=1920, width=1080,
-    #     download_dir=CONFIG.get('PHOTO_DOWNLOAD_DIR'),
+    #     download_dir=CONFIG.get('DOWNLOAD_DIR'),
     #     number_of_downloads=500,
     #     is_video_download=False,
     #     photo_size='large2x'
@@ -247,45 +247,43 @@ if __name__ == '__main__':
     # PexelsDownloadTask(
     #     query="city skyline",
     #     orientation='landscape', height=1920, width=1080,
-    #     download_dir=CONFIG.get('PHOTO_DOWNLOAD_DIR'),
+    #     download_dir=CONFIG.get('DOWNLOAD_DIR'),
     #     number_of_downloads=500,
     #     is_video_download=False,
     #     photo_size='large2x'
     # ).run()
     # PexelsDownloadTask(
-    #     query="sky",
+    #     query="flower",
     #     orientation='landscape', height=1920, width=1080,
-    #     download_dir=CONFIG.get('PHOTO_DOWNLOAD_DIR'),
+    #     download_dir=CONFIG.get('DOWNLOAD_DIR'),
     #     number_of_downloads=5000,
     #     is_video_download=False,
     #     photo_size='large2x'
     # ).run()
-    # PexelsDownloadTask(
-    #     query="sunshine",
-    #     orientation='landscape', height=1920, width=1080,
-    #     download_dir=CONFIG.get('PHOTO_DOWNLOAD_DIR'),
-    #     number_of_downloads=500,
-    #     is_video_download=False,
-    #     photo_size='large2x'
-    # ).run()
-    PexelsDownloadTask(query="architecture", download_dir=CONFIG.get('DOWNLOAD_DIR'),
+    PexelsDownloadTask(query="cliff", download_dir=CONFIG.get('DOWNLOAD_DIR'),
                        size='medium',
                        height=1920,
                        width=1080,
                        orientation='portrait',
-                       number_of_downloads=5000).run()
-    PexelsDownloadTask(query="skyscraper", download_dir=CONFIG.get('DOWNLOAD_DIR'),
+                       number_of_downloads=10000).run()
+    PexelsDownloadTask(query="lightning", download_dir=CONFIG.get('DOWNLOAD_DIR'),
                        size='medium',
                        height=1920,
                        width=1080,
                        orientation='portrait',
-                       number_of_downloads=5000).run()
-    PexelsDownloadTask(query="history", download_dir=CONFIG.get('DOWNLOAD_DIR'),
+                       number_of_downloads=10000).run()
+    PexelsDownloadTask(query="storm", download_dir=CONFIG.get('DOWNLOAD_DIR'),
                        size='medium',
                        height=1920,
                        width=1080,
                        orientation='portrait',
-                       number_of_downloads=5000).run()
+                       number_of_downloads=10000).run()
+    # PexelsDownloadTask(query="history", download_dir=CONFIG.get('DOWNLOAD_DIR'),
+    #                    size='medium',
+    #                    height=1920,
+    #                    width=1080,q
+    #                    orientation='portrait',
+    #                    number_of_downloads=5000).run()
     # PexelsDownloadTask(query="stormy sky", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
     # PexelsDownloadTask(query="vibrant sunset", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
     # PexelsDownloadTask(query="winding road", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()

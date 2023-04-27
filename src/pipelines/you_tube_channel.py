@@ -2,7 +2,7 @@ import json
 import logging
 import os.path
 import random
-from typing import Tuple
+from typing import Tuple, List
 
 from audio.audio_processor import read_audio_clip
 from common.config import read_config, ChannelConfig
@@ -64,7 +64,7 @@ class YouTubeChannel:
             voice_over_speed=config.voice_over_speed
         )
         video_preset = config.video_background_presets[random.randint(0, len(config.video_background_presets) - 1)]
-        logger.info(f"Randomly selected following video preset {video_preset.name}")
+        logger.debug(f"Randomly selected following video preset {video_preset.name}")
         self.video_manager = VideoTasks(
             topics=video_preset.topics,
             colors=video_preset.colors,
@@ -101,7 +101,7 @@ class YouTubeChannel:
 
     @property
     def lake_dir(self):
-        return self.lake_dir
+        return self.lake_result_dir
 
     def build_result_dir(self, date):
         return os.path.join(self.channel_root_dir, date)
@@ -131,7 +131,7 @@ class YouTubeChannel:
     def create_thumbnail(self, title):
         return self.image_manager.create_thumbnail(title)
 
-    def create_title_description_thumbnail_title(self, text, prompt=None) -> Tuple[str, str, str, str]:
+    def create_title_description_thumbnail_title(self, text, prompt=None) -> Tuple[str, str, str, str, List[str]]:
         return self.text_manager.create_title_description_thumbnail_title(text, prompt=prompt)
 
     def create_basic_youtube_video(self, text_script, is_ssml) -> str:
@@ -143,7 +143,7 @@ class YouTubeChannel:
         return final_video
 
     def upload_to_youtube_video_and_thumbnail(self, final_video, text_script):
-        title, description, thumbnail_title, comment = self.create_title_description_thumbnail_title(text_script)
+        title, description, thumbnail_title, comment, tags = self.create_title_description_thumbnail_title(text_script)
         thumbnail_image_path = self.create_thumbnail(thumbnail_title)
         logger.info(f"Before YouTube upload\n{title}\n{description}\n{thumbnail_title}")
         video_id = self.socials_manager.upload_video_to_youtube(final_video, title, description, privacy_status=VALID_PRIVACY_STATUSES[1])

@@ -2,7 +2,8 @@ import os.path
 from typing import List
 
 from pipelines.tasks import DEFAULT_START_END_DELAY, DEFAULT_ORIENTATION, DEFAULT_HEIGHT, DEFAULT_WIDTH
-from pipelines.tasks.common_tasks import CommonTasks, build_video_dir_path
+from pipelines.tasks.common_tasks import CommonTasks
+from video.utils import build_video_dir_path
 
 
 class VideoTasks:

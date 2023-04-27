@@ -1,6 +1,5 @@
 import logging
 import math
-import random
 from typing import List, Tuple
 
 from moviepy.editor import *
@@ -9,64 +8,13 @@ from audio.audio_processor import read_audio_clip
 from audio.google_tts import remove_extra_spaces, extract_only_ssml, synthesize_ssml, synthesize_text
 from common.exception import WrongMediaException
 from config import CONFIG
-from image.colors import get_image_main_colors
-from image.image_tagging import get_image_classes
-from image.video_to_image import extract_frames
 from pipelines.tasks import DEFAULT_ORIENTATION, DEFAULT_HEIGHT, DEFAULT_WIDTH
 from text.chat_gpt import ChatGPTTask
 from util.time import get_now
-from video.downloader import PexelsDownloadTask
-from video.movie import read_n_video_clips, trim_clip_duration, read_video_clip
+from video.utils import is_video_matching, build_video_dir_path, prepare_clip
 from video.video_transitions import first_fade_out_second_fade_in_all
 
 logger = logging.getLogger(__name__)
-
-
-def prepare_clip(video_dir, is_should_download, topics, orientation, width, height):
-    if is_should_download and topics:
-        res = PexelsDownloadTask(query=topics[random.randint(0, len(topics))], number_of_downloads=1, orientation=orientation, height=height, width=width).run()
-        clip = read_video_clip(res.downloaded_files[0])
-    else:
-        clip = read_n_video_clips(video_dir, 1)[0]
-    return clip
-
-
-def extract_video_colors_and_topics(clip, colors, topics):
-    images = extract_frames(clip.filename, num_frames=5)
-    all_topics = set()
-    all_colors = set()
-    if topics:
-        for i in images:
-            image_classes = get_image_classes(image_ndarray=i, number_of_classes=6)
-            all_topics.update(image_classes)
-        logger.info(f"All TOPICS from video {all_topics}")
-
-    if colors:
-        for i in images:
-            image_colors = get_image_main_colors(image_ndarray=i, number_of_colors=6)
-            all_colors.update(image_colors)
-        logger.info(f"All COLORS from video: {all_colors}")
-    return all_colors, all_topics
-
-
-def is_video_matching(clip, colors, colors_to_avoid, topics, topics_to_avoid):
-    if topics or colors or colors_to_avoid:
-        all_colors, all_topics = extract_video_colors_and_topics(clip, colors, topics)
-        if colors and not any(color in colors for color in all_colors):
-            raise WrongMediaException(f"Video colors are not in required {colors}")
-        if colors_to_avoid and any(color in colors_to_avoid for color in all_colors):
-            raise WrongMediaException(f"Video colors are in forbidden {colors_to_avoid}")
-        if topics and not any(topic in topics for topic in all_topics):
-            raise WrongMediaException(f"Video topics are not in required {topics}")
-        if topics_to_avoid and any(topic in topics_to_avoid for topic in all_topics):
-            raise WrongMediaException(f"Video topics are in forbidden {topics_to_avoid}")
-
-
-def build_video_dir_path(orientation=DEFAULT_ORIENTATION, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
-    return os.path.join(CONFIG.get('MEDIA_GALLERY_DIR'),
-                        "VIDEO",
-                        orientation,
-                        f"{width}_{height}")
 
 
 class CommonTasks:
@@ -165,6 +113,7 @@ class CommonTasks:
             width=DEFAULT_WIDTH,
             height=DEFAULT_HEIGHT
     ):
+        from video.movie import trim_clip_duration
         video = None
         videos_list = []
         used_video_clips = set()

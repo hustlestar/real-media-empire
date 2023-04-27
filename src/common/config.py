@@ -33,6 +33,8 @@ class ChannelConfigTemplate:
         self.video_start_end_delay: int = None
         self.video_single_video_duration: int = None
         self.video_background_presets: List[VideoBackgroundPreset] = None
+        self.video_fonts_list: List[str] = None
+        self.video_text_color_list: List[str] = None
 
         self.audio_background_dir_path: str = None
         self.audio_background_api: str = None

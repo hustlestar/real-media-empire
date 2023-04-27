@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import shutil
 from typing import List
 
@@ -9,12 +10,14 @@ from zenml.steps import step, Output
 from common.exception import WrongMediaException
 from config import CONFIG
 from pipelines.params.params_for_pipeline import PipelineParams
-from pipelines.tasks.common_tasks import is_video_matching
 from pipelines.you_tube_channel import YouTubeChannel
 from text import helpers
 from text.helpers import pick_random_from_list, finish_line, TemplateArg
 from util.time import get_now
-from video.movie import read_n_video_clips, LineToMp3File, video_with_text
+from video.movie import LineToMp3File, video_with_text, trim_clip_duration, video_with_text_full_sentence, video_with_text_full_sentence_many_clips, \
+    BG_CLIP_STRATEGIES
+from video.utils import is_video_matching, read_n_video_clips
+from video.video_transitions import first_fade_out_second_fade_in_all
 
 QUOTE_TXT = "1_quote.txt"
 
@@ -91,7 +94,7 @@ def predefined_quote_by_author(params):
     quote = pick_random_from_list(single_author.get('quotes'))
     logger.info(f"Result quote is\n{quote}")
     quote_lines = [finish_line(s) for s in quote.split(".") if s]
-    result = helpers.prepare_short_lines(quote_lines)
+    result = quote_lines if not params.is_split_quote else helpers.prepare_short_lines(quote_lines)
     result.append(finish_line(single_author.get("author")))
     with open(os.path.join(channel.result_dir, f"{QUOTE_TXT}"), "w") as k:
         k.write(f"{quote} {single_author.get('author')}")
@@ -102,13 +105,15 @@ def predefined_quote_by_author(params):
 
 @step
 def generate_shorts_swamp(params: PipelineParams) -> None:
-    for i in range(2):
+    logger.info(f"Starting generation of new shorts {params.number_of_videos}")
+    for i in range(params.number_of_videos):
         now = get_now()
         logger.info(f"Starting generation of video {i} at {now}")
         params = params.copy(update={"execution_date": now})
         quote_lines = predefined_quote_by_author(params)
         voice_over_files = voice_overs(params, quote_lines)
         shorts_with_voice(params, quote_lines, voice_over_files, is_swamp=True)
+    logger.info("Finished shorts generation")
 
 
 @step
@@ -139,6 +144,47 @@ def find_shorts_in_swamp(params: PipelineParams) -> Output(video_path=str, quote
 
 
 @step
+def music_video(params: PipelineParams) -> None:
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    videos_list = []
+    used_video_clips = set()
+    counter = 0
+    video = None
+    while True:
+        counter += 1
+        logger.info(f"Reading video clip {counter}")
+        clip = read_video_for_channel(channel)
+        try:
+            is_video_matching(clip,
+                              topics=channel.video_manager.topics,
+                              colors=channel.video_manager.colors,
+                              colors_to_avoid=channel.video_manager.colors_to_avoid,
+                              topics_to_avoid=channel.video_manager.topics_to_avoid)
+        except WrongMediaException as x:
+            logger.info(x)
+            continue
+
+        if clip.duration < channel.config.video_single_video_duration:
+            continue
+        clip = trim_clip_duration(clip, channel.config.video_single_video_duration)
+        videos_list.append(clip)
+        used_video_clips.add(clip.filename)
+        video = first_fade_out_second_fade_in_all(videos_list, 0.5)
+        if video.duration > 60 * 60:
+            logger.info("Achieved desired duration of video. Stopping")
+            break
+
+    video.set_duration(60 * 60)
+
+
+def read_video_for_channel(channel):
+    return read_n_video_clips(os.path.join(CONFIG.get('MEDIA_GALLERY_DIR'),
+                                           "VIDEO",
+                                           channel.config.video_orientation,
+                                           f"{channel.config.video_width}_{channel.config.video_height}"), 1)[0]
+
+
+@step
 def create_voice_overs(text_lines: List[str], params: PipelineParams) -> List[str]:
     return voice_overs(params, text_lines)
 
@@ -156,30 +202,50 @@ def create_shorts_with_voice(text_lines: List[str], voice_over_files: List[str],
 
 
 def shorts_with_voice(params, text_lines, voice_over_files, is_swamp=False):
+    from video.utils import find_matching_video
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
-    for i in range(4):
-        bg_video = None
-        while bg_video is None:
-            clip = read_n_video_clips(os.path.join(CONFIG.get('MEDIA_GALLERY_DIR'),
-                                                   "VIDEO",
-                                                   channel.config.video_orientation,
-                                                   f"{channel.config.video_width}_{channel.config.video_height}"), 1)[0]
-            try:
-                is_video_matching(clip,
-                                  topics=channel.video_manager.topics,
-                                  colors=channel.video_manager.colors,
-                                  colors_to_avoid=channel.video_manager.colors_to_avoid,
-                                  topics_to_avoid=channel.video_manager.topics_to_avoid)
-                bg_video = clip
-            except WrongMediaException as x:
-                logger.info(x)
-                continue
+    for i in range(len(BG_CLIP_STRATEGIES)):
+        try:
+            clean_text = re.sub(r"[^a-zA-Z]+", " ", " ".join(text_lines))
+            clean_text = re.sub(r"\\s+", "_", clean_text).lower()
 
-        result_video_filename = os.path.join(channel.swamp_dir if is_swamp else channel.result_dir, f"{params.execution_date}_{i}_result.mp4")
-        lines = [LineToMp3File(k, v) for k, v in zip(text_lines, voice_over_files)]
-        bg_audio_filename = os.path.join(channel.config.audio_background_dir_path, pick_random_from_list(os.listdir(channel.config.audio_background_dir_path)))
-        video_with_text(bg_video, lines, result_file=result_video_filename, fonts_dir=channel.config.thumbnail_fonts_dir, bg_audio_filename=bg_audio_filename)
+            result_video_filename = build_file_name(clean_text, channel, i, is_swamp, params)
+
+            lines = [LineToMp3File(k, v) for k, v in zip(text_lines, voice_over_files)]
+            bg_audio_filename = os.path.join(channel.config.audio_background_dir_path, pick_random_from_list(os.listdir(channel.config.audio_background_dir_path)))
+            if params.is_split_quote:
+                bg_video = find_matching_video(channel)
+                logger.warning(f"Split quote is used for text preparation.")
+                video_with_text(bg_video,
+                                lines,
+                                result_file=result_video_filename,
+                                fonts_list=channel.config.video_fonts_list,
+                                bg_audio_filename=bg_audio_filename,
+                                text_colors=channel.config.video_text_color_list
+                                )
+            else:
+                for s in BG_CLIP_STRATEGIES:
+                    video_with_text_full_sentence_many_clips(
+                        channel,
+                        lines,
+                        result_file=build_file_name(clean_text, channel, i, is_swamp, params, bg_clip_strategy=s),
+                        fonts_list=channel.config.video_fonts_list,
+                        bg_audio_filename=bg_audio_filename,
+                        text_colors=channel.config.video_text_color_list,
+                        bg_clip_strategy=s,
+                        single_clip_duration=2
+                    )
+        except Exception as x:
+            logger.error(f"Error while creating video {i}", x)
+            continue
     return result_video_filename
+
+
+def build_file_name(clean_text, channel, i, is_swamp, params, bg_clip_strategy=""):
+    return os.path.join(
+        channel.swamp_dir if is_swamp else channel.result_dir,
+        f"{params.execution_date}_{clean_text}_{bg_clip_strategy}_{i}.mp4"
+    )
 
 
 @step
@@ -213,13 +279,15 @@ def upload_video_and_thumbnail_to_youtube(final_video: str, text_script: str, pa
 
 
 @step
-def create_title_description_thumbnail_title(text_script: str, params: PipelineParams) -> Output(title=str, description=str, thumbnail_title=str, comment=str):
+def create_video_meta(text_script: str, params: PipelineParams) \
+        -> Output(title=str, description=str, thumbnail_title=str, comment=str, tags=List[str]):
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     return channel.create_title_description_thumbnail_title(text_script)
 
 
 @step
-def create_title_description_thumbnail_title_for_list(text_script: List[str], params: PipelineParams) -> Output(title=str, description=str, thumbnail_title=str, comment=str):
+def create_video_meta_for_list(text_script: List[str], params: PipelineParams) \
+        -> Output(title=str, description=str, thumbnail_title=str, comment=str, tags=List[str]):
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     return channel.create_title_description_thumbnail_title(" ".join(text_script))
 
@@ -233,7 +301,7 @@ def create_thumbnail(thumbnail_title: str, params: PipelineParams) -> str:
 @step
 def upload_video_to_youtube(final_video: str, title: str, description: str, params: PipelineParams) -> str:
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
-    logger.info(f"Before YouTube upload\n{title}\n{description}")
+    logger.info(f"Starting YouTube video upload\n{final_video}\n{title}\n{description}")
     video_id = channel.socials_manager.upload_video_to_youtube(final_video, title, description, privacy_status=channel.youtube_privacy_status)
     return video_id
 
@@ -241,6 +309,7 @@ def upload_video_to_youtube(final_video: str, title: str, description: str, para
 @step
 def upload_thumbnail_to_youtube(thumbnail_image_path: str, video_id: str, params: PipelineParams) -> str:
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    logger.info(f"Uploading {thumbnail_image_path} for video {video_id}")
     thumbnail_url = channel.socials_manager.upload_thumbnail_for_youtube(thumbnail_image_path, video_id)
     return thumbnail_url
 

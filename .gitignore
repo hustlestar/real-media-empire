@@ -9,3 +9,6 @@ __pycache__
 .DS_Store
 jack
 *oauth2.json
+*.mp4
+*.wav
+*.mp3
