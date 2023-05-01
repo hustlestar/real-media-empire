@@ -29,7 +29,8 @@ class CommonTasks:
             audio_output_file=None,
             start_end_voice_delay=6,
             single_video_duration=10,
-            is_allow_duplicate_clips=False
+            is_allow_duplicate_clips=False,
+            tokens_number=3700
     ):
         self.start_end_voice_delay = start_end_voice_delay
         if voice_audio_file and audio_output_file:
@@ -45,6 +46,7 @@ class CommonTasks:
         self.single_video_duration = single_video_duration
         self.result_video_clips = []
         self.is_allow_duplicate_clips = is_allow_duplicate_clips
+        self.tokens_number = tokens_number
 
     def prepare_text_for_voiceover(self) -> Tuple[str, bool]:
         is_ssml = False
@@ -54,7 +56,7 @@ class CommonTasks:
                 is_ssml = True
         else:
             if not self.text:
-                gpt_result = ChatGPTTask(self.prompt).run().text
+                gpt_result = ChatGPTTask(self.prompt, self.tokens_number).run().text
             else:
                 gpt_result = self.text
 

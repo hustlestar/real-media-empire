@@ -31,7 +31,7 @@ class SocialTasks:
             title=title,
             description=description,
             category=self.youtube_category,
-            tags=set(self.youtube_tags + (tags or [])) if self.youtube_tags else tags,
+            tags=list(set(self.youtube_tags + (tags or []))) if self.youtube_tags else tags,
             privacy_status=privacy_status
         )
 

@@ -46,8 +46,10 @@ class ChannelConfigTemplate:
         self.main_prompt_number_of_engagement_techniques: int = None
         self.main_prompt_engagement_techniques: List[str] = None
         self.main_prompt_template = None
+        self.main_prompt_number_of_words: int = None
         self.main_ttt_api: str = None
         self.main_ttt_model_name: str = None
+        self.main_ttt_tokens_number: int = None
 
         self.description_ttt_api: str = None
         self.description_ttt_model_name: str = None

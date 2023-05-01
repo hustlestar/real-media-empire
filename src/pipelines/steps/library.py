@@ -38,6 +38,7 @@ def build_prompt(params: PipelineParams) -> str:
         channel.config.main_prompt_topics_file,
         narrative_types=channel.config.main_prompt_narrative_types,
         engagement_techniques=channel.config.main_prompt_engagement_techniques,
+        number_of_words=channel.config.main_prompt_number_of_words
     )
     return prompt
 

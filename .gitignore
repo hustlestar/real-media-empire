@@ -7,7 +7,6 @@ __pycache__
 *\__pycache__
 *\*\__pycache__
 .DS_Store
-jack
 *oauth2.json
 *.mp4
 *.wav

@@ -13,6 +13,7 @@ class TextTasks:
                  thumbnail_ttt_api=None, thumbnail_model_name=None, title_suffix=None, results_dir=None):
         self.main_ttt_api: str = main_ttt_api
         self.main_ttt_model_name: str = main_ttt_model_name
+        self.main_ttt_tokens_number = None
 
         self.description_ttt_api: str = description_ttt_api
         self.description_ttt_model_name: str = description_ttt_model_name
@@ -33,8 +34,8 @@ class TextTasks:
         self.title, self.description, self.thumbnail_title, self.comment, self.tags = None, None, None, None, None
 
     def create_text(self, prompt, text_type='text') -> Tuple[str, bool]:
-        helper = CommonTasks(prompt=prompt)
-        self.text_for_voiceover, self.is_ssml = helper.prepare_text_for_voiceover()
+        common_tasks = CommonTasks(prompt=prompt, tokens_number=self.main_ttt_tokens_number)
+        self.text_for_voiceover, self.is_ssml = common_tasks.prepare_text_for_voiceover()
         with open(os.path.join(self.results_dir, '1_text_script.txt'), 'w') as f:
             f.write(self.text_for_voiceover)
         with open(os.path.join(self.results_dir, '0_prompt.txt'), 'w') as k:
