@@ -58,6 +58,7 @@ class YouTubeChannel:
             tts_api=config.tts_api,
             tts_type=config.tts_type,
             tts_voice_name=config.tts_voice_name,
+            tts_secondary_voice_name=config.tts_secondary_voice_name,
             tts_api_key_or_path=config.tts_api_key_or_path,
             start_end_delay=config.video_start_end_delay,
             results_dir=self.this_run_result_dir,
@@ -149,6 +150,23 @@ class YouTubeChannel:
         video_id = self.socials_manager.upload_video_to_youtube(final_video, title, description, privacy_status=VALID_PRIVACY_STATUSES[1])
         thumbnail_url = self.socials_manager.upload_thumbnail_for_youtube(thumbnail_image_path, video_id)
         return video_id, thumbnail_url
+
+    def find_youtube_video(self, execution_date):
+        dir_path = os.path.join(self.channel_root_dir, execution_date)
+        text_script_path = os.path.join(dir_path, f"0_text_script.txt")
+
+        if not os.path.exists(text_script_path):
+            raise Exception(f"Text script not found {text_script_path}")
+
+        mp4_files = [f for f in os.listdir(dir_path) if f.endswith(".mp4")]
+
+        if len(mp4_files) != 1:
+            raise Exception(f"More than one mp4 file found {mp4_files}")
+        with open(text_script_path, "r") as f:
+            text_script = f.read()
+
+        logger.info(f"Text script found in {dir_path}\n{text_script}")
+        return os.path.join(dir_path, mp4_files[0]), text_script
 
 
 if __name__ == '__main__':

@@ -41,7 +41,7 @@ class YouTubeUploader:
     def __init__(self, client_secrets_file: str, channel_name: str, channel_id: str, oath_storage_dir: str = CONFIG.get("OAUTH_2_DIR")):
         self.client_secrets_file = client_secrets_file
         self.channel_id = channel_id
-        self.channel_name = str(channel_name).lower().replace("\\s+", "_")
+        self.channel_name = str(channel_name).lower().replace("\\s+", "_").replace("_shorts", "")
         self.credentials_file = os.path.join(oath_storage_dir, f"{self.channel_name}_oauth2.json")
         self.youtube = None
 

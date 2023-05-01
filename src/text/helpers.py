@@ -283,149 +283,6 @@ def prepare_all_quotes():
             model_name='text-davinci-003',
             tokens_number=3500
         )
-        # authors_dict = {
-        #     "authors": [
-        #         "Jeff Bezos",
-        #         "Elon Musk",
-        #         "Bill Gates",
-        #         "Warren Buffett",
-        #         "Mark Zuckerberg",
-        #         "Larry Ellison",
-        #         "Michael Bloomberg",
-        #         "Larry Page",
-        #         "Sergey Brin",
-        #         "Jack Ma",
-        #         "Steve Ballmer",
-        #         "Richard Branson",
-        #         "Phil Knight",
-        #         "Paul Allen",
-        #         "Sheldon Adelson",
-        #         "Mukesh Ambani",
-        #         "Carl Icahn",
-        #         "George Soros",
-        #         "Aliko Dangote",
-        #         "Ma Huateng",
-        #         "Steve Wynn",
-        #         "Amancio Ortega",
-        #         "David Tepper",
-        #         "Roman Abramovich",
-        #         "Leonardo Del Vecchio",
-        #         "Azim Premji",
-        #         "Li Ka-shing",
-        #         "Joseph Safra",
-        #         "Gautam Adani",
-        #         "Luis Carlos Sarmiento",
-        #         "Michael Dell",
-        #         "Carlos Slim",
-        #         "Charles Koch",
-        #         "David Koch",
-        #         "Francois Pinault",
-        #         "Jacqueline Mars",
-        #         "Kiran Mazumdar-Shaw",
-        #         "Lakshmi Mittal",
-        #         "Hasso Plattner",
-        #         "Stefan Persson",
-        #         "David Geffen",
-        #         "Dilip Shanghvi",
-        #         "Theo Albrecht",
-        #         "Beate Heister",
-        #         "Kerry Packer",
-        #         "Anne Cox Chambers",
-        #         "Michael Hartono",
-        #         "Eike Batista",
-        #         "John Paulson",
-        #         "Len Blavatnik",
-        #         "John Fredriksen",
-        #         "Ralph Lauren",
-        #         "Kumar Mangalam Birla",
-        #         "Vagit Alekperov",
-        #         "Anil Ambani",
-        #         "Fridtjof Detzner",
-        #         "Brian Acton",
-        #         "Rinat Akhmetov",
-        #         "Stephen Schwarzman",
-        #         "Vladimir Potanin",
-        #         "Gennadi Timchenko",
-        #         "Leonardo Farkas",
-        #         "Alexander Abramov",
-        #         "Viktor Vekselberg",
-        #         "Albert Frere",
-        #         "Ernesto Bertarelli",
-        #         "Dhanin Chearavanont",
-        #         "Otto Beisheim",
-        #         "Andre Esteves",
-        #         "Li Hejun",
-        #         "Thomas Frist",
-        #         "Carlos Rodriguez",
-        #         "Alain Wertheimer",
-        #         "Ginni Rometty",
-        #         "Uday Kotak",
-        #         "Kwek Leng Beng",
-        #         "Shiv Nadar",
-        #         "Philippe Dauman",
-        #         "Vladimir Lisin",
-        #         "Ted Lerner",
-        #         "John Menard",
-        #         "Ramesh Chandra",
-        #         "Gustavo Cisneros",
-        #         "Theodor Weimer",
-        #         "Yuri Milner",
-        #         "Thomas Peterffy",
-        #         "Paul Singer",
-        #         "Frank Lowy",
-        #         "George Kaiser",
-        #         "Lu Guanqiu",
-        #         "Hui Ka Yan",
-        #         "Leonid Mikhelson",
-        #         "Thomas & Raymond Kwok",
-        #         "Patrice Motsepe",
-        #         "Alexander Frolov",
-        #         "Shahid Khan",
-        #         "John Mars",
-        #         "Tadashi Yanai",
-        #         "John Grayken",
-        #         "David Green",
-        #         "Charles Ergen",
-        #         "Ma Yun",
-        #         "Stephen Ross",
-        #         "Torbjorn Tornqvist",
-        #         "Robson Walton",
-        #         "Estee Lauder",
-        #         "Jorge Paulo Lemann",
-        #         "Abigail Johnson",
-        #         "Harold Hamm",
-        #         "Reed Hastings",
-        #         "Ajay Piramal",
-        #         "Brian Roberts",
-        #         "Masayoshi Son",
-        #         "Gina Rinehart",
-        #         "Tadashi Okamura",
-        #         "Iris Fontbona",
-        #         "Adi Godrej",
-        #         "Shari Arison",
-        #         "Pallonji Mistry",
-        #         "David Thomson",
-        #         "Anne Lauvergeon",
-        #         "Giovanni Ferrero",
-        #         "Christy Walton",
-        #         "Stephen Bisciotti",
-        #         "John Morris",
-        #         "Iskander Makhmudov",
-        #         "Kushal Pal Singh",
-        #         "Viktor Rashnikov",
-        #         "Michel & Marguerite Leclercq",
-        #         "Dilip Shanghvi",
-        #         "John Catsimatidis",
-        #         "Prasert Prasarttong-Osoth",
-        #         "Alexander Nesis",
-        #         "Juan Roig",
-        #         "Dhanin Chearavanont",
-        #         "George Kaiser",
-        #         "Vladimir Kim",
-        #         "John Malone",
-        #         "Vijay Shekhar Sharma"
-        #     ]
-        # }
         print(authors_dict)
         all_quotes_in_category = []
         for a in authors_dict.get('authors'):
@@ -471,6 +328,158 @@ def prepare_all_quotes():
             r.write(json.dumps(all_quotes_in_category))
 
 
+def prepare_all_authors():
+    categories = [
+        # "philosophers",
+        # "historical figures",
+        # "poets", #skipped
+        # "novelists and writers", #skipped
+        # "journalists", #skipped
+        "businessman",  # failed
+        "psychologists",
+        "business coaches",
+        "leaders",
+        # "scientists", #skipped
+        "speakers",
+        # "engineers" #skipped
+    ]
+    # with open("G:\OLD DISK D - LOL\Projects\media-empire\jack\speakers_list.json") as f:
+    #     authors = json.loads(f.read())['authors']
+    all_authors_and_quotes = {}
+    for c in categories:
+        category_args = [
+            TemplateArg(
+                text_definition=f"100 {c} names as strings in array field called authors",
+                json_field_name='authors',
+                value='[]'
+            ),
+        ]
+        category_params = {
+            "main_idea": ""
+        }
+        authors_dict = create_result_dict_from_prompt_template(
+            quote_template,
+            category_args,
+            category_params,
+            model_name='text-davinci-003',
+            tokens_number=3500
+        )
+        print(authors_dict)
+        all_quotes_in_category = []
+        for a in authors_dict.get('authors'):
+            params = {
+                "topic": "quotes",
+                "author": a,
+                "main_idea": ""
+            }
+            args = [
+                TemplateArg(
+                    text_definition="100 [[topic]] by [[author]] in array field called quotes",
+                    json_field_name='quotes',
+                    value='[]'
+                ),
+                TemplateArg(
+                    text_definition="author of quote",
+                    json_field_name='author',
+                    value='\"\"'
+                ),
+            ]
+            try:
+                if a in all_authors_and_quotes.keys():
+                    print("-" * 100)
+                    print(f"Cache hit for author {a}")
+                    print("-" * 100)
+                    all_quotes_in_category.append({
+                        "author": a,
+                        "quotes": all_authors_and_quotes[a]
+                    })
+                else:
+                    quotes_by_author = create_result_dict_from_prompt_template(quote_template,
+                                                                               args,
+                                                                               params,
+                                                                               model_name='text-davinci-003',
+                                                                               tokens_number=3500)
+                    quotes_by_author['quotes'] = list(set(quotes_by_author['quotes']))
+                    all_authors_and_quotes[quotes_by_author['author']] = quotes_by_author['quotes']
+                    all_quotes_in_category.append(quotes_by_author)
+            except:
+                print(f"Failed to get quotes by {a}")
+
+        with open(f"G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes\\{c.lower().replace(' ', '_')}.json", 'w') as r:
+            r.write(json.dumps(all_quotes_in_category))
+
+
+def cleaned_quotes():
+    jack_quotes = "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes"
+    quote_template = f"""
+Provide json having ${{n}} fields:
+${{arg1}} 
+in the following format:
+{{
+    "${{arg2}}": ${{arg3}}
+}}
+Your response should contain only json. Json must be valid. Don't include row number in any of the array strings.
+"""
+    params = {}
+    args = [
+        TemplateArg(text_definition="author of quote with value [[author]]",
+                    json_field_name='author',
+                    value='\"[[author]]\"'),
+        TemplateArg(text_definition="short author description, if dead with years of living",
+                    json_field_name='author_description',
+                    value='\"years from - years to if dead, description\"'),
+        TemplateArg(text_definition="array with 1-3 funny facts about author",
+                    json_field_name='author_funny_facts',
+                    value='[]'),
+        TemplateArg(text_definition="array with 1-3 interesting facts about author",
+                    json_field_name='author_interesting_facts',
+                    value='[]'),
+        TemplateArg(text_definition="array with 1-3 inspiring facts about author",
+                    json_field_name='author_inspiring_facts',
+                    value='[]'),
+    ]
+    for q in os.listdir(jack_quotes):
+        with open(os.path.join(jack_quotes, q)) as f:
+            quotes = json.loads(f.read())
+        new_quotes = []
+        for k in quotes:
+            params['author'] = k.get('author')
+            quotes_by_author = None
+            while quotes_by_author is None:
+                try:
+                    quotes_by_author = create_result_dict_from_prompt_template(
+                        quote_template,
+                        args,
+                        params,
+                        model_name='gpt-3.5-turbo',
+                        tokens_number=1500)
+                except Exception as x:
+                    print(x)
+            new_quotes.append({
+                "quotes": list(set(k.get('quotes'))),
+                **quotes_by_author,
+                "author": k.get('author')
+            })
+        with open(os.path.join(jack_quotes, f"clean_{q}"), 'w') as o:
+            o.write(json.dumps(new_quotes))
+
+
+def more_than_n_quotes(number_of_quotes=30):
+    jack_quotes = "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes"
+    for q in os.listdir(jack_quotes):
+        if os.path.isdir(os.path.join(jack_quotes, q)):
+            continue
+        with open(os.path.join(jack_quotes, q)) as f:
+            quotes = json.loads(f.read())
+        new_quotes = []
+        for k in quotes:
+            if len(k.get('quotes')) > number_of_quotes:
+                new_quotes.append({**k})
+        print(f"Writing {len(new_quotes)} quotes to file more_than_{number_of_quotes}_quotes_{q}, initially there were {len(quotes)}")
+        with open(os.path.join(jack_quotes, f"more_than_20_quotes_{q}"), 'w') as o:
+            o.write(json.dumps(new_quotes))
+
+
 if __name__ == '__main__':
     # prepare_all_quotes()
 
@@ -480,15 +489,4 @@ if __name__ == '__main__':
     #
     # print(f"final result {result}")
 
-    jack_quotes = "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes"
-    for q in os.listdir(jack_quotes):
-        with open(os.path.join(jack_quotes, q)) as f:
-            quotes = json.loads(f.read())
-        new_quotes = []
-        for k in quotes:
-            new_quotes.append({
-                "author": k.get('author'),
-                "quotes": list(set(k.get('quotes')))
-            })
-        with open(os.path.join(jack_quotes, f"clean_{q}"), 'w') as o:
-            o.write(json.dumps(new_quotes))
+    more_than_n_quotes()

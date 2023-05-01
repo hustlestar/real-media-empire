@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 
@@ -6,6 +7,7 @@ from image.colors import get_image_main_colors
 from image.thumbnail import add_text_to_image, TextPosition
 from pipelines.tasks import DEFAULT_ORIENTATION
 
+logger = logging.getLogger(__name__)
 
 class ImageTasks:
     def __init__(
@@ -20,6 +22,7 @@ class ImageTasks:
 
     def create_thumbnail(self, title: str):
         image_path = self.find_matching_image()
+        logger.info(f"Found matching image {image_path}")
         result_image = os.path.join(self.results_dir, f"5_thumbnail.jpg")
         all_groups = split_string_into_three_groups_max(title)
 

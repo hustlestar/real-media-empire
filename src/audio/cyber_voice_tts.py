@@ -1,6 +1,7 @@
 import httpx
 import requests
 
+from audio.text_to_speech import TextToSpeech
 from config import CONFIG
 
 CYBER_VOICE_API_KEY = CONFIG.get("CYBERVOICE_API_KEY")
@@ -14,7 +15,7 @@ headers = {
 
 def synthesize_text(text, output_file=None,
                     voice_language_code=2,
-                    voice_name=None,
+                    voice_name=37,
                     gender='male'  # 'female'
                     ):
     if len(text) > 1000:
@@ -40,6 +41,13 @@ def synthesize_text(text, output_file=None,
     print(data)
 
 
+class CyberVoiceTextToSpeech(TextToSpeech):
+    def synthesize_ssml(self, ssml=None, output_file=None, voice_language_code=2, voice_name=37, **kwargs):
+        synthesize_text(ssml, output_file, voice_language_code, voice_name)
+
+    def synthesize_text(self, text=None, output_file=None, voice_language_code=2, voice_name=37, **kwargs):
+        synthesize_text(text, output_file, voice_language_code, voice_name)
+
 def list_voices(is_print=False):
     url = "https://api.voice.steos.io/v1/get/voices"
     response = httpx.get(url, headers=headers)
@@ -62,4 +70,5 @@ def sample_all_voices(text):
 
 
 if __name__ == '__main__':
-    sample_all_voices("Let's see what this api gives us")
+    # sample_all_voices("I want to test out how good this api became")
+    list_voices(is_print=True)

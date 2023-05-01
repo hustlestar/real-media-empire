@@ -23,14 +23,15 @@ class SocialTasks:
             file_path,
             title="Test Title",
             description="Test Description",
-            privacy_status=VALID_PRIVACY_STATUSES[1]
+            privacy_status=VALID_PRIVACY_STATUSES[1],
+            tags=None
     ):
         return self.youtube_uploader.upload_video(
             file_path,
             title=title,
             description=description,
             category=self.youtube_category,
-            tags=self.youtube_tags,
+            tags=set(self.youtube_tags + (tags or [])) if self.youtube_tags else tags,
             privacy_status=privacy_status
         )
 

@@ -16,6 +16,12 @@ from config import CONFIG
 from text.helpers import pick_random_from_list
 from video.utils import find_matching_video
 
+BIG_PAUSE = 4
+
+DEFAULT_SHADOW_COLOR = 'black'
+
+DEFAULT_FONT_SIZE_FOR_HORIZONTAL = 80
+
 logger = logging.getLogger(__name__)
 
 BG_CLIP_CHANGE_EVERY_N_SECONDS = 'every_n_seconds'
@@ -141,6 +147,149 @@ def video_with_text(
     save_final_video_file(final_clip, result_file)
 
 
+class AuthorLabel:
+    def __init__(self, author=None, title=None):
+        self.author = author
+        self.title = title
+
+
+def determine_positions(text_lines, font_size, video_height):
+    line_height = font_size / 2
+    font_height_half = font_size / 2
+    line_height_half = line_height / 2
+    font_height_half_to_height = font_height_half / video_height
+    line_height_half_to_height = line_height_half / video_height
+
+    if len(text_lines) * font_size + (len(text_lines) - 1) * line_height > video_height:
+        raise Exception(f"Text is too big for video height {video_height}: {text_lines}")
+
+    if len(text_lines) == 1:
+        return {1: (0.5, 0.5)}
+    elif len(text_lines) == 2:
+        return {
+            1: (0.5 - font_height_half_to_height - line_height_half_to_height, 0.5),
+            2: (0.5 + font_height_half_to_height + line_height_half_to_height, 0.5)
+        }
+    elif len(text_lines) == 3:
+        return {
+            1: (0.5 - font_height_half_to_height * 2 - line_height_half_to_height * 2, 0.5),
+            2: (0.5, 0.5),
+            3: (0.5 + font_height_half_to_height * 2 + line_height_half_to_height * 2, 0.5)
+        }
+    elif len(text_lines) == 4:
+        return {
+            1: (0.5 - font_height_half_to_height * 3 - line_height_half_to_height * 3, 0.5),
+            2: (0.5 - font_height_half_to_height - line_height_half_to_height, 0.5),
+            3: (0.5 + font_height_half_to_height + line_height_half_to_height, 0.5),
+            4: (0.5 + font_height_half_to_height * 3 + line_height_half_to_height * 3, 0.5)
+        }
+    elif len(text_lines) == 5:
+        return {
+            1: (0.5 - font_height_half_to_height * 4 - line_height_half_to_height * 4, 0.5),
+            2: (0.5 - font_height_half_to_height * 2 - line_height_half_to_height * 2, 0.5),
+            3: (0.5, 0.5),
+            4: (0.5 + font_height_half_to_height * 2 + line_height_half_to_height * 2, 0.5),
+            5: (0.5 + font_height_half_to_height * 4 + line_height_half_to_height * 4, 0.5),
+        }
+    else:
+        raise Exception(f"Too many lines in text {len(text_lines)}")
+
+
+class ExtraLabel:
+    def __init__(self, text, color=None):
+        self.text = text
+        self.color = color
+
+    def __repr__(self):
+        return f"ExtraLabel({self.text}, {self.color})"
+
+
+def video_with_quote_and_label(
+        bg_video,
+        line_to_voice: NamedTuple('LineToMp3File', [('line', str), ('audio_file', str)]),
+        bg_audio_filename=None,
+        fonts_list=None,
+        font=None,
+        text_colors=None,
+        shadow_color=DEFAULT_SHADOW_COLOR,
+        line_width=35,
+        font_size=DEFAULT_FONT_SIZE_FOR_HORIZONTAL,
+        author_label: AuthorLabel = None,
+        extra_label: ExtraLabel = None,
+        darken_to=0.7,
+        additional_pause=BIG_PAUSE
+):
+    text_color = pick_random_from_list(text_colors)
+    font = font if font else pick_random_from_list(fonts_list)
+    text_clips = []
+    audio_clips = []
+
+    # Define a function that darkens the clip
+    def darken(clip):
+        return clip.fl_image(lambda image: image * darken_to)
+
+    # Apply the function to the clip using the fx method
+    bg_video = bg_video.fx(darken)
+
+    logger.info(f"Font size {font_size}")
+    audio = read_audio_clip(line_to_voice.audio_file).fx(afx.audio_fadeout, 0.5)#.fx(vfx.speedx, 0.95)
+
+    audio_clips.append(audio)
+    duration = audio.duration + additional_pause
+    text_lines = textwrap.wrap(line_to_voice.line, line_width, break_long_words=False)
+    try:
+        positions = determine_positions(text_lines, font_size, bg_video.h)
+    except Exception as x:
+        logger.error(x)
+        return None
+    for i, text_line in enumerate(text_lines, start=1):
+        position_tuple = positions.get(i)
+        logger.info(f"Position is {position_tuple} for line {text_line}")
+
+        txt_clip = build_txt_clip(text_line, bg_video.w, bg_video.w / 2, duration, font_size, (position_tuple[1], position_tuple[0]), 0, font, color=text_color)
+        txt_clip = txt_clip.crossfadeout(additional_pause / 2)
+
+        shadow_clip = build_txt_clip(text_line, bg_video.w, bg_video.w / 2, duration, font_size, (position_tuple[1] + 0.005, position_tuple[0] + 0.005), 0, font,
+                                     color=shadow_color)
+        shadow_clip = shadow_clip.crossfadeout(additional_pause / 2)
+
+        text_clips.append(shadow_clip)
+        text_clips.append(txt_clip)
+
+    final_duration = duration
+    logger.info(f"FINAL DURATION WOULD BE {final_duration}")
+
+    if bg_audio_filename:
+        bg_audio_clip = read_audio_clip(bg_audio_filename)
+        bg_audio_clip = bg_audio_clip.set_duration(final_duration).volumex(0.2)
+        audio_clips.append(bg_audio_clip)
+
+    final_audio = CompositeAudioClip(audio_clips)
+    if bg_video.duration < final_duration:
+        logger.info(f"Background video is shorter than final duration {final_duration}")
+    else:
+        bg_video = bg_video.set_duration(final_duration)
+
+    if author_label:
+        author_clip = build_txt_clip(author_label.author, bg_video.w, bg_video.w / 2, duration, font_size / 2, (0.5, 0.9), 0, font, color=text_color).set_opacity(0.8)
+        if author_label.title:
+            label_clip = build_txt_clip(author_label.title, bg_video.w, bg_video.w / 2, duration, font_size / 2, (0.5, 0.95), 0, font, color=text_color).set_opacity(0.8)
+            text_clips.append(label_clip)
+        text_clips.append(author_clip)
+
+    if extra_label:
+        extra_label_clip = build_txt_clip(extra_label.text, bg_video.w, bg_video.w / 2, duration, font_size / 2, (0.15, 0.15), 0, font, color=extra_label.color)
+        extra_label_clip = extra_label_clip.add_mask().rotate(pick_random_from_list([45, 30]))
+        text_clips.append(extra_label_clip)
+
+    final_clip = CompositeVideoClip([bg_video, *text_clips])
+    final_audio.set_duration(final_duration)
+    final_clip = final_clip.set_audio(final_audio)
+    final_clip.set_duration(final_duration)
+    # Write the final clip to a file
+    return final_clip
+
+
 def video_with_text_full_sentence(
         bg_video,
         line_to_voice_list: List[NamedTuple('LineToMp3File', [('line', str), ('audio_file', str)])],
@@ -250,7 +399,7 @@ def video_with_text_full_sentence_many_clips(
                 single_duration = single_duration + big_pause_duration
             logger.info(f"Duration is {single_duration} for line - {text_line}")
             txt_clip = build_txt_clip(text_line, bg_width, bg_width_half, single_duration, font_size, pos_1, previous_end, font, color=text_color)
-            shadow = build_txt_clip(text_line, bg_width, bg_width_half, single_duration, font_size, (pos_1[0] + 0.005, pos_1[1] + 0.005), previous_end, font, color=shadow_color)
+            shadow = build_txt_clip(text_line, bg_width, bg_width_half, single_duration, font_size, (pos_1[0] + 0.0025, pos_1[1] + 0.0025), previous_end, font, color=shadow_color)
 
             text_clips.append(shadow)
             text_clips.append(txt_clip)
@@ -316,7 +465,8 @@ def save_final_video_file(final_clip, result_file):
         codec='libx264',
         audio_codec='aac',
         temp_audiofile=f'{random.randint(0, 100)}_temp-audio.m4a',
-        remove_temp=True
+        remove_temp=True,
+        threads=6
     )
 
 
@@ -326,7 +476,7 @@ def build_txt_clip(text_line, bg_width, bg_width_half, duration, font_size, pos_
     if txt_width > bg_width:
         raise Exception(f"Line text is too long {txt_width}")
     pos_w_rel = (bg_width_half - txt_width / 2) / bg_width + (pos_1[0] - 0.5)
-    logger.info(f"Text Clip width for font {font} is {txt_clip.w} for {text_line} position is {pos_w_rel} {pos_1[1]} for {text_line}")
+    logger.info(f"Text Clip width for font {font} is {txt_clip.w} for '{text_line}' position is {pos_w_rel} {pos_1[1]} for {text_line}")
     txt_clip = txt_clip.set_position((pos_w_rel, pos_1[1]), relative=True)
     return txt_clip
 
@@ -373,7 +523,7 @@ def music_video(
 
 
 if __name__ == '__main__':
-    for f in TextClip.list('font'):
-        logger.info(f)
-    # for c in TextClip.list('color'):
-    #     logger.info(c)
+    # for f in TextClip.list('font'):
+    #     logger.info(f)
+    for c in TextClip.list('color'):
+        logger.info(c)

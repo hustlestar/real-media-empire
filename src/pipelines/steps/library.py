@@ -3,10 +3,12 @@ import logging
 import os
 import re
 import shutil
-from typing import List
+from typing import List, Optional, Tuple
 
+from moviepy.video.compositing.concatenate import concatenate_videoclips
 from zenml.steps import step, Output
 
+from audio.audio_processor import read_audio_clip
 from common.exception import WrongMediaException
 from config import CONFIG
 from pipelines.params.params_for_pipeline import PipelineParams
@@ -15,9 +17,12 @@ from text import helpers
 from text.helpers import pick_random_from_list, finish_line, TemplateArg
 from util.time import get_now
 from video.movie import LineToMp3File, video_with_text, trim_clip_duration, video_with_text_full_sentence, video_with_text_full_sentence_many_clips, \
-    BG_CLIP_STRATEGIES
-from video.utils import is_video_matching, read_n_video_clips
+    BG_CLIP_STRATEGIES, video_with_quote_and_label, AuthorLabel, save_final_video_file, BIG_PAUSE, ExtraLabel
+from video.utils import is_video_matching, read_n_video_clips, find_matching_video
 from video.video_transitions import first_fade_out_second_fade_in_all
+
+EXTRA_LABLE_COLORS = ['orange1', 'DarkOrange', 'CadetBlue1', 'DeepSkyBlue', 'SkyBlue', 'purple1', 'MediumPurple1', 'SpringGreen2', 'SpringGreen1', 'SeaGreen1', 'green1',
+                      'IndianRed1', 'PaleVioletRed1', 'Red1', 'VioletRed1']
 
 QUOTE_TXT = "1_quote.txt"
 
@@ -87,10 +92,7 @@ def use_predefined_quote_by_author(params: PipelineParams) -> List[str]:
 def predefined_quote_by_author(params):
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     channel.socials_manager.youtube_uploader.authenticate()
-    quote_file = pick_random_from_list(channel.config.all_extras.get("quote_sources"))
-    with open(quote_file) as f:
-        all_authors = json.loads(f.read())
-    single_author = pick_random_from_list(all_authors)
+    single_author = get_single_author(params)
     quote = pick_random_from_list(single_author.get('quotes'))
     logger.info(f"Result quote is\n{quote}")
     quote_lines = [finish_line(s) for s in quote.split(".") if s]
@@ -103,6 +105,15 @@ def predefined_quote_by_author(params):
     return result
 
 
+def get_single_author(params):
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    quote_file = pick_random_from_list(channel.config.all_extras.get("quote_sources"))
+    with open(quote_file) as f:
+        all_authors = json.loads(f.read())
+    single_author = pick_random_from_list(all_authors)
+    return single_author
+
+
 @step
 def generate_shorts_swamp(params: PipelineParams) -> None:
     logger.info(f"Starting generation of new shorts {params.number_of_videos}")
@@ -113,6 +124,101 @@ def generate_shorts_swamp(params: PipelineParams) -> None:
         quote_lines = predefined_quote_by_author(params)
         voice_over_files = voice_overs(params, quote_lines)
         shorts_with_voice(params, quote_lines, voice_over_files, is_swamp=True)
+    logger.info("Finished shorts generation")
+
+
+def prepare_author_title(title: str):
+    if title and 'unknown' not in title.lower():
+        title = title.replace(", was a ", ", ").replace(", was an ", ", ")
+        logger.info(f"Prepared following author title: {title}")
+        return title
+    else:
+        return None
+
+
+def prepare_extra_label(author_funny_facts, author_interesting_facts, author_inspiring_facts, used_facts) -> Optional[Tuple[str, ExtraLabel]]:
+    def pop_lists(list1, list2, list3):
+        while list1 or list2 or list3:
+            if list1 and len(list1) >= len(list2) and len(list1) >= len(list3):
+                yield "Funny Fact", list1.pop()
+            elif list2 and len(list2) >= len(list3):
+                yield "Interesting Fact", list2.pop()
+            elif list3:
+                yield "Inspiring Fact", list3.pop()
+            else:
+                yield None
+
+    res = pop_lists(author_funny_facts, author_interesting_facts, author_inspiring_facts)
+    fact = None
+    try:
+        fact = next(res)
+    except:
+        pass
+    if fact and fact not in used_facts:
+        used_facts.add(fact)
+        return fact[1], ExtraLabel(fact[0], color=pick_random_from_list(EXTRA_LABLE_COLORS))
+
+
+@step
+def generate_quotes_video(params: PipelineParams) -> None:
+    logger.info(f"Starting generation of new quotes video{params.number_of_videos}")
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    now = get_now()
+    logger.info(f"Starting generation of video at {now}")
+    # params = params.copy(update={"execution_date": now})
+    author_dict = get_single_author(params)
+    logger.info(f"Result author that was chosen\n{author_dict}")
+    author_funny_facts = author_dict.get("author_funny_facts")
+    author_interesting_facts = author_dict.get("author_interesting_facts")
+    author_inspiring_facts = author_dict.get("author_inspiring_facts")
+    used_facts = set()
+    all_quotes_videos = []
+    voice_over_id = 0
+    for i, quote in enumerate(author_dict.get('quotes')):
+        if i % 9 == 0:
+            fact_label_tuple = prepare_extra_label(author_funny_facts, author_interesting_facts, author_inspiring_facts, used_facts)
+            if fact_label_tuple:
+                voice_over_file = single_voice_over(fact_label_tuple[0], channel, index=voice_over_id, is_secondary=True)
+                voice_over_id = voice_over_id + 1
+                required_duration = (read_audio_clip(voice_over_file).duration + BIG_PAUSE) * 1.2
+                bg_video = find_matching_video(channel, required_duration=required_duration)
+                fact_video = video_with_quote_and_label(
+                    bg_video,
+                    LineToMp3File(fact_label_tuple[0], voice_over_file),
+                    text_colors=['yellow'],
+                    fonts_list=channel.config.video_fonts_list,
+                    author_label=AuthorLabel(author_dict.get("author"), prepare_author_title(author_dict.get("author_description"))),
+                    additional_pause=BIG_PAUSE,
+                    extra_label=fact_label_tuple[1]
+                )
+                if fact_video:
+                    all_quotes_videos.append(fact_video)
+
+        if len(quote) > 35 * 5:
+            logger.warning(f"Quote is too long, skipping: {quote}")
+            continue
+
+        voice_over_file = single_voice_over(quote, channel, index=voice_over_id)
+        voice_over_id = voice_over_id + 1
+
+        required_duration = (read_audio_clip(voice_over_file).duration + BIG_PAUSE) * 1.2
+        bg_video = find_matching_video(channel, required_duration=required_duration)
+        single_quote_video = video_with_quote_and_label(
+            bg_video,
+            LineToMp3File(quote, voice_over_file),
+            text_colors=['white'],
+            fonts_list=channel.config.video_fonts_list,
+            shadow_color='black',
+            author_label=AuthorLabel(author_dict.get("author"), prepare_author_title(author_dict.get("author_description"))),
+            additional_pause=BIG_PAUSE,
+        )
+        if single_quote_video:
+            all_quotes_videos.append(single_quote_video)
+
+    final_video = concatenate_videoclips(all_quotes_videos, method="compose")
+    with open(os.path.join(channel.result_dir, f"0_text_script.txt"), "w") as f:
+        f.write("".join(author_dict.get("quotes") + author_funny_facts + author_interesting_facts + author_inspiring_facts))
+    save_final_video_file(final_video, build_file_name(author_dict.get("author"), channel, 0, is_swamp=False, params=params))
     logger.info("Finished shorts generation")
 
 
@@ -192,8 +298,13 @@ def create_voice_overs(text_lines: List[str], params: PipelineParams) -> List[st
 def voice_overs(params, text_lines):
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     channel.socials_manager.youtube_uploader.authenticate()
-    return [channel.audio_manager.create_audio_voice_over(line, is_ssml=False, result_file=f"{i}_voiceover.mp3", speaking_rate=channel.config.voice_over_speed)
+    return [single_voice_over(line, channel, i)
             for i, line in enumerate(text_lines)]
+
+
+def single_voice_over(line, channel, index, is_secondary=False):
+    return channel.audio_manager.create_audio_voice_over(line, is_ssml=False, result_file=f"{index}_voiceover.mp3", speaking_rate=channel.config.voice_over_speed,
+                                                         is_secondary=is_secondary)
 
 
 @step
@@ -278,6 +389,12 @@ def upload_video_and_thumbnail_to_youtube(final_video: str, text_script: str, pa
     return video_id, thumbnail_url
 
 
+@step(enable_cache=False)
+def find_youtube_video(params: PipelineParams) -> Output(video_file_path=str, text_script=str):
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    return channel.find_youtube_video(params.execution_date)
+
+
 @step
 def create_video_meta(text_script: str, params: PipelineParams) \
         -> Output(title=str, description=str, thumbnail_title=str, comment=str, tags=List[str]):
@@ -307,6 +424,20 @@ def upload_video_to_youtube(final_video: str, title: str, description: str, para
 
 
 @step
+def upload_video_to_youtube_with_tags(final_video: str, title: str, description: str, tags: List[str], params: PipelineParams) -> str:
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    logger.info(f"Starting YouTube video upload\n{final_video}\n{title}\n{description}\n{tags}")
+    video_id = channel.socials_manager.upload_video_to_youtube(
+        final_video,
+        title,
+        description,
+        privacy_status=channel.youtube_privacy_status,
+        tags=tags
+    )
+    return video_id
+
+
+@step
 def upload_thumbnail_to_youtube(thumbnail_image_path: str, video_id: str, params: PipelineParams) -> str:
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     logger.info(f"Uploading {thumbnail_image_path} for video {video_id}")
@@ -322,3 +453,24 @@ def add_comment_to_youtube(thumbnail_image_path: str, video_id: str, params: Pip
         return comment_id
     else:
         return ''
+
+
+if __name__ == '__main__':
+    author_funny_facts = [
+        "Isaac Newton was born premature and was so small he could fit into a quart-sized mug.",
+        "He is said to have invented the cat flap, but there's no evidence of it.",
+        "Newton was known to have a great sense of humor and loved telling jokes."
+    ]
+    author_interesting_facts = [
+        "Newton was the first person to describe the laws of motion and the law of gravity.",
+        "He also made significant advances in the field of optics, discovering the properties of light and color.",
+        "Newton was a member of the Royal Society and served as its president from 1703 to 1727."
+    ]
+    author_inspiring_facts = [
+        "Despite facing many obstacles, Newton persevered in his scientific pursuits and left a lasting legacy in the field of physics.",
+        "He once said, 'If I have seen further than others, it is by standing upon the shoulders of giants.'",
+        "Newton's dedication to his work and his willingness to question accepted knowledge continues to inspire scientists and thinkers today."
+    ]
+    used_facts = set()
+    for i in range(100):
+        print(prepare_extra_label(author_funny_facts, author_interesting_facts, author_inspiring_facts, used_facts))

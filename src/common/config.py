@@ -1,4 +1,4 @@
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Union
 
 import yaml
 from munch import Munch
@@ -62,7 +62,8 @@ class ChannelConfigTemplate:
 
         self.tts_api: str = None
         self.tts_type: str = None
-        self.tts_voice_name: str = None
+        self.tts_voice_name: Union[str, int] = None
+        self.tts_secondary_voice_name: Union[str, int] = None
         self.tts_api_key_or_path: str = None
         self.voice_over_speed: float = None
 
