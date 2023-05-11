@@ -30,7 +30,7 @@ class VideoTasks:
         self.width = width
         self.video_task = CommonTasks(
             single_video_duration=single_video_duration,
-            is_allow_duplicate_clips=is_allow_duplicate_clips
+            is_allow_duplicate_clips=is_allow_duplicate_clips,
         )
         self.results_dir = results_dir
 

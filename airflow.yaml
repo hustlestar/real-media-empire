@@ -6,4 +6,6 @@ dependencies:
   - python=3.9
   - pip
   - pip:
-#    - airflow
+    - apache-airflow
+    - apache-airflow-providers-http
+    - python-telegram-bot

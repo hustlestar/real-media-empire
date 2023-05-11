@@ -44,7 +44,7 @@ audio_background_api: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
 audio_background_api_key_or_path: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
 
 main_text_type: 'text'
-main_prompt_topics_file: "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\speakers_list.json"
+main_prompt_topics_file: "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\speakers_list.json"
 main_prompt_narrative_types:
   - "motivational quote"
   - "inspiring quote"
@@ -53,8 +53,8 @@ main_prompt_narrative_types:
   - "important idea"
 all_extras:
   quote_sources:
-    - "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes\\business_coaches.json"
-    - "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes\\motivational_speakers.json"
+    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\business_coaches.json"
+    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\motivational_speakers.json"
 main_prompt_number_of_engagement_techniques: 2
 main_prompt_engagement_techniques:
 #  - "Begin story with a captivating opening."
@@ -70,8 +70,10 @@ main_prompt_template: |
     "${arg2}": ${arg3}
   }
   Your response should contain only json.
+main_prompt_number_of_words: 2500
 main_ttt_api: "chat_gpt"
 main_ttt_model_name: "text-davinci-003"
+main_ttt_tokens_number: 3700
 
 description_ttt_api: "chat_gpt"
 description_ttt_model_name: "text-davinci-003"

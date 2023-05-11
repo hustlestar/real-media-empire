@@ -216,7 +216,7 @@ def video_with_quote_and_label(
         font_size=DEFAULT_FONT_SIZE_FOR_HORIZONTAL,
         author_label: AuthorLabel = None,
         extra_label: ExtraLabel = None,
-        darken_to=0.7,
+        darken_to=0.8,
         additional_pause=BIG_PAUSE
 ):
     text_color = pick_random_from_list(text_colors)

@@ -1,6 +1,5 @@
 import psutil
 import telegram
-from telegram.ext import Updater
 
 # Telegram bot token
 TOKEN = '1439670844:AAFejYbp5TSMcuWMW_TxUDSKiho1Ht7gc7w'
@@ -10,9 +9,6 @@ CHAT_ID = '66395090'
 
 # Create a Telegram bot object
 bot = telegram.Bot(token=TOKEN)
-
-# Create an Updater object to handle incoming updates
-updater = Updater(token=TOKEN, use_context=True)
 
 # Get the current system CPU usage
 cpu_usage = psutil.cpu_percent()

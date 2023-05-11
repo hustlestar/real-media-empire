@@ -266,13 +266,14 @@ if __name__ == '__main__':
     #                    width=1080,
     #                    orientation='portrait',
     #                    number_of_downloads=10000).run()
-    # PexelsDownloadTask(query="history", download_dir=CONFIG.get('DOWNLOAD_DIR'),
-    #                    size='medium',
-    #                    height=1920,
-    #                    width=1080,q
-    #                    orientation='portrait',
-    #                    number_of_downloads=5000).run()
-    PexelsDownloadTask(query="eagle", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=5000).run()
+    PexelsDownloadTask(query="waterfall",
+                       download_dir=CONFIG.get('DOWNLOAD_DIR'),
+                       size='medium',
+                       height=1920,
+                       width=1080,
+                       orientation='portrait',
+                       number_of_downloads=5000).run()
+    PexelsDownloadTask(query="waterfall", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=5000).run()
     # PexelsDownloadTask(query="vibrant sunset", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
     # PexelsDownloadTask(query="winding road", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
     # PexelsDownloadTask(query="long flight of stairs", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()

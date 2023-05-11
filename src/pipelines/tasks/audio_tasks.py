@@ -45,9 +45,11 @@ class AudioTasks:
         else:
             raise NotImplementedError("Api for audio background is not there yet")
 
-    def create_audio_voice_over(self, text_script, is_ssml, result_file=None, speaking_rate=0.0, is_secondary=False):
+    def create_audio_voice_over(self, text_script: str, is_ssml, result_file=None, speaking_rate=0.0, is_secondary=False):
         logger.info(f"Creating audio voice over for {text_script}, is_ssml={is_ssml}, result_file={result_file}, speaking_rate={speaking_rate}")
         api = TTS_APIS[self.tts_api]
+        logger.info("Preprocessing tts text script")
+        text_script = text_script.replace(" live", "leeve")
         result_audio_file = os.path.join(self.results_dir, result_file)
         if is_ssml:
             api.synthesize_ssml(text_script, output_file=result_audio_file, voice_name=self.tts_voice_name if not is_secondary else self.tts_secondary_voice_name)

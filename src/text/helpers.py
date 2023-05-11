@@ -2,11 +2,10 @@ import json
 import logging
 import os
 import random
-import re
 from collections import namedtuple
-from typing import List, Tuple, Dict, Any
+from typing import List, Dict, Any
 
-from text.chat_gpt import ChatGPTTask, chat_completion, ask_chatgpt
+from text.chat_gpt import ChatGPTTask, generate_text
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +89,7 @@ def pick_random_from_list(any_list):
 
 def pick_book_theme(author_collection):
     books = author_collection['books']
-    return pick_random_from_list(books)
+    return f"{pick_random_from_list(books)}"
 
 
 def create_thoughts_list(topic="from Michael Hyatt's Your Best Year Ever book", what=None):
@@ -117,10 +116,7 @@ def create_result_dict_from_prompt_template(prompt_template: str, args, params, 
     prompt = create_prompt_from_template(args, params, prompt_template)
     retry_counter = 0
     while retry_counter < 5:
-        if model_name and model_name.startswith('gpt-3.5-turbo'):
-            result_text = chat_completion(prompt, model_name=model_name, tokens_number=tokens_number)
-        else:
-            result_text = ask_chatgpt(prompt, model_name=model_name, tokens_number=tokens_number)
+        result_text = generate_text(prompt, model_name, tokens_number)
         print(f"CHAT GPT {model_name} response \n{result_text}")
         if has_json(result_text):
             result_dict = extract_json_as_dict(result_text)
@@ -262,7 +258,7 @@ def prepare_all_quotes():
         "speakers",
         # "engineers" #skipped
     ]
-    # with open("G:\OLD DISK D - LOL\Projects\media-empire\jack\speakers_list.json") as f:
+    # with open("G:\OLD_DISK_D_LOL\Projects\media-empire\jack\speakers_list.json") as f:
     #     authors = json.loads(f.read())['authors']
     all_authors_and_quotes = {}
     for c in categories:
@@ -324,7 +320,7 @@ def prepare_all_quotes():
             except:
                 print(f"Failed to get quotes by {a}")
 
-        with open(f"G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes\\{c.lower().replace(' ', '_')}.json", 'w') as r:
+        with open(f"G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\{c.lower().replace(' ', '_')}.json", 'w') as r:
             r.write(json.dumps(all_quotes_in_category))
 
 
@@ -343,7 +339,7 @@ def prepare_all_authors():
         "speakers",
         # "engineers" #skipped
     ]
-    # with open("G:\OLD DISK D - LOL\Projects\media-empire\jack\speakers_list.json") as f:
+    # with open("G:\OLD_DISK_D_LOL\Projects\media-empire\jack\speakers_list.json") as f:
     #     authors = json.loads(f.read())['authors']
     all_authors_and_quotes = {}
     for c in categories:
@@ -405,12 +401,12 @@ def prepare_all_authors():
             except:
                 print(f"Failed to get quotes by {a}")
 
-        with open(f"G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes\\{c.lower().replace(' ', '_')}.json", 'w') as r:
+        with open(f"G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\{c.lower().replace(' ', '_')}.json", 'w') as r:
             r.write(json.dumps(all_quotes_in_category))
 
 
 def cleaned_quotes():
-    jack_quotes = "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes"
+    jack_quotes = "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes"
     quote_template = f"""
 Provide json having ${{n}} fields:
 ${{arg1}} 
@@ -465,7 +461,7 @@ Your response should contain only json. Json must be valid. Don't include row nu
 
 
 def more_than_n_quotes(number_of_quotes=30):
-    jack_quotes = "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes"
+    jack_quotes = "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes"
     for q in os.listdir(jack_quotes):
         if os.path.isdir(os.path.join(jack_quotes, q)):
             continue

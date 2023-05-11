@@ -4,10 +4,11 @@ youtube_client_secrets_file: "C:\\tools\\google\\infinite_quotes_inspiration.jso
 youtube_category: 22
 youtube_tags:
   - motivation
-  - mindfulness
   - inspiration
   - success
   - listenable
+  - quotes
+  - quote
 youtube_title_suffix: " - #QUOTES #INSPIRATION"
 youtube_privacy_status: 'public' #private
 
@@ -33,7 +34,7 @@ audio_background_api: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
 audio_background_api_key_or_path: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
 
 main_text_type: 'text'
-main_prompt_topics_file: "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\motivation_topics.json"
+main_prompt_topics_file: "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\motivation_topics.json"
 main_prompt_narrative_types:
   - "motivational speech in the third person"
   - "inspiring talk in the third person"
@@ -41,8 +42,8 @@ main_prompt_narrative_types:
   - "inspiring speech in the third person"
 all_extras:
   quote_sources:
-    #    - "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes\\business_coaches.json"
-    - "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes\\historical_figures.json"
+    #    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\business_coaches.json"
+    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\historical_figures.json"
 main_prompt_number_of_engagement_techniques: 2
 main_prompt_engagement_techniques:
   - "Begin story with a captivating opening."
@@ -59,6 +60,7 @@ main_prompt_template: |
   Your answer should contain only xml.
 main_ttt_api: "chat_gpt"
 main_ttt_model_name: "text-davinci-003"
+main_ttt_tokens_number: 7500
 
 description_ttt_api: "chat_gpt"
 description_ttt_model_name: "text-davinci-003"

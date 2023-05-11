@@ -1,3 +1,4 @@
+import logging
 import os
 
 import openai
@@ -7,6 +8,7 @@ from util.time import get_now
 
 openai.api_key = CONFIG.get("OPEN_AI_API_KEY")
 
+logger = logging.getLogger(__name__)
 
 class ChatGPTTask:
     def __init__(self, prompt, model_name="text-davinci-003", tokens_number=3700):
@@ -19,6 +21,7 @@ class ChatGPTTask:
 
     def run(self):
         self.text, self.filename, self.task_time = process_chatgpt_results(self.prompt, model_name=self.model_name, tokens_number=self.tokens_number)
+        logger.info(f"Chat GPT response text: {self.text}")
         return self
 
 
@@ -71,13 +74,21 @@ def save_results(prompt, text):
 
 
 def process_chatgpt_results(prompt, model_name=None, tokens_number=3700):
-    res = ask_chatgpt(prompt, model_name, tokens_number=tokens_number)
+    res = generate_text(prompt, model_name, tokens_number=tokens_number)
     filename, now = save_results(prompt, res)
     return res, filename, now
 
 
 def print_models():
     print(openai.Model.list())
+
+
+def generate_text(prompt, model_name, tokens_number):
+    if model_name and model_name.startswith('gpt-3.5-turbo') or model_name.startswith('gpt-4'):
+        result_text = chat_completion(prompt, model_name=model_name, tokens_number=tokens_number)
+    else:
+        result_text = ask_chatgpt(prompt, model_name=model_name, tokens_number=tokens_number)
+    return result_text
 
 
 if __name__ == '__main__':

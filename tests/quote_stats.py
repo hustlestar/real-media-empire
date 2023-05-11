@@ -2,7 +2,7 @@ import json
 import os
 import pandas as pd
 if __name__ == '__main__':
-    quotes_dir = "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\quotes"
+    quotes_dir = "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes"
     files = os.listdir(quotes_dir)
     quotes_total = 0
     quotes_max_length = 0

@@ -10,7 +10,7 @@ youtube_tags:
   - success
   - listenable
 youtube_title_suffix: " - WISDOM INSPIRATION"
-youtube_privacy_status: 'private' #public
+youtube_privacy_status: 'public' #public
 
 video_orientation: 'landscape' #portrait
 video_width: 1920
@@ -46,7 +46,7 @@ audio_background_api: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
 audio_background_api_key_or_path: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
 
 main_text_type: 'ssml'
-main_prompt_topics_file: "G:\\OLD DISK D - LOL\\Projects\\media-empire\\jack\\motivation_topics.json"
+main_prompt_topics_file: "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\motivation_topics.json"
 main_prompt_narrative_types:
   - "motivational speech in the third person"
   - "inspiring talk in the third person"
@@ -66,8 +66,10 @@ main_prompt_template: |
   Use 5 seconds breaks between different parts, emphasize important parts by increasing or decreasing pitch. 
   Set prosody rate to slow.
   Your answer should contain only xml.
+main_prompt_number_of_words: 5000
 main_ttt_api: "chat_gpt"
-main_ttt_model_name: "text-davinci-003"
+main_ttt_model_name: "gpt-4"
+main_ttt_tokens_number: 7500
 
 description_ttt_api: "chat_gpt"
 description_ttt_model_name: "text-davinci-003"

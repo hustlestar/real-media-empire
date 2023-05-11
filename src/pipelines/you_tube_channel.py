@@ -48,6 +48,9 @@ class YouTubeChannel:
             os.makedirs(self.swamp_result_dir, exist_ok=True)
             os.makedirs(self.lake_result_dir, exist_ok=True)
         self.text_manager = TextTasks(
+            main_ttt_model_name=self.config.main_ttt_model_name,
+            main_ttt_api=self.config.main_ttt_api,
+            main_ttt_tokens_number=self.config.main_ttt_tokens_number,
             title_suffix=config.youtube_title_suffix,
             results_dir=self.this_run_result_dir
         )

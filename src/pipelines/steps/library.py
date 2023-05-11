@@ -161,7 +161,7 @@ def prepare_extra_label(author_funny_facts, author_interesting_facts, author_ins
 
 
 @step
-def generate_quotes_video(params: PipelineParams) -> None:
+def generate_quotes_video(params: PipelineParams) -> Output(video_file_path=str, text_script=str):
     logger.info(f"Starting generation of new quotes video{params.number_of_videos}")
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     now = get_now()
@@ -217,10 +217,13 @@ def generate_quotes_video(params: PipelineParams) -> None:
             all_quotes_videos.append(single_quote_video)
 
     final_video = concatenate_videoclips(all_quotes_videos, method="compose")
+    result_text_script = "".join(author_dict.get("quotes") + author_funny_facts + author_interesting_facts + author_inspiring_facts)
     with open(os.path.join(channel.result_dir, f"0_text_script.txt"), "w") as f:
-        f.write("".join(author_dict.get("quotes") + author_funny_facts + author_interesting_facts + author_inspiring_facts))
-    save_final_video_file(final_video, build_file_name(author_dict.get("author"), channel, 0, is_swamp=False, params=params))
+        f.write(result_text_script)
+    result_video_file_path = build_file_name(author_dict.get("author"), channel, 0, is_swamp=False, params=params)
+    save_final_video_file(final_video, result_video_file_path)
     logger.info("Finished shorts generation")
+    return result_video_file_path, result_text_script
 
 
 @step
@@ -304,8 +307,13 @@ def voice_overs(params, text_lines):
 
 
 def single_voice_over(line, channel, index, is_secondary=False):
-    return channel.audio_manager.create_audio_voice_over(line, is_ssml=False, result_file=f"{index}_voiceover.mp3", speaking_rate=channel.config.voice_over_speed,
-                                                         is_secondary=is_secondary)
+    return channel.audio_manager.create_audio_voice_over(
+        line,
+        is_ssml=False,
+        result_file=f"{index}_voiceover.mp3",
+        speaking_rate=channel.config.voice_over_speed,
+        is_secondary=is_secondary
+    )
 
 
 @step

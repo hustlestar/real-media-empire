@@ -9,11 +9,20 @@ from text.helpers import extract_json_as_dict, has_json
 
 
 class TextTasks:
-    def __init__(self, main_ttt_api=None, main_ttt_model_name=None, description_ttt_api=None, description_ttt_model_name=None, title_ttt_api=None, title_ttt_model_name=None,
-                 thumbnail_ttt_api=None, thumbnail_model_name=None, title_suffix=None, results_dir=None):
+    def __init__(self, main_ttt_api=None,
+                 main_ttt_model_name=None,
+                 main_ttt_tokens_number=None,
+                 description_ttt_api=None,
+                 description_ttt_model_name=None,
+                 title_ttt_api=None,
+                 title_ttt_model_name=None,
+                 thumbnail_ttt_api=None,
+                 thumbnail_model_name=None,
+                 title_suffix=None,
+                 results_dir=None):
         self.main_ttt_api: str = main_ttt_api
         self.main_ttt_model_name: str = main_ttt_model_name
-        self.main_ttt_tokens_number = None
+        self.main_ttt_tokens_number: int = main_ttt_tokens_number
 
         self.description_ttt_api: str = description_ttt_api
         self.description_ttt_model_name: str = description_ttt_model_name
@@ -34,7 +43,7 @@ class TextTasks:
         self.title, self.description, self.thumbnail_title, self.comment, self.tags = None, None, None, None, None
 
     def create_text(self, prompt, text_type='text') -> Tuple[str, bool]:
-        common_tasks = CommonTasks(prompt=prompt, tokens_number=self.main_ttt_tokens_number)
+        common_tasks = CommonTasks(prompt=prompt, model_name=self.main_ttt_model_name, tokens_number=self.main_ttt_tokens_number)
         self.text_for_voiceover, self.is_ssml = common_tasks.prepare_text_for_voiceover()
         with open(os.path.join(self.results_dir, '1_text_script.txt'), 'w') as f:
             f.write(self.text_for_voiceover)
@@ -56,7 +65,7 @@ class TextTasks:
         self.cleaned_text = re.sub(r'<.*?>', '', text) if '<speak>' in text else text
         if not prompt:
             prompt = f"""
-            Provide json with following data: title up to {100 - len(self.title_suffix) - 1} characters long,  2 to 5 sentences description, 2 to 4 words thumbnail clickbait phrase, comment with question to engage audience, array with 5-10 tags for video seo.
+            Provide json with following data: title up to {100 - len(self.title_suffix) - 1} characters long,  2 to 5 sentences description including at least 20 hashtags in the bottom, 2 to 4 words thumbnail clickbait phrase, comment with question to engage audience, array with 5-10 tags for video seo.
             in the following format:""" + \
                      """{
                          "title": "",

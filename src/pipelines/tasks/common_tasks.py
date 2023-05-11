@@ -30,7 +30,8 @@ class CommonTasks:
             start_end_voice_delay=6,
             single_video_duration=10,
             is_allow_duplicate_clips=False,
-            tokens_number=3700
+            tokens_number=3700,
+            model_name="text-davinci-003"
     ):
         self.start_end_voice_delay = start_end_voice_delay
         if voice_audio_file and audio_output_file:
@@ -47,6 +48,7 @@ class CommonTasks:
         self.result_video_clips = []
         self.is_allow_duplicate_clips = is_allow_duplicate_clips
         self.tokens_number = tokens_number
+        self.model_name = model_name
 
     def prepare_text_for_voiceover(self) -> Tuple[str, bool]:
         is_ssml = False
@@ -56,7 +58,7 @@ class CommonTasks:
                 is_ssml = True
         else:
             if not self.text:
-                gpt_result = ChatGPTTask(self.prompt, self.tokens_number).run().text
+                gpt_result = ChatGPTTask(self.prompt, model_name=self.model_name, tokens_number=self.tokens_number).run().text
             else:
                 gpt_result = self.text
 
