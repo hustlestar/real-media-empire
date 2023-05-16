@@ -4,9 +4,19 @@ import re
 from google.cloud import texttospeech
 from google.cloud.texttospeech_v1 import SsmlVoiceGender, AudioEncoding
 
+from audio.text_to_speech import TextToSpeech
 from config import CONFIG
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CONFIG.get("GOOGLE_TEXT_TO_SPEECH_API_KEY_PATH")
+
+
+class GoogleTextToSpeech(TextToSpeech):
+    def synthesize_ssml(self, ssml=None, output_file=None, voice_language_code='en-US', voice_name='en-US-Wavenet-D', gender=SsmlVoiceGender.MALE):
+        synthesize_ssml(ssml, output_file, voice_language_code, voice_name, gender)
+
+    def synthesize_text(self, text=None, output_file=None, voice_language_code='en-US', voice_name='en-US-Wavenet-D', gender=SsmlVoiceGender.MALE,
+                        audio_config=texttospeech.AudioConfig(audio_encoding=AudioEncoding.MP3)):
+        synthesize_text(text, output_file, voice_language_code, voice_name, gender, audio_config)
 
 
 def synthesize_ssml(ssml=None,
@@ -29,11 +39,10 @@ def synthesize_ssml(ssml=None,
         out.write(response.audio_content)
 
 
-
 def synthesize_text(text=None,
                     output_file=None,
                     voice_language_code='en-US',
-                    voice_name='en-US-Wavenet-D',
+                    voice_name='en-US-Studio-M',
                     gender=SsmlVoiceGender.MALE,
                     audio_config=texttospeech.AudioConfig(audio_encoding=AudioEncoding.MP3)):
     """
@@ -73,7 +82,7 @@ def remove_extra_spaces(text):
 
 
 def extract_only_ssml(text):
-    ssml = re.search(r'<speak>.*</speak>', text).group(0)
+    ssml = re.search(r'<speak.*>.*</speak>', text).group(0)
     return ssml
 
 
@@ -86,11 +95,31 @@ def sample_all_voices(ssml):
 
 
 if __name__ == '__main__':
-    sample_text = ''
-    with open('..\\..\\tmp\\test_text_small.xml', 'r') as f:
-        read = f.read()
+    # sample_text = ''
+    # with open('..\\..\\tmp\\test_text_small.xml', 'r') as f:
+    #     read = f.read()
+    #
+    # ssml_speak = extract_only_ssml(remove_extra_spaces(read))
+    # print(ssml_speak)
+    # list_voices()
+    synthesize_text(
+        "The only way",
+        output_file='../video/1.mp3',
+        voice_name='en-US-Wavenet-J',
+    )
+    synthesize_text(
+        "to do great work",
+        output_file='../video/2.mp3',
+        voice_name='en-US-Wavenet-J',
+    )
+    synthesize_text(
+        "is to love what you do",
+        output_file='../video/3.mp3',
+        voice_name='en-US-Wavenet-J',
+    )
+    synthesize_text(
+        "Steve Jobs",
+        output_file='../video/4.mp3',
+        voice_name='en-US-Wavenet-J',
+    )
 
-    ssml_speak = extract_only_ssml(remove_extra_spaces(read))
-    print(ssml_speak)
-
-    # sample_all_voices(ssml_speak)

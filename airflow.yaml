@@ -1,0 +1,11 @@
+name: airflow
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pip
+  - pip:
+    - apache-airflow
+    - apache-airflow-providers-http
+    - python-telegram-bot

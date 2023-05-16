@@ -1,0 +1,97 @@
+youtube_channel_name: "Century Wisdom Shorts"
+youtube_channel_id: "UCPZrsHvG-XxorsXWtC3i6AA"
+youtube_client_secrets_file: "C:\\tools\\google\\century_wisdom.json"
+youtube_category: 22
+youtube_tags:
+  - motivation
+  - mindfulness
+  - inspiration
+  - success
+  - listenable
+  - shorts
+youtube_title_suffix: " #shorts WISDOM INSPIRATION"
+youtube_privacy_status: 'private' #public
+
+video_download_new: 'false'
+video_orientation: 'portrait' #portrait
+video_width: 1080
+video_height: 1920
+video_transition: ""
+video_transition_duration: 1
+video_start_end_delay: 2
+video_single_video_duration: 30
+
+video_background_presets:
+  - name: free-preset
+    colors: [ ]
+    colors_to_avoid: [ ]
+    topics: [ ]
+    topics_to_avoid: [ 'freight car','garbage truck, dustcart', 'golfcart, golf cart', 'convertible', 'sports car, sport car', 'car wheel', 'minivan', 'trailer truck, tractor trailer, trucking rig, rig, articulated lorry, semi', 'flagpole, flagstaff', 'street sign', 'cab, hack, taxi, taxicab', 'moving van' ]
+#  - name: water-preset
+#    colors: [ ]
+#    colors_to_avoid: [ 'white', 'grey', 'silver', 'beige' ]
+#    topics: [ 'lakeside, lakeshore', 'geyser', 'seashore, coast, seacoast, sea-coast', 'dam, dike, dyke', 'boathouse', 'promontory, headland, head, foreland', 'breakwater, groin, groyne, mole, bulwark, seawall, jetty' ]
+#    topics_to_avoid: [ 'freight car','garbage truck, dustcart', 'golfcart, golf cart', 'convertible', 'sports car, sport car', 'car wheel', 'minivan', 'trailer truck, tractor trailer, trucking rig, rig, articulated lorry, semi', 'flagpole, flagstaff', 'street sign', 'cab, hack, taxi, taxicab', 'moving van' ]
+video_fonts_list:
+  - "THEBOLDFONT"
+  - "LeagueSpartan-ExtraBold"
+  - "RubikMonoOne-Regular"
+video_text_color_list:
+  - "white"
+  - "yellow"
+
+audio_background_dir_path: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
+audio_background_api: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
+audio_background_api_key_or_path: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
+
+main_text_type: 'text'
+main_prompt_topics_file: "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\speakers_list.json"
+main_prompt_narrative_types:
+  - "motivational quote"
+  - "inspiring quote"
+  - "helpful advice"
+  - "wise thought"
+  - "important idea"
+all_extras:
+  quote_sources:
+    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\business_coaches.json"
+    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\motivational_speakers.json"
+main_prompt_number_of_engagement_techniques: 2
+main_prompt_engagement_techniques:
+#  - "Begin story with a captivating opening."
+#  - "Introduce a conflict or tension in the story that creates suspense and keeps the audience engaged."
+  #  - "Add humor if it's appropriate."
+#  - "End story with a satisfying conclusion that leaves the audience feeling fulfilled or emotionally moved."
+main_prompt_template: |
+  [[main_idea]]
+  Provide json having ${n} fields:
+    ${arg1}
+  in the following format:
+  {
+    "${arg2}": ${arg3}
+  }
+  Your response should contain only json.
+main_prompt_number_of_words: 2500
+main_ttt_api: "chat_gpt"
+main_ttt_model_name: "text-davinci-003"
+main_ttt_tokens_number: 3700
+
+description_ttt_api: "chat_gpt"
+description_ttt_model_name: "text-davinci-003"
+
+title_ttt_api: "chat_gpt"
+title_ttt_model_name: "text-davinci-003"
+
+thumbnail_ttt_api: "chat_gpt"
+thumbnail_model_name: "text-davinci-003"
+thumbnail_background_colors:
+  - "navy"
+  - 'green'
+thumbnail_fonts_dir: "E:\\MEDIA_GALLERY\\FONTS\\daily_mindset_shorts"
+
+tts_api: "google_tts"
+tts_type: "text"
+tts_voice_name: "en-US-Neural2-D"
+tts_secondary_voice_name: "en-US-Neural2-D"
+tts_api_key_or_path: "C:\\tools\\google\\credentials_to_google_apis.json"
+voice_over_speed: 0.8

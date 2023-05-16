@@ -1,0 +1,92 @@
+youtube_channel_name: "Daily Mindset"
+youtube_channel_id: "UCPZrsHvG-XxorsXWtC3i6AA"
+youtube_client_secrets_file: "C:\\tools\\google\\daily_mindset.json"
+youtube_category: 22
+youtube_tags:
+  - motivation
+  - mindfulness
+  - inspiration
+  - success
+  - listenable
+youtube_title_suffix: " - #DAILY #MINDSET #MOTIVATION"
+youtube_privacy_status: 'public' #private
+
+video_download_new: 'false'
+video_orientation: 'landscape' #portrait
+video_width: 1920
+video_height: 1080
+video_transition: ""
+video_transition_duration: 1
+video_start_end_delay: 5
+video_single_video_duration: 10
+video_background_presets:
+  - name: mountains-preset
+    colors: [ ]
+    colors_to_avoid: [ 'red', 'pink' ]
+    topics: [ 'alp', 'volcano', 'valley, vale', 'cliff, drop, drop-off', 'promontory, headland, head, foreland' ]
+    topics_to_avoid: [ 'freight car','garbage truck, dustcart', 'golfcart, golf cart', 'convertible', 'sports car, sport car', 'car wheel', 'minivan', 'trailer truck, tractor trailer, trucking rig, rig, articulated lorry, semi', 'flagpole, flagstaff', 'street sign', 'cab, hack, taxi, taxicab', 'moving van' ]
+  - name: forest-preset
+    colors: [ 'green', 'olive', 'mint', 'turquoise', 'teal' ]
+    colors_to_avoid: [ 'red', 'pink', 'navy' ]
+    topics: [ ]
+    topics_to_avoid: [ 'freight car','garbage truck, dustcart', 'golfcart, golf cart', 'convertible', 'sports car, sport car', 'car wheel', 'minivan', 'trailer truck, tractor trailer, trucking rig, rig, articulated lorry, semi', 'flagpole, flagstaff', 'street sign', 'cab, hack, taxi, taxicab', 'moving van' ]
+  - name: water-preset
+    colors: [ ]
+    colors_to_avoid: [ 'red', 'pink' ]
+    topics: [ 'lakeside, lakeshore', 'geyser', 'seashore, coast, seacoast, sea-coast', 'dam, dike, dyke', 'boathouse', 'promontory, headland, head, foreland', 'breakwater, groin, groyne, mole, bulwark, seawall, jetty' ]
+    topics_to_avoid: [ 'freight car','garbage truck, dustcart', 'golfcart, golf cart', 'convertible', 'sports car, sport car', 'car wheel', 'minivan', 'trailer truck, tractor trailer, trucking rig, rig, articulated lorry, semi', 'flagpole, flagstaff', 'street sign', 'cab, hack, taxi, taxicab', 'moving van' ]
+video_fonts_list:
+  - "THEBOLDFONT"
+video_text_color_list:
+  - "white"
+  - "yellow"
+audio_background_dir_path: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
+audio_background_api: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
+audio_background_api_key_or_path: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
+
+main_text_type: 'ssml'
+main_prompt_topics_file: "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\motivation_topics.json"
+main_prompt_narrative_types:
+  - "motivational speech in the third person"
+  - "inspiring talk in the third person"
+#  - "inspiring story in the third person"
+  - "inspiring speech in the third person"
+main_prompt_number_of_engagement_techniques: 2
+main_prompt_engagement_techniques:
+  - "Begin story with a captivating opening."
+  - "Introduce a conflict or tension in the story that creates suspense and keeps the audience engaged."
+  #  - "Add humor if it's appropriate."
+  - "End story with a satisfying conclusion that leaves the audience feeling fulfilled or emotionally moved."
+main_prompt_number_of_words: 5000
+main_prompt_template: |
+  Create {number_of_words} words {narrative_type} for youtube video about {theme} using data and style of {author} and his books. 
+  Provide actionable plan for ideas and main points.
+  {engagement_techniques}
+  Avoid using word I. Be concise and inspiring. {mention_author}
+  Represent your answer as ssml for google text to speech api. 
+  Use 5 seconds breaks between different parts, emphasize important parts by increasing or decreasing pitch. 
+  Set prosody rate to slow.
+  Your answer should contain only xml.
+main_ttt_api: "chat_gpt"
+main_ttt_model_name: "gpt-4"
+main_ttt_tokens_number: 7500
+
+description_ttt_api: "chat_gpt"
+description_ttt_model_name: "text-davinci-003"
+
+title_ttt_api: "chat_gpt"
+title_ttt_model_name: "text-davinci-003"
+
+thumbnail_ttt_api: "chat_gpt"
+thumbnail_model_name: "text-davinci-003"
+thumbnail_background_colors:
+  - "navy"
+  - 'green'
+thumbnail_fonts_dir: "E:\\MEDIA_GALLERY\\FONTS\\daily_mindset"
+
+tts_api: "google_tts"
+tts_type: "ssml"
+tts_voice_name: "en-US-Wavenet-J"
+tts_secondary_voice_name: "en-US-Wavenet-J"
+tts_api_key_or_path: "C:\\tools\\google\\credentials_to_google_apis.json"
+voice_over_speed: 1

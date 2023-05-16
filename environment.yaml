@@ -1,12 +1,34 @@
 name: media-empire
 channels:
   - defaults
+  - conda-forge
 dependencies:
-  - python=3.8.16
+  - python=3.9
   - pip
+#  - pytorch::pytorch
+#  - pytorch::torchvision
+#  - pytorch::pytorch-cuda
   - pip:
+    - transformers
+    - Pillow
+    - numpy
     - moviepy
     - python-dotenv
     - gTTS
     - openai
+    - google_auth_oauthlib
     - google-cloud-texttospeech
+    - google-cloud-speech
+    - google-api-python-client
+    - opencv-python
+#    - cchardet
+    - colorgram.py
+    - accelerate
+    - oauth2client
+    - munch
+    - scipy
+    - zenml
+    - fastapi
+    - opencv
+    - httpx
+    - psycopg2
