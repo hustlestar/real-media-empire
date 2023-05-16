@@ -1,9 +1,8 @@
 import logging
 import os
 import random
-from typing import List
-
 from moviepy.video.io.VideoFileClip import VideoFileClip
+from typing import List, Any
 
 from common.exception import WrongMediaException
 from config import CONFIG
@@ -85,6 +84,14 @@ def prepare_clip(video_dir, is_should_download, topics, orientation, width, heig
     else:
         clip = read_n_video_clips(video_dir, 1)[0]
     return clip
+
+
+def download_new_videos(topic, number, channel) -> List[Any]:
+    task = PexelsDownloadTask(query=topic, number_of_downloads=number, orientation=channel.config.video_orientation, height=channel.config.video_height,
+                              width=channel.config.video_width, )
+    res = task.find_all_matching_videos()
+    task.download_generator(res)
+    return None
 
 
 def read_all_video_clips(path_to_dir, video_format='mp4'):

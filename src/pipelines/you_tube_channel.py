@@ -16,6 +16,8 @@ from social.you_tube import VALID_PRIVACY_STATUSES
 from text.helpers import build_prompt
 from util.time import get_now
 
+PUBLISHED = ".published"
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,7 +25,7 @@ class YouTubeChannel:
     def __init__(self, channel_config_path, execution_date=None, is_recover=False) -> None:
         config: ChannelConfig = read_config(channel_config_path)
         logger.debug(f"Starting with following config:\n{json.dumps(config, indent=4)}")
-        self.config = config
+        self.config: ChannelConfig = config
         neat_chanel_name = str(config.youtube_channel_name).lower().strip().replace(" ", "_")
         self.channel_root_dir = os.path.join(
             CONFIG.get("MEDIA_GALLERY_DIR"),
@@ -154,34 +156,64 @@ class YouTubeChannel:
         thumbnail_url = self.socials_manager.upload_thumbnail_for_youtube(thumbnail_image_path, video_id)
         return video_id, thumbnail_url
 
-    def find_youtube_video(self, execution_date):
-        dir_path = os.path.join(self.channel_root_dir, execution_date)
-        text_script_path = os.path.join(dir_path, f"0_text_script.txt")
+    def find_unpublished_youtube_video(self, execution_date=None):
+        if not execution_date:
+            dirs = os.listdir(self.channel_root_dir)
+            for d in reversed(dirs):
+                if d.isdigit():
+                    execution_date = d
+                    dir_path = os.path.join(self.channel_root_dir, execution_date)
+                    text_script_path = os.path.join(dir_path, f"0_text_script.txt")
 
-        if not os.path.exists(text_script_path):
-            raise Exception(f"Text script not found {text_script_path}")
+                    if not os.path.exists(text_script_path) or os.path.exists(os.path.join(dir_path, PUBLISHED)):
+                        continue
 
-        mp4_files = [f for f in os.listdir(dir_path) if f.endswith(".mp4")]
+                    mp4_files = [f for f in os.listdir(dir_path) if f.endswith(".mp4")]
+                    if len(mp4_files) != 1:
+                        continue
 
-        if len(mp4_files) != 1:
-            raise Exception(f"More than one mp4 file found {mp4_files}")
+                    return self.find_result(dir_path, mp4_files, text_script_path)
+            raise Exception(f"Not found any videos in {self.channel_root_dir}")
+        else:
+            dir_path = os.path.join(self.channel_root_dir, execution_date)
+            text_script_path = os.path.join(dir_path, f"0_text_script.txt")
+
+            if os.path.exists(os.path.join(dir_path, PUBLISHED)):
+                raise Exception(f"Video is already published in {dir_path}")
+
+            if not os.path.exists(text_script_path):
+                raise Exception(f"Text script not found {text_script_path}")
+
+            mp4_files = [f for f in os.listdir(dir_path) if f.endswith(".mp4")]
+
+            if len(mp4_files) != 1:
+                raise Exception(f"More than one mp4 file found {mp4_files}")
+            return self.find_result(dir_path, mp4_files, text_script_path)
+
+    @staticmethod
+    def find_result(dir_path, mp4_files, text_script_path):
         with open(text_script_path, "r") as f:
             text_script = f.read()
+        logger.info(f"Unpublished video found in {dir_path}\n{text_script}")
+        return dir_path, os.path.join(dir_path, mp4_files[0]), text_script
 
-        logger.info(f"Text script found in {dir_path}\n{text_script}")
-        return os.path.join(dir_path, mp4_files[0]), text_script
+    @staticmethod
+    def mark_video_as_published(video_dir):
+        with open(os.path.join(video_dir, PUBLISHED), "w") as f:
+            pass
 
 
 if __name__ == '__main__':
-    channel = YouTubeChannel("D:\\Projects\\media-empire\\jack\\daily_mindset.yaml")
-    prompt = build_prompt(channel.config.main_prompt_template,
-                          channel.config.main_prompt_topics_file,
-                          narrative_types=channel.config.main_prompt_narrative_types,
-                          engagement_techniques=channel.config.main_prompt_engagement_techniques,
-                          )
-    channel.socials_manager.youtube_uploader.authenticate()
-    text_script, is_ssml = channel.create_text_script(prompt)
-    final_video = channel.create_basic_youtube_video(text_script, is_ssml)
-    logger.info(f"Video {final_video} \ntext{text_script}")
-    video_id, thumbnail_url = channel.upload_to_youtube_video_and_thumbnail(final_video, text_script)
-    logger.info(f"Video id {video_id} thumbnail url {thumbnail_url}")
+    channel = YouTubeChannel("G:\OLD_DISK_D_LOL\Projects\media-empire\jack\infinite_quotes_inspiration.yaml")
+    # prompt = build_prompt(channel.config.main_prompt_template,
+    #                       channel.config.main_prompt_topics_file,
+    #                       narrative_types=channel.config.main_prompt_narrative_types,
+    #                       engagement_techniques=channel.config.main_prompt_engagement_techniques,
+    #                       )
+    # channel.socials_manager.youtube_uploader.authenticate()
+    # text_script, is_ssml = channel.create_text_script(prompt)
+    # final_video = channel.create_basic_youtube_video(text_script, is_ssml)
+    # logger.info(f"Video {final_video} \ntext{text_script}")
+    # video_id, thumbnail_url = channel.upload_to_youtube_video_and_thumbnail(final_video, text_script)
+    # logger.info(f"Video id {video_id} thumbnail url {thumbnail_url}")
+    channel.find_unpublished_youtube_video()

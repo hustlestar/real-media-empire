@@ -12,6 +12,7 @@ youtube_tags:
 youtube_title_suffix: " - #QUOTES #INSPIRATION"
 youtube_privacy_status: 'public' #private
 
+video_download_new: 'false'
 video_orientation: 'landscape' #portrait
 video_width: 1920
 video_height: 1080
@@ -37,9 +38,6 @@ main_text_type: 'text'
 main_prompt_topics_file: "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\motivation_topics.json"
 main_prompt_narrative_types:
   - "motivational speech in the third person"
-  - "inspiring talk in the third person"
-  - "inspiring story in the third person"
-  - "inspiring speech in the third person"
 all_extras:
   quote_sources:
     #    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\business_coaches.json"
@@ -47,9 +45,6 @@ all_extras:
 main_prompt_number_of_engagement_techniques: 2
 main_prompt_engagement_techniques:
   - "Begin story with a captivating opening."
-  - "Introduce a conflict or tension in the story that creates suspense and keeps the audience engaged."
-  #  - "Add humor if it's appropriate."
-  - "End story with a satisfying conclusion that leaves the audience feeling fulfilled or emotionally moved."
 main_prompt_template: |
   Create {number_of_words} words {narrative_type} for youtube video about {theme} using data and style of {author} and his books. 
   {engagement_techniques}

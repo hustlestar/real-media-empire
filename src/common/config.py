@@ -25,6 +25,7 @@ class ChannelConfigTemplate:
 
         self.all_extras: Dict[str, Any] = None
 
+        self.video_download_new:  bool = False
         self.video_orientation: str = 'landscape'  # portrait
         self.video_width: int = 1920
         self.video_height: int = 1080

@@ -48,6 +48,7 @@ class CyberVoiceTextToSpeech(TextToSpeech):
     def synthesize_text(self, text=None, output_file=None, voice_language_code=2, voice_name=37, **kwargs):
         synthesize_text(text, output_file, voice_language_code, voice_name)
 
+
 def list_voices(is_print=False):
     url = "https://api.voice.steos.io/v1/get/voices"
     response = httpx.get(url, headers=headers)

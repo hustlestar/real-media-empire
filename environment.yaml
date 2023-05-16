@@ -31,3 +31,4 @@ dependencies:
     - fastapi
     - opencv
     - httpx
+    - psycopg2

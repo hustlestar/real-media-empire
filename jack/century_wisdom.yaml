@@ -12,6 +12,7 @@ youtube_tags:
 youtube_title_suffix: " - WISDOM INSPIRATION"
 youtube_privacy_status: 'public' #public
 
+video_download_new: 'false'
 video_orientation: 'landscape' #portrait
 video_width: 1920
 video_height: 1080

@@ -12,6 +12,7 @@ youtube_tags:
 youtube_title_suffix: " #shorts WISDOM INSPIRATION"
 youtube_privacy_status: 'private' #public
 
+video_download_new: 'false'
 video_orientation: 'portrait' #portrait
 video_width: 1080
 video_height: 1920

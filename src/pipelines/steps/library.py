@@ -3,26 +3,47 @@ import logging
 import os
 import re
 import shutil
-from typing import List, Optional, Tuple
-
 from moviepy.video.compositing.concatenate import concatenate_videoclips
+from typing import List, Optional, Tuple
 from zenml.steps import step, Output
 
 from audio.audio_processor import read_audio_clip
 from common.exception import WrongMediaException
 from config import CONFIG
+from data.dao import add_channel, get_db, is_author_used_in_channel, add_author_to_channel
 from pipelines.params.params_for_pipeline import PipelineParams
 from pipelines.you_tube_channel import YouTubeChannel
 from text import helpers
-from text.helpers import pick_random_from_list, finish_line, TemplateArg
+from text.helpers import pick_random_from_list, finish_line, TemplateArg, DEFAULT_TEMPLATE
 from util.time import get_now
-from video.movie import LineToMp3File, video_with_text, trim_clip_duration, video_with_text_full_sentence, video_with_text_full_sentence_many_clips, \
+from video.movie import LineToMp3File, video_with_text, trim_clip_duration, video_with_text_full_sentence_many_clips, \
     BG_CLIP_STRATEGIES, video_with_quote_and_label, AuthorLabel, save_final_video_file, BIG_PAUSE, ExtraLabel
 from video.utils import is_video_matching, read_n_video_clips, find_matching_video
 from video.video_transitions import first_fade_out_second_fade_in_all
 
 EXTRA_LABLE_COLORS = ['orange1', 'DarkOrange', 'CadetBlue1', 'DeepSkyBlue', 'SkyBlue', 'purple1', 'MediumPurple1', 'SpringGreen2', 'SpringGreen1', 'SeaGreen1', 'green1',
                       'IndianRed1', 'PaleVioletRed1', 'Red1', 'VioletRed1']
+
+VIDEO_BACKGROUND_THEMES = [
+    "Sunrise",
+    "Forest",
+    "Beach",
+    "Cityscape",
+    "Mountains",
+    "Sunset",
+    "Desert",
+    "Ocean",
+    "Meadow",
+    "Galaxy",
+    "Snow",
+    "Rain",
+    "Waterfall",
+    "Jungle",
+    "Clouds",
+    "fireworks",
+    "sexy girl",
+    "woman"
+]
 
 QUOTE_TXT = "1_quote.txt"
 
@@ -106,13 +127,42 @@ def predefined_quote_by_author(params):
     return result
 
 
-def get_single_author(params):
+def get_single_author(params: PipelineParams):
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
-    quote_file = pick_random_from_list(channel.config.all_extras.get("quote_sources"))
-    with open(quote_file) as f:
-        all_authors = json.loads(f.read())
-    single_author = pick_random_from_list(all_authors)
-    return single_author
+    if not params.author:
+        logger.info(f"No selected author, picking one randomly.")
+        quote_file = pick_random_from_list(channel.config.all_extras.get("quote_sources"))
+        with open(quote_file) as f:
+            all_authors = json.loads(f.read())
+        return pick_random_from_list(all_authors)
+    else:
+        return find_selected_author(params)
+
+
+def find_selected_author(params: PipelineParams):
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    logger.info(f"Selected author {params.author}")
+    for quote_file in channel.config.all_extras.get("quote_sources"):
+        with open(quote_file) as f:
+            all_authors = json.loads(f.read())
+            for a in all_authors:
+                if a.get('author') == params.author:
+                    return a
+
+
+def find_unused_author(params: PipelineParams):
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    if not params.author:
+        add_channel(next(get_db()), name=channel.config.youtube_channel_id)
+        logger.info(f"No selected author, picking unused one.")
+        for quote_file in channel.config.all_extras.get("quote_sources"):
+            with open(quote_file) as f:
+                all_authors = json.loads(f.read())
+                for a in all_authors:
+                    if not is_author_used_in_channel(next(get_db()), channel_name=channel.config.youtube_channel_id, author_name=a.get('author')):
+                        return a
+    else:
+        return find_selected_author(params)
 
 
 @step
@@ -162,12 +212,12 @@ def prepare_extra_label(author_funny_facts, author_interesting_facts, author_ins
 
 @step
 def generate_quotes_video(params: PipelineParams) -> Output(video_file_path=str, text_script=str):
-    logger.info(f"Starting generation of new quotes video{params.number_of_videos}")
+    logger.info(f"Starting generation of new QUOTES video{params.number_of_videos}")
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     now = get_now()
     logger.info(f"Starting generation of video at {now}")
     # params = params.copy(update={"execution_date": now})
-    author_dict = get_single_author(params)
+    author_dict = find_unused_author(params)
     logger.info(f"Result author that was chosen\n{author_dict}")
     author_funny_facts = author_dict.get("author_funny_facts")
     author_interesting_facts = author_dict.get("author_interesting_facts")
@@ -222,7 +272,8 @@ def generate_quotes_video(params: PipelineParams) -> Output(video_file_path=str,
         f.write(result_text_script)
     result_video_file_path = build_file_name(author_dict.get("author"), channel, 0, is_swamp=False, params=params)
     save_final_video_file(final_video, result_video_file_path)
-    logger.info("Finished shorts generation")
+    add_author_to_channel(next(get_db()), channel_name=channel.config.youtube_channel_id, author_name=author_dict.get('author'))
+    logger.info("Finished QUOTES generation")
     return result_video_file_path, result_text_script
 
 
@@ -324,6 +375,24 @@ def create_shorts_with_voice(text_lines: List[str], voice_over_files: List[str],
 def shorts_with_voice(params, text_lines, voice_over_files, is_swamp=False):
     from video.utils import find_matching_video
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    background_themes_dict = None
+    if channel.config.video_download_new:
+        prompt_params = {
+            "main_idea": f"For the video with following text script:\n{' '.join(text_lines)}",
+        }
+        args = [
+            TemplateArg(
+                text_definition="json array of strings containing video background themes for the text script. Each theme should be up to 3 words",
+                json_field_name='video_background_themes',
+                value='[]'
+            ),
+        ]
+        background_themes_dict = helpers.create_result_dict_from_prompt_template(
+            DEFAULT_TEMPLATE,
+            args,
+            prompt_params,
+            tokens_number=1000
+        )
     for i in range(len(BG_CLIP_STRATEGIES)):
         try:
             clean_text = re.sub(r"[^a-zA-Z]+", " ", " ".join(text_lines))
@@ -345,15 +414,19 @@ def shorts_with_voice(params, text_lines, voice_over_files, is_swamp=False):
                                 )
             else:
                 for s in BG_CLIP_STRATEGIES:
+                    video_background_themes = background_themes_dict.get('video_background_themes', []) + VIDEO_BACKGROUND_THEMES
+                    is_download_new_video = pick_random_from_list([True, False])
                     video_with_text_full_sentence_many_clips(
                         channel,
                         lines,
-                        result_file=build_file_name(clean_text, channel, i, is_swamp, params, bg_clip_strategy=s),
+                        result_file=build_file_name(clean_text, channel, i, is_swamp, params, bg_clip_strategy=s, background_type='new' if is_download_new_video else 'reuse'),
                         fonts_list=channel.config.video_fonts_list,
                         bg_audio_filename=bg_audio_filename,
                         text_colors=channel.config.video_text_color_list,
                         bg_clip_strategy=s,
-                        single_clip_duration=2
+                        single_clip_duration=2,
+                        video_background_themes=video_background_themes,
+                        is_download_new_video=is_download_new_video
                     )
         except Exception as x:
             logger.error(f"Error while creating video {i}", x)
@@ -361,10 +434,10 @@ def shorts_with_voice(params, text_lines, voice_over_files, is_swamp=False):
     return result_video_filename
 
 
-def build_file_name(clean_text, channel, i, is_swamp, params, bg_clip_strategy=""):
+def build_file_name(clean_text, channel, i, is_swamp, params, bg_clip_strategy="", background_type=''):
     return os.path.join(
         channel.swamp_dir if is_swamp else channel.result_dir,
-        f"{params.execution_date}_{clean_text}_{bg_clip_strategy}_{i}.mp4"
+        f"{params.execution_date}_{clean_text}_{bg_clip_strategy}_{i}_{background_type}.mp4"
     )
 
 
@@ -399,9 +472,15 @@ def upload_video_and_thumbnail_to_youtube(final_video: str, text_script: str, pa
 
 
 @step(enable_cache=False)
-def find_youtube_video(params: PipelineParams) -> Output(video_file_path=str, text_script=str):
+def find_youtube_video(params: PipelineParams) -> Output(video_dir=str, video_file_path=str, text_script=str):
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
-    return channel.find_youtube_video(params.execution_date)
+    return channel.find_unpublished_youtube_video(params.execution_date)
+
+
+@step
+def mark_video_as_published(video_dir: str, video_id: str, params: PipelineParams) -> None:
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    return channel.mark_video_as_published(video_dir)
 
 
 @step

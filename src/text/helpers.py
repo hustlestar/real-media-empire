@@ -9,6 +9,16 @@ from text.chat_gpt import ChatGPTTask, generate_text
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_TEMPLATE = f"""[[main_idea]]
+Provide json having ${{n}} fields:
+${{arg1}} 
+in the following format:
+{{
+    "${{arg2}}": ${{arg3}}
+}}
+Your response should contain only json. Json must be valid.
+"""
+
 
 def extract_json_as_dict(text_with_json):
     first_value = text_with_json.index("{")
@@ -122,17 +132,6 @@ def create_result_dict_from_prompt_template(prompt_template: str, args, params, 
             result_dict = extract_json_as_dict(result_text)
             for arg in args:
                 if arg.json_field_name not in result_dict.keys():
-                    # quote, author = (
-                    #     result_dict["quote"],
-                    #     result_dict["author"],
-                    # )
-                    # with open(os.path.join(results_dir, '1_quotes.json'), 'w') as f:
-                    #     f.write(json.dumps(
-                    #         {
-                    #             "title": quote,
-                    #             "description": author,
-                    #         }, indent=4)
-                    #     )
                     raise Exception(f"ChatGPT response did not include {arg.json_field_name} field in json")
                 return result_dict
         print(f"Invalid ChatGPT response in try {retry_counter}, going on retry")
@@ -145,19 +144,10 @@ def has_json(result_text):
     return '{' in result_text and '}' in result_text
 
 
-quote_template = f"""[[main_idea]]
-Provide json having ${{n}} fields:
-${{arg1}} 
-in the following format:
-{{
-    "${{arg2}}": ${{arg3}}
-}}
-Your response should contain only json. Json must be valid.
-"""
-TemplateArg = namedtuple('QuoteArg', ['text_definition', 'json_field_name', 'value'])
+TemplateArg = namedtuple('TemplateArg', ['text_definition', 'json_field_name', 'value'])
 
 
-def create_prompt_from_template(args: List[TemplateArg], params: Dict[str, str], template_string: str = quote_template):
+def create_prompt_from_template(args: List[TemplateArg], params: Dict[str, str], template_string: str = DEFAULT_TEMPLATE):
     res = template_string
     number_of_fields = str(len(args))
     for i, a in enumerate(args):
@@ -273,7 +263,7 @@ def prepare_all_quotes():
             "main_idea": ""
         }
         authors_dict = create_result_dict_from_prompt_template(
-            quote_template,
+            DEFAULT_TEMPLATE,
             category_args,
             category_params,
             model_name='text-davinci-003',
@@ -309,7 +299,7 @@ def prepare_all_quotes():
                         "quotes": all_authors_and_quotes[a]
                     })
                 else:
-                    quotes_by_author = create_result_dict_from_prompt_template(quote_template,
+                    quotes_by_author = create_result_dict_from_prompt_template(DEFAULT_TEMPLATE,
                                                                                args,
                                                                                params,
                                                                                model_name='text-davinci-003',
@@ -354,7 +344,7 @@ def prepare_all_authors():
             "main_idea": ""
         }
         authors_dict = create_result_dict_from_prompt_template(
-            quote_template,
+            DEFAULT_TEMPLATE,
             category_args,
             category_params,
             model_name='text-davinci-003',
@@ -390,7 +380,7 @@ def prepare_all_authors():
                         "quotes": all_authors_and_quotes[a]
                     })
                 else:
-                    quotes_by_author = create_result_dict_from_prompt_template(quote_template,
+                    quotes_by_author = create_result_dict_from_prompt_template(DEFAULT_TEMPLATE,
                                                                                args,
                                                                                params,
                                                                                model_name='text-davinci-003',

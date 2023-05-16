@@ -1,3 +1,7 @@
+import random
+
+from typing import List, Tuple
+
 import logging
 import math
 import os
@@ -5,10 +9,12 @@ import os
 import requests
 
 from config import CONFIG
+from text.helpers import pick_random_from_list
 
 PEXELS_API_KEY = CONFIG.get("PEXEL_API_KEY")
 
 logger = logging.getLogger(__name__)
+
 
 def search_photos(query, orientation=None, size=None, color=None, page=1):
     """
@@ -83,7 +89,7 @@ def read_page(page_url='https://api.pexels.com/videos/search', params=None):
     return response_json['videos'] if 'videos' in page_url else response_json['photos'], response_json.get('next_page'), response_json['total_results']
 
 
-def download(url, result_filename, download_folder, file_format='.mp4'):
+def download(url, result_filename, download_folder, file_format='.mp4', on_exists_filename=False):
     """
     Download a video from the specified URL and save it to the specified folder.
 
@@ -103,7 +109,7 @@ def download(url, result_filename, download_folder, file_format='.mp4'):
 
     filename = os.path.join(download_folder, f"{result_filename}{file_format}")
     if os.path.exists(filename):
-        return False
+        return False if not on_exists_filename else filename
     with open(filename, 'wb') as f:
         for chunk in response.iter_content(chunk_size=8192):
             f.write(chunk)
@@ -116,13 +122,13 @@ class PexelsDownloadTask:
             query,
             download_dir=CONFIG.get('DOWNLOAD_DIR'),
             orientation='landscape',
-            size='small',
+            size=None,
             number_of_downloads=3,
             height=1080,
             width=1920,
             is_video_download=True,
             width_to_height_ratio=16 / 9,
-            photo_size='original'  # 'original', 'large2x', 'large', 'medium', 'small', 'tiny'
+            photo_size='original',  # 'original', 'large2x', 'large', 'medium', 'small', 'tiny'
     ):
         self.query = query
         self.is_video_download = is_video_download
@@ -141,9 +147,10 @@ class PexelsDownloadTask:
         self.downloaded_files = []
         self.width_to_height_ratio_lower, self.width_to_height_ratio_higher = round_down_up(width_to_height_ratio)
         self.photo_size = photo_size
+        self.appropriate_videos = []
 
     def run(self):
-        print(f"Starting download task for query {self.query}, number of downloads is set to {self.number_of_downloads}")
+        logger.info(f"Starting download task for query {self.query}, number of downloads is set to {self.number_of_downloads}")
         self.download_video()
         self.download_photo()
         return self
@@ -151,7 +158,7 @@ class PexelsDownloadTask:
     def download_photo(self):
         if not self.is_video_download:
             photos, next_page, total_results_number = search_photos(self.query, self.orientation, self.size)
-            print(f"Starting download task, found {total_results_number} results")
+            logger.info(f"Starting download task, found {total_results_number} results")
             if self.number_of_downloads and photos:
                 while True:
                     try:
@@ -159,10 +166,10 @@ class PexelsDownloadTask:
                         self.processed_downloads = self.processed_downloads + 1
                     except:
                         photo = None
-                        print(f"Processed all photos on page {self.current_page_number}, going to next page {next_page}")
+                        logger.info(f"Processed all photos on page {self.current_page_number}, going to next page {next_page}")
                         self.current_page_number = self.current_page_number + 1
                     if self.completed_downloads >= self.number_of_downloads:
-                        print("Successfully finished running of download task")
+                        logger.info("Successfully finished running of download task")
                         break
                     if photo:
                         if photo.get('height') >= self.height and photo.get('width') >= self.width:
@@ -171,27 +178,27 @@ class PexelsDownloadTask:
                             if photo_files and ratio >= self.width_to_height_ratio_lower and ratio <= self.width_to_height_ratio_higher:
                                 photo_url = photo_files.get(self.photo_size)
                                 result_filename = photo.get('id')
-                                print(f"Downloading photo with id {result_filename}")
+                                logger.info(f"Downloading photo with id {result_filename}")
                                 downloaded_file = download(photo_url, result_filename, self.download_dir, file_format='.jpg')
                                 if downloaded_file:
                                     self.completed_downloads = self.completed_downloads + 1
                                     self.downloaded_files.append(downloaded_file)
                         else:
-                            print(f"Required width to height is not found for photo")
+                            logger.info(f"Required width to height is not found for photo")
                     elif self.processed_downloads < total_results_number and next_page:
                         photos, next_page, _ = read_page(next_page)
                     else:
-                        print("Finished")
+                        logger.info("Finished")
                         break
 
             else:
-                print(f"Found {total_results_number} results matching your query: "
+                logger.info(f"Found {total_results_number} results matching your query: "
                       f"{self.query}, {self.orientation}, {self.size} and desired amount of downloads {self.number_of_downloads}")
 
     def download_video(self):
         if self.is_video_download:
             videos, next_page, total_results_number = search_videos(self.query, self.orientation, self.size)
-            print(f"Starting download task, found {total_results_number} results")
+            logger.info(f"Starting download task, found {total_results_number} results")
             if self.number_of_downloads and videos:
                 while True:
                     try:
@@ -199,10 +206,10 @@ class PexelsDownloadTask:
                         self.processed_downloads = self.processed_downloads + 1
                     except:
                         video = None
-                        print(f"Processed all videos on page {self.current_page_number}, going to next page {next_page}")
+                        logger.info(f"Processed all videos on page {self.current_page_number}, going to next page {next_page}")
                         self.current_page_number = self.current_page_number + 1
                     if self.completed_downloads >= self.number_of_downloads:
-                        print("Successfully finished running of download task")
+                        logger.info("Successfully finished running of download task")
                         break
                     if video:
                         video_files = list(filter(lambda x: x.get('height') == self.height and x.get('width') == self.width, video['video_files']))
@@ -211,23 +218,55 @@ class PexelsDownloadTask:
                             file_type = video_files[0]['file_type']
                             result_filename = video_files[0]['id']
                             if 'mp4' in file_type:
-                                print(f"Downloading video with id {result_filename}")
+                                logger.info(f"Downloading video with id {result_filename}")
                                 downloaded_file = download(video_url, result_filename, self.download_dir)
                                 if downloaded_file:
                                     self.completed_downloads = self.completed_downloads + 1
                                     self.downloaded_files.append(downloaded_file)
                             else:
-                                print(f"Video {result_filename} is not mp4")
+                                logger.info(f"Video {result_filename} is not mp4")
                         else:
-                            print(f"Required resolution is not found for video")
+                            logger.info(f"Required resolution is not found for video")
                     elif self.processed_downloads < total_results_number and next_page:
                         videos, next_page, _ = read_page(next_page)
                     else:
                         break
 
             else:
-                print(f"Found {total_results_number} results matching your query: "
+                logger.info(f"Found {total_results_number} results matching your query: "
                       f"{self.query}, {self.orientation}, {self.size} and desired amount of downloads {self.number_of_downloads}")
+
+    def find_all_matching_videos(self):
+        videos, next_page, total_results_number = search_videos(self.query, self.orientation, self.size)
+        logger.info(f"Found {total_results_number} results matching your query: {self.query}, {self.orientation}, {self.size}")
+        while next_page:
+            new_videos, next_page, _ = read_page(next_page)
+            videos.extend(new_videos)
+
+        for f in videos:
+            video_files = list(filter(lambda x: x.get('height') == self.height and x.get('width') == self.width, f['video_files']))
+            if video_files:
+                video_url = video_files[0]['link']
+                file_type = video_files[0]['file_type']
+                result_filename = video_files[0]['id']
+                if 'mp4' in file_type:
+                    self.appropriate_videos.append((video_url, result_filename))
+        logger.info(f"Found {len(self.appropriate_videos)} videos with required resolution and orientation")
+        return self.appropriate_videos
+
+    def download_generator(self, download_queue: List[Tuple[str, str, str]]):
+        """
+        A generator that yields the results of the download_queue.
+        """
+        while True:
+            next_index = random.randint(0, len(download_queue) - 1)
+            try:
+                next_download = download_queue.pop(next_index)
+            except:
+                raise StopIteration("No more items in the download queue")
+            download_result = download(next_download[0], next_download[1], self.download_dir, on_exists_filename=True)
+            if download_result:
+                yield download_result
 
 
 if __name__ == '__main__':
@@ -235,7 +274,9 @@ if __name__ == '__main__':
     orientation = 'portrait'
     # 'Enter a size (small, medium, large, or leave blank): '
     size = 'small'
-
+    task = PexelsDownloadTask(query="thunder storm", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=5000)
+    videos = task.find_all_matching_videos()
+    logger.info(next(task.download_generator(videos)))
     # PexelsDownloadTask(
     #     query="mountain range",
     #     orientation='landscape', height=1920, width=1080,
@@ -266,14 +307,14 @@ if __name__ == '__main__':
     #                    width=1080,
     #                    orientation='portrait',
     #                    number_of_downloads=10000).run()
-    PexelsDownloadTask(query="waterfall",
-                       download_dir=CONFIG.get('DOWNLOAD_DIR'),
-                       size='medium',
-                       height=1920,
-                       width=1080,
-                       orientation='portrait',
-                       number_of_downloads=5000).run()
-    PexelsDownloadTask(query="waterfall", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=5000).run()
+    # PexelsDownloadTask(query="waterfall",
+    #                    download_dir=CONFIG.get('DOWNLOAD_DIR'),
+    #                    size='medium',
+    #                    height=1920,
+    #                    width=1080,
+    #                    orientation='portrait',
+    #                    number_of_downloads=5000).run()
+    # PexelsDownloadTask(query="waterfall", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=5000).run()
     # PexelsDownloadTask(query="vibrant sunset", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
     # PexelsDownloadTask(query="winding road", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
     # PexelsDownloadTask(query="long flight of stairs", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()

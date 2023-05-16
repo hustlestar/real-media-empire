@@ -1,20 +1,21 @@
+from collections import namedtuple
+
 import logging
 import math
+import moviepy.config as cfg
 import random
 import textwrap
-from collections import namedtuple
-from typing import List, NamedTuple
-
-import moviepy.config as cfg
 from colorama import Fore
 from moviepy.editor import *
 from moviepy.editor import VideoFileClip
 from moviepy.video.VideoClip import TextClip
+from typing import List, NamedTuple
 
 from audio.audio_processor import read_audio_clip
 from config import CONFIG
 from text.helpers import pick_random_from_list
-from video.utils import find_matching_video
+from video.downloader import PexelsDownloadTask
+from video.utils import find_matching_video, read_video_clip
 
 BIG_PAUSE = 4
 
@@ -232,7 +233,7 @@ def video_with_quote_and_label(
     bg_video = bg_video.fx(darken)
 
     logger.info(f"Font size {font_size}")
-    audio = read_audio_clip(line_to_voice.audio_file).fx(afx.audio_fadeout, 0.5)#.fx(vfx.speedx, 0.95)
+    audio = read_audio_clip(line_to_voice.audio_file).fx(afx.audio_fadeout, 0.5)  # .fx(vfx.speedx, 0.95)
 
     audio_clips.append(audio)
     duration = audio.duration + additional_pause
@@ -370,7 +371,9 @@ def video_with_text_full_sentence_many_clips(
         line_width=17,
         font_size=90,
         bg_clip_strategy=BG_CLIP_CHANGE_EVERY_N_SECONDS,
-        single_clip_duration=2
+        single_clip_duration=2,
+        video_background_themes: List[str] = None,
+        is_download_new_video=False
 ):
     logger.info(f"Starting clip generation with bg clip {bg_clip_strategy}")
     text_color = pick_random_from_list(text_colors)
@@ -386,6 +389,13 @@ def video_with_text_full_sentence_many_clips(
     previous_end = 0
 
     previous_batch_end = 0
+    if is_download_new_video:
+        theme_for_the_background_videos = pick_random_from_list(video_background_themes)
+        logger.info(f"Selected following video background theme {theme_for_the_background_videos}")
+        task = PexelsDownloadTask(query=theme_for_the_background_videos,
+                                  orientation=channel.config.video_orientation, height=channel.config.video_height, width=channel.config.video_width, )
+        res = task.find_all_matching_videos()
+        thematic_download_generator = task.download_generator(res)
     for i, line_and_audio in enumerate(line_to_voice_list):
         audio = read_audio_clip(line_and_audio.audio_file)
         audio = audio.set_start(previous_end)
@@ -405,7 +415,7 @@ def video_with_text_full_sentence_many_clips(
             text_clips.append(txt_clip)
 
             if bg_clip_strategy == BG_CLIP_CHANGE_PER_LINE:
-                video = find_matching_video(channel, single_duration)
+                video = find_matching_video(channel, single_duration) if not is_download_new_video else read_video_clip(next(thematic_download_generator))
                 video = video.set_duration(single_duration)
                 video = video.set_start(previous_end)
                 logger.info(Fore.RED + f"{bg_clip_strategy}: Adding video to bg_clips starting at {previous_end}, with duration of {single_duration}")
@@ -415,7 +425,7 @@ def video_with_text_full_sentence_many_clips(
 
             if bg_clip_strategy == BG_CLIP_CHANGE_PER_SENTENCE and j == len(text_lines) - 1:
                 required_duration = previous_end - previous_batch_end
-                video = find_matching_video(channel, required_duration)
+                video = find_matching_video(channel, required_duration) if not is_download_new_video else read_video_clip(next(thematic_download_generator))
                 video = video.set_start(previous_batch_end)
                 video = video.set_duration(required_duration)
                 logger.info(Fore.GREEN + f"{bg_clip_strategy}: Adding video to bg_clips starting at {required_duration}, with duration of {required_duration}")
@@ -430,7 +440,7 @@ def video_with_text_full_sentence_many_clips(
     previous_end = 0
     if bg_clip_strategy == BG_CLIP_CHANGE_EVERY_N_SECONDS:
         while previous_end < final_duration:
-            video = find_matching_video(channel, single_clip_duration)
+            video = find_matching_video(channel, single_clip_duration) if not is_download_new_video else read_video_clip(next(thematic_download_generator))
             video = video.set_start(previous_end)
             video = video.set_duration(single_clip_duration)
             logger.info(Fore.BLUE + f"{bg_clip_strategy}: Adding video to bg_clips starting at {previous_end}, with duration of {single_clip_duration}")
@@ -523,7 +533,7 @@ def music_video(
 
 
 if __name__ == '__main__':
-    # for f in TextClip.list('font'):
-    #     logger.info(f)
-    for c in TextClip.list('color'):
-        logger.info(c)
+    for f in TextClip.list('font'):
+        logger.info(f)
+    # for c in TextClip.list('color'):
+    #     logger.info(c)

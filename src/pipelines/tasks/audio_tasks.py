@@ -9,12 +9,13 @@ from google.cloud.texttospeech_v1 import AudioEncoding
 from moviepy.editor import *
 from moviepy.video.fx.speedx import speedx
 
-from audio import google_tts, cyber_voice_tts
+from audio import google_tts, cyber_voice_tts, xi_labs_tts
 from audio.text_to_speech import TextToSpeech
 
 TTS_APIS: Dict[str, TextToSpeech] = {
     'google_tts': google_tts.GoogleTextToSpeech(),
-    'cyber_voice_tts': cyber_voice_tts.CyberVoiceTextToSpeech()
+    'cyber_voice_tts': cyber_voice_tts.CyberVoiceTextToSpeech(),
+    'xi_labs_tts': xi_labs_tts.ElevenLabsTextToSpeech(),
 }
 
 logger = logging.getLogger(__name__)

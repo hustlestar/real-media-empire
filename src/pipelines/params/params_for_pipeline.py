@@ -12,6 +12,7 @@ class PipelineParams(BaseParameters):
     execution_date: str = None
     number_of_videos: int = None
     is_split_quote: bool = False
+    author: str = None
 
 
 def prepare_and_get_pipeline_params(click_ctx, _pipeline_params_class: Callable):

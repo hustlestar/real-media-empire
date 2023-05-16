@@ -12,6 +12,7 @@ youtube_tags:
 youtube_title_suffix: " #shorts #DAILY #MINDSET #motivation"
 youtube_privacy_status: 'public' #public
 
+video_download_new: 'true'
 video_orientation: 'portrait' #portrait
 video_width: 1080
 video_height: 1920

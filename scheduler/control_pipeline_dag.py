@@ -12,7 +12,7 @@ TELEGRAM_API_TOKEN = '1439670844:AAFejYbp5TSMcuWMW_TxUDSKiho1Ht7gc7w'
 CHAT_IDS = ['66395090']
 
 
-def call_api_and_check_status(cmd=None, ts=None, msg=None, timeout=60 * 60):
+def call_api_and_check_status(cmd=None, ts=None, msg=None, timeout=1.5 * 60 * 60):
     # Replace with your REST API URL
     api_url = 'http://winhost:10101/commands'
 
@@ -42,7 +42,7 @@ def call_api_and_check_status(cmd=None, ts=None, msg=None, timeout=60 * 60):
             stdout, stderr = response_json.get('stdout'), response_json.get('stderr')
             elapsed_time = time.time() - start_time
 
-            if status in ('success'):
+            if status in 'success':
                 break
             elif status in ('failed', 'error'):
                 raise Exception(f"Command failed with status: {status}")
@@ -57,7 +57,7 @@ def call_api_and_check_status(cmd=None, ts=None, msg=None, timeout=60 * 60):
         print(x)
 
     try:
-        bot_message = prepare_msg(msg, status, stderr=stderr)
+        bot_message = prepare_msg(msg, status, stderr=stderr, command_id=response_json.get('command_id'))
         asyncio.run(send_telegram_message(bot_message))
     except Exception as x:
         print(x)
@@ -67,11 +67,12 @@ def call_api_and_check_status(cmd=None, ts=None, msg=None, timeout=60 * 60):
         raise Exception(f"Failed to run command!")
 
 
-def prepare_msg(msg, status, stdout=None, stderr=None):
+def prepare_msg(msg, status, stdout=None, stderr=None, command_id=None):
     if status != 'success':
-        message = f"{msg}: {status}\nstdout:\n{stdout[-2000:] if stdout else ''}\nstderr:\n{stderr[-2000:] if stderr else ''}"
+        message = f"{msg}: #{status} \U0001F534\n" \
+                  f"Command ID {command_id} \nstdout:\n{stdout[-2000:] if stdout else ''}\nstderr:\n{stderr[-2000:] if stderr else ''}"
     else:
-        message = f"{msg}: {status}"
+        message = f"{msg}: {status} \U0001F7E2"
     return message
 
 
@@ -122,23 +123,34 @@ class ChannelDAGConfig:
 
 dag_configs = [
     ChannelDAGConfig(
+        dag_id='infinite_quotes_inspiration__generation_test',
+        schedule_interval=None,
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\quotes_generate.py"'
+            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration_v2.yaml"'
+            ' --execution_date [ym_ts]'
+            ' --author "{{ dag_run.conf["author"] }}"'
+        ,
+        custom_message='Infinite Quotes Inspiration #IQI #QUOTES_VIDEO_GENERATE pipeline finished with status: ',
+        timeout=7 * 60 * 60
+    ),
+    ChannelDAGConfig(
         dag_id='infinite_quotes_inspiration__generate',
         schedule_interval='0 2 * * *',
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\quotes_generate.py"'
-            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration.yaml"'
+            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration_v2.yaml"'
             ' --execution_date [ym_ts]',
-        custom_message='Infinite Quotes Inspiration #QUOTES_VIDEO_GENERATE pipeline finished with status: ',
-        timeout=25200
+        custom_message='Infinite Quotes Inspiration #IQI #QUOTES_VIDEO_GENERATE pipeline finished with status: ',
+        timeout=7 * 60 * 60
     ),
     ChannelDAGConfig(
         dag_id='infinite_quotes_inspiration__publish',
         schedule_interval='0 13 * * *',
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\publish_pipeline.py"'
-            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration.yaml"'
-            ' --execution_date [ym_ts]',
-        custom_message='Infinite Quotes Inspiration #QUOTES_PUBLISH pipeline finished with status: '
+            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration.yaml"',
+        custom_message='Infinite Quotes Inspiration #IQI #QUOTES_PUBLISH pipeline finished with status: '
     ),
     ChannelDAGConfig(
         dag_id='daily_mindset__video',
@@ -147,7 +159,8 @@ dag_configs = [
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\basic_you_tube_pipeline.py"'
             ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\daily_mindset.yaml"'
             ' --execution_date [ym_ts]',
-        custom_message='Daily Mindset #BASIC_VIDEO pipeline finished with status: '
+        custom_message='Daily Mindset #DM #BASIC_VIDEO pipeline finished with status: ',
+        timeout=2 * 60 * 60
     ),
     ChannelDAGConfig(
         dag_id='century_wisdom__video',
@@ -156,7 +169,8 @@ dag_configs = [
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\basic_you_tube_pipeline.py"'
             ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\century_wisdom.yaml"'
             ' --execution_date [ym_ts]',
-        custom_message='Century Wisdom #BASIC_VIDEO pipeline finished with status: '
+        custom_message='Century Wisdom #CW #BASIC_VIDEO pipeline finished with status: ',
+        timeout=2 * 60 * 60
     ),
     ChannelDAGConfig(
         dag_id='daily_mindset__shorts_generate',
@@ -165,8 +179,8 @@ dag_configs = [
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\shorts_generate.py"'
             ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\daily_mindset_shorts.yaml"'
             ' --number_of_videos 32',
-        custom_message='Daily Mindset #SHORTS_SWAMP pipeline finished with status: ',
-        timeout=25200
+        custom_message='Daily Mindset #DM #SHORTS_SWAMP pipeline finished with status: ',
+        timeout=7 * 60 * 60
     ),
     ChannelDAGConfig(
         dag_id='daily_mindset__shorts_publish',
@@ -174,7 +188,7 @@ dag_configs = [
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\shorts_publish.py"'
             ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\daily_mindset_shorts.yaml"',
-        custom_message='Daily Mindset #SHORTS_PUBLISH pipeline finished with status: '
+        custom_message='Daily Mindset #DM #SHORTS_PUBLISH pipeline finished with status: '
     ),
 ]
 
