@@ -10,7 +10,8 @@ youtube_tags:
   - quotes
   - quote
 youtube_title_suffix: " - #QUOTES #INSPIRATION"
-youtube_privacy_status: 'public' #private
+youtube_privacy_status: 'private' #private
+language: 'english'
 
 video_download_new: 'false'
 video_orientation: 'landscape' #portrait

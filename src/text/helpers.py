@@ -118,11 +118,7 @@ def create_thoughts_list(topic="from Michael Hyatt's Your Best Year Ever book", 
     raise Exception("Failed to create required json using ChatGPT")
 
 
-def chatgpt_answer_as_a_dict(template, arguments: dict):
-    pass
-
-
-def create_result_dict_from_prompt_template(prompt_template: str, args, params, model_name='gpt-3.5-turbo', results_dir=None, tokens_number=500) -> Dict[str, Any]:
+def create_result_dict_from_prompt_template(prompt_template: str, args, params, model_name='gpt-3.5-turbo', results_dir=None, tokens_number=700) -> Dict[str, Any]:
     prompt = create_prompt_from_template(args, params, prompt_template)
     retry_counter = 0
     while retry_counter < 5:

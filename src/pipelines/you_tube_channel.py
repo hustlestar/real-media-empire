@@ -138,7 +138,7 @@ class YouTubeChannel:
         return self.image_manager.create_thumbnail(title)
 
     def create_title_description_thumbnail_title(self, text, prompt=None) -> Tuple[str, str, str, str, List[str]]:
-        return self.text_manager.create_title_description_thumbnail_title(text, prompt=prompt)
+        return self.text_manager.create_title_description_thumbnail_title(text, prompt=prompt, language=self.config.language)
 
     def create_basic_youtube_video(self, text_script, is_ssml) -> str:
         voice_over_audio_clip = self.create_audio_voice_over(text_script, is_ssml)

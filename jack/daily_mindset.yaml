@@ -10,6 +10,7 @@ youtube_tags:
   - listenable
 youtube_title_suffix: " - #DAILY #MINDSET #MOTIVATION"
 youtube_privacy_status: 'public' #private
+language: 'english'
 
 video_download_new: 'false'
 video_orientation: 'landscape' #portrait

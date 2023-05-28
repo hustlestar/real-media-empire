@@ -7,6 +7,8 @@ from pipelines.tasks.common_tasks import CommonTasks
 from text.chat_gpt import ChatGPTTask
 from text.helpers import extract_json_as_dict, has_json
 
+ENGLISH = 'english'
+
 
 class TextTasks:
     def __init__(self, main_ttt_api=None,
@@ -60,22 +62,26 @@ class TextTasks:
     def create_thumbnail_title(self, text, prompt=None):
         pass
 
-    def create_title_description_thumbnail_title(self, text, prompt=None) -> Tuple[str, str, str, str, List[str]]:
-        pass
+    def create_title_description_thumbnail_title(self, text, prompt=None, language=ENGLISH) -> Tuple[str, str, str, str, List[str]]:
         self.cleaned_text = re.sub(r'<.*?>', '', text) if '<speak>' in text else text
+
+        lang_str = f', values should all be in {language} language' if language and language != ENGLISH else ''
         if not prompt:
             prompt = f"""
-            Provide json with following data: title up to {100 - len(self.title_suffix) - 1} characters long,  2 to 5 sentences description including at least 20 hashtags in the bottom, 2 to 4 words thumbnail clickbait phrase, comment with question to engage audience, array with 5-10 tags for video seo.
-            in the following format:""" + \
-                     """{
-                         "title": "",
-                         "description_from_2_to_5_sentences": "",
-                         "thumbnail_from_2_to_4_words_clickbait_phrase": "",
-                         "question_comment": "",
-                         "tags": []
-                     }
-                     Your response should contain only json.
-                     for the following video script:\n""" + self.cleaned_text
+Provide json with following data: title up to {100 - len(self.title_suffix) - 1} characters long, 
+3 to 7 sentences description including at least 20 hashtags in the bottom, 
+2 to 4 words thumbnail clickbait phrase, comment with question to engage audience,
+array with 5-10 tags for video seo{lang_str}.
+In the following format:""" + \
+                """{
+ "title": "",
+ "description_from_3_to_7_sentences": "",
+ "thumbnail_from_2_to_4_words_clickbait_phrase": "",
+ "question_comment": "",
+ "tags": []
+}
+Your response should contain only json.
+for the following video script:\n""" + self.cleaned_text
             retry_counter = 0
             while retry_counter < 5:
                 result_text = ChatGPTTask(prompt=prompt, tokens_number=500).run().text
@@ -83,12 +89,12 @@ class TextTasks:
                 if has_json(result_text):
                     result_dict = extract_json_as_dict(result_text)
                     if ("title" in result_dict.keys()
-                            and "description_from_2_to_5_sentences" in result_dict.keys()
+                            and "description_from_3_to_7_sentences" in result_dict.keys()
                             and "thumbnail_from_2_to_4_words_clickbait_phrase" in result_dict.keys()
                     ):
                         self.title, self.description, self.thumbnail_title, self.comment, self.tags = (
                             result_dict["title"],
-                            result_dict["description_from_2_to_5_sentences"],
+                            result_dict["description_from_3_to_7_sentences"],
                             result_dict["thumbnail_from_2_to_4_words_clickbait_phrase"],
                             result_dict["question_comment"],
                             result_dict["tags"],

@@ -9,8 +9,9 @@ youtube_tags:
   - quotes
   - success
   - listenable
-youtube_title_suffix: " - WISDOM INSPIRATION"
+youtube_title_suffix: " - #WISDOM #INSPIRATION"
 youtube_privacy_status: 'public' #public
+language: 'english'
 
 video_download_new: 'false'
 video_orientation: 'landscape' #portrait

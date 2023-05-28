@@ -146,10 +146,10 @@ dag_configs = [
     ),
     ChannelDAGConfig(
         dag_id='infinite_quotes_inspiration__publish',
-        schedule_interval='0 13 * * *',
+        schedule_interval='0 11 * * *',
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\publish_pipeline.py"'
-            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration.yaml"',
+            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration_v2.yaml"',
         custom_message='Infinite Quotes Inspiration #IQI #QUOTES_PUBLISH pipeline finished with status: '
     ),
     ChannelDAGConfig(

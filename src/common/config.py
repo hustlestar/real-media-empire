@@ -22,6 +22,7 @@ class ChannelConfigTemplate:
         self.youtube_tags: List[str] = None
         self.youtube_title_suffix: str = None
         self.youtube_privacy_status: str = None
+        self.language: str = 'en'
 
         self.all_extras: Dict[str, Any] = None
 
@@ -68,6 +69,7 @@ class ChannelConfigTemplate:
         self.tts_voice_name: Union[str, int] = None
         self.tts_secondary_voice_name: Union[str, int] = None
         self.tts_api_key_or_path: str = None
+        self.tts_model: str = None
         self.voice_over_speed: float = None
 
 

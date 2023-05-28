@@ -6,7 +6,7 @@ from config import CONFIG
 ELEVEN_LABS_API_KEY = CONFIG.get("ELEVEN_LABS_API_KEY")
 
 
-def synthesize_text(text, output_file, voice_language_code, voice_name, model_id="eleven_monolingual_v1"):
+def synthesize_text(text, output_file, voice_language_code, voice_name, model_id="eleven_monolingual_v1", **kwargs):
     CHUNK_SIZE = 1024
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_name}"
 

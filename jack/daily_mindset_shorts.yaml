@@ -11,6 +11,7 @@ youtube_tags:
   - shorts
 youtube_title_suffix: " #shorts #DAILY #MINDSET #motivation"
 youtube_privacy_status: 'public' #public
+language: 'english'
 
 video_download_new: 'true'
 video_orientation: 'portrait' #portrait

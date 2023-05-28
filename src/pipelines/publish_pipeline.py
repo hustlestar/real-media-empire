@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 @pipeline(enable_cache=True)
 def safe_simple_video_pipeline(
         find_youtube_video,
-        create_title_description_thumbnail_title,
+        create_video_meta,
         upload_video_to_youtube_with_tags,
         mark_video_as_published,
         create_thumbnail,
@@ -22,7 +22,7 @@ def safe_simple_video_pipeline(
         add_comment_to_youtube
 ):
     video_dir, final_video, text_script = find_youtube_video()
-    title, description, thumbnail_title, comment, tags = create_title_description_thumbnail_title(text_script)
+    title, description, thumbnail_title, comment, tags = create_video_meta(text_script)
     video_id = upload_video_to_youtube_with_tags(final_video, title, description, tags)
     mark_video_as_published(video_dir, video_id)
     thumbnail_image_path = create_thumbnail(thumbnail_title)
