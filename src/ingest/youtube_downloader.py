@@ -19,6 +19,6 @@ def download_playlist(playlist_link: str):
 # Usage
 # Replace the links with the actual YouTube video or playlist URL
 #download_video("https://www.youtube.com/watch?v=rh6Cj0CW4Bo")
-download_playlist("https://www.youtube.com/watch?v=sQrYoFVCiQM&list=PLotrUJhmcK7RJawRXoib4MLGBk4fTI8Uo")
-download_playlist("https://www.youtube.com/watch?v=_SZuUDKjnCg&list=PLMMiIzbQ5LUzVCwsoLlsCFvZh9UENgbPH")
-download_playlist("https://www.youtube.com/watch?v=YnjPDKPaeIc&list=PL5hws9jJULo2kfftxkBeyQCz2mPbJ2yjy")
+# download_playlist("https://www.youtube.com/watch?v=sQrYoFVCiQM&list=PLotrUJhmcK7RJawRXoib4MLGBk4fTI8Uo")
+# download_playlist("https://www.youtube.com/watch?v=_SZuUDKjnCg&list=PLMMiIzbQ5LUzVCwsoLlsCFvZh9UENgbPH")
+# download_playlist("https://www.youtube.com/watch?v=YnjPDKPaeIc&list=PL5hws9jJULo2kfftxkBeyQCz2mPbJ2yjy")
