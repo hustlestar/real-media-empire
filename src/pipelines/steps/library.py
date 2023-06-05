@@ -17,7 +17,7 @@ from text import helpers
 from text.helpers import pick_random_from_list, finish_line, TemplateArg, DEFAULT_TEMPLATE
 from util.time import get_now
 from video.movie import LineToMp3File, video_with_text, trim_clip_duration, video_with_text_full_sentence_many_clips, \
-    BG_CLIP_STRATEGIES, video_with_quote_and_label, AuthorLabel, save_final_video_file, BIG_PAUSE, ExtraLabel
+    BG_CLIP_STRATEGIES, video_with_quote_and_label, AuthorLabel, save_final_video_file, BIG_PAUSE, ExtraLabel, create_thematic_download_generator
 from video.utils import is_video_matching, read_n_video_clips, find_matching_video
 from video.video_transitions import first_fade_out_second_fade_in_all
 
@@ -277,6 +277,102 @@ def generate_quotes_video(params: PipelineParams) -> Output(video_file_path=str,
     return result_video_file_path, result_text_script
 
 
+def prepare_quote_intro_questions(quote, author):
+    prompt_params = {
+        "main_idea": f"For the video with following quote by {author}:\n{' '.join(quote)}",
+    }
+    args = [
+        TemplateArg(
+            text_definition="json array of 5 to 10 strings containing question about quote and author, that will spark viewers"
+                            "curiosity and engage them. Each question should be up to 6 words and it should end with three dots",
+            json_field_name='quote_intro_questions',
+            value='[]'
+        ),
+    ]
+    quote_intro_questions_dict = helpers.create_result_dict_from_prompt_template(
+        DEFAULT_TEMPLATE,
+        args,
+        prompt_params,
+        tokens_number=1000
+    )
+    return quote_intro_questions_dict['quote_intro_questions']
+
+
+def download_matching_video(thematic_download_generator, required_duration):
+    clip = next(thematic_download_generator)
+    if clip.duration >= required_duration:
+        return clip
+    else:
+        return download_matching_video(thematic_download_generator, required_duration)
+
+
+@step
+def generate_quotes_shorts(params: PipelineParams) -> Output(video_file_path=str, text_script=str):
+    logger.info(f"Starting generation of new QUOTES video{params.number_of_videos}")
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    now = get_now()
+    logger.info(f"Starting generation of video at {now}")
+    author_dict = get_single_author(params)
+    logger.info(f"Result author that was chosen\n{author_dict}")
+    final_video_sequence = []
+
+    quote = pick_random_from_list(author_dict.get('quotes'))
+
+    if len(quote) > 35 * 5:
+        logger.warning(f"Quote is too long, skipping: {quote}")
+        raise Exception(f"Quote is too long, choose another one")
+
+    thematic_download_generator = prepare_thematic_generator(channel, quote)
+
+    intro_question, voice_over_index = prepare_intro_video(channel, thematic_download_generator, final_video_sequence, quote, author_dict.get('author'), 0)
+
+    voice_over_file = single_voice_over(quote, channel, index=voice_over_index)
+    voice_over_index = voice_over_index + 1
+
+    required_duration = (read_audio_clip(voice_over_file).duration + BIG_PAUSE) * 1.2
+    bg_video = download_matching_video(thematic_download_generator, required_duration)
+    single_quote_video = video_with_quote_and_label(
+        bg_video,
+        LineToMp3File(quote, voice_over_file),
+        text_colors=['white'],
+        fonts_list=channel.config.video_fonts_list,
+        shadow_color='black',
+        additional_pause=BIG_PAUSE,
+    )
+    final_video_sequence.append(single_quote_video)
+
+    final_video = concatenate_videoclips(final_video_sequence, method="compose")
+    result_text_script = "".join([intro_question, quote])
+    with open(os.path.join(channel.result_dir, f"0_text_script.txt"), "w") as f:
+        f.write(result_text_script)
+    result_video_file_path = build_file_name(author_dict.get("author"), channel, 0, is_swamp=False, params=params)
+    save_final_video_file(final_video, result_video_file_path)
+    logger.info("Finished QUOTES shorts generation")
+    return result_video_file_path, result_text_script
+
+
+def prepare_intro_video(channel, thematic_download_generator, final_video_sequence, quote, author, voice_over_index):
+    intro_question = pick_random_from_list(prepare_quote_intro_questions(quote, author))
+    voice_over_file = single_voice_over(intro_question, channel, index=voice_over_index, is_secondary=True)
+    required_duration = (read_audio_clip(voice_over_file).duration + BIG_PAUSE) * 1.2
+    bg_video = download_matching_video(thematic_download_generator, required_duration)
+    intro_video = video_with_quote_and_label(
+        bg_video,
+        LineToMp3File(intro_question, voice_over_file),
+        text_colors=['yellow'],
+        fonts_list=channel.config.video_fonts_list,
+        additional_pause=BIG_PAUSE
+    )
+    final_video_sequence.append(intro_video)
+    return intro_question, voice_over_index + 1
+
+
+def prepare_thematic_generator(channel, quote):
+    background_themes_dict = ask_for_backround_themes(channel, quote)
+    thematic_download_generator = create_thematic_download_generator(channel, True, background_themes_dict)
+    return thematic_download_generator
+
+
 @step
 def find_shorts_in_swamp(params: PipelineParams) -> Output(video_path=str, quote=str):
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
@@ -375,24 +471,7 @@ def create_shorts_with_voice(text_lines: List[str], voice_over_files: List[str],
 def shorts_with_voice(params, text_lines, voice_over_files, is_swamp=False):
     from video.utils import find_matching_video
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
-    background_themes_dict = None
-    if channel.config.video_download_new:
-        prompt_params = {
-            "main_idea": f"For the video with following text script:\n{' '.join(text_lines)}",
-        }
-        args = [
-            TemplateArg(
-                text_definition="json array of strings containing video background themes for the text script. Each theme should be up to 3 words",
-                json_field_name='video_background_themes',
-                value='[]'
-            ),
-        ]
-        background_themes_dict = helpers.create_result_dict_from_prompt_template(
-            DEFAULT_TEMPLATE,
-            args,
-            prompt_params,
-            tokens_number=1000
-        )
+    background_themes_dict = ask_for_backround_themes(channel, text_lines)
     for i in range(len(BG_CLIP_STRATEGIES)):
         try:
             clean_text = re.sub(r"[^a-zA-Z]+", " ", " ".join(text_lines))
@@ -432,6 +511,28 @@ def shorts_with_voice(params, text_lines, voice_over_files, is_swamp=False):
             logger.error(f"Error while creating video {i}", x)
             continue
     return result_video_filename
+
+
+def ask_for_backround_themes(channel, text_lines):
+    background_themes_dict = None
+    if channel.config.video_download_new:
+        prompt_params = {
+            "main_idea": f"For the video with following text script:\n{' '.join(text_lines)}",
+        }
+        args = [
+            TemplateArg(
+                text_definition="json array of strings containing video background themes for the text script. Each theme should be up to 3 words",
+                json_field_name='video_background_themes',
+                value='[]'
+            ),
+        ]
+        background_themes_dict = helpers.create_result_dict_from_prompt_template(
+            DEFAULT_TEMPLATE,
+            args,
+            prompt_params,
+            tokens_number=1000
+        )
+    return background_themes_dict
 
 
 def build_file_name(clean_text, channel, i, is_swamp, params, bg_clip_strategy="", background_type=''):

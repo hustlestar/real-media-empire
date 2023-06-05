@@ -389,13 +389,7 @@ def video_with_text_full_sentence_many_clips(
     previous_end = 0
 
     previous_batch_end = 0
-    if is_download_new_video:
-        theme_for_the_background_videos = pick_random_from_list(video_background_themes)
-        logger.info(f"Selected following video background theme {theme_for_the_background_videos}")
-        task = PexelsDownloadTask(query=theme_for_the_background_videos,
-                                  orientation=channel.config.video_orientation, height=channel.config.video_height, width=channel.config.video_width, )
-        res = task.find_all_matching_videos()
-        thematic_download_generator = task.download_generator(res)
+    thematic_download_generator = create_thematic_download_generator(channel, is_download_new_video, video_background_themes)
     for i, line_and_audio in enumerate(line_to_voice_list):
         audio = read_audio_clip(line_and_audio.audio_file)
         audio = audio.set_start(previous_end)
@@ -467,6 +461,20 @@ def video_with_text_full_sentence_many_clips(
     # Write the final clip to a file
     logger.info(Fore.WHITE + "Finished clip creation, saving result")
     save_final_video_file(final_clip, result_file)
+
+
+def create_thematic_download_generator(channel, is_download_new_video, video_background_themes):
+    if is_download_new_video:
+        theme_for_the_background_videos = pick_random_from_list(video_background_themes)
+        logger.info(f"Selected following video background theme {theme_for_the_background_videos}")
+        task = PexelsDownloadTask(query=theme_for_the_background_videos,
+                                  orientation=channel.config.video_orientation, height=channel.config.video_height,
+                                  width=channel.config.video_width, )
+        res = task.find_all_matching_videos()
+        thematic_download_generator = task.download_generator(res)
+        return thematic_download_generator
+    else:
+        return None
 
 
 def save_final_video_file(final_clip, result_file):
