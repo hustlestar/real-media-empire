@@ -1,10 +1,9 @@
-import logging
-
 import click
+import logging
 from zenml.pipelines import pipeline
 
 from pipelines.params.params_for_pipeline import PipelineParams, prepare_and_get_pipeline_params
-from pipelines.steps.library import generate_quotes_shorts, create_video_meta
+from pipelines.steps.library import generate_quotes_shorts
 from pipelines.utils import recover_last_run_if_required
 from util.time import get_now
 
@@ -14,10 +13,8 @@ logger = logging.getLogger(__name__)
 @pipeline(enable_cache=True)
 def generate_quotes_video_pipeline(
         generate_quotes_shorts,
-        create_video_meta
 ):
     video_file_path, text_script = generate_quotes_shorts()
-    title, description, thumbnail_title, comment, tags = create_video_meta(text_script)
 
 
 @click.command(context_settings=dict(ignore_unknown_options=True))
@@ -36,7 +33,6 @@ def main(click_context, execution_date: str, channel_config_path, author, number
 
     pipeline = generate_quotes_video_pipeline(
         generate_quotes_shorts(pipeline_params),
-        create_video_meta(pipeline_params)
     )
 
     pipeline.run()

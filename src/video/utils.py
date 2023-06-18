@@ -10,7 +10,6 @@ from image.colors import get_image_main_colors
 from image.image_tagging import get_image_classes
 from image.video_to_image import extract_frames
 from pipelines.tasks import DEFAULT_ORIENTATION, DEFAULT_WIDTH, DEFAULT_HEIGHT
-from video.downloader import PexelsDownloadTask
 
 DIR_CACHE = {}
 
@@ -78,6 +77,8 @@ def build_video_dir_path(orientation=DEFAULT_ORIENTATION, width=DEFAULT_WIDTH, h
 
 
 def prepare_clip(video_dir, is_should_download, topics, orientation, width, height):
+    from video.downloader import PexelsDownloadTask
+
     if is_should_download and topics:
         res = PexelsDownloadTask(query=topics[random.randint(0, len(topics))], number_of_downloads=1, orientation=orientation, height=height, width=width).run()
         clip = read_video_clip(res.downloaded_files[0])
@@ -87,6 +88,7 @@ def prepare_clip(video_dir, is_should_download, topics, orientation, width, heig
 
 
 def download_new_videos(topic, number, channel) -> List[Any]:
+    from video.downloader import PexelsDownloadTask
     task = PexelsDownloadTask(query=topic, number_of_downloads=number, orientation=channel.config.video_orientation, height=channel.config.video_height,
                               width=channel.config.video_width, )
     res = task.find_all_matching_videos()

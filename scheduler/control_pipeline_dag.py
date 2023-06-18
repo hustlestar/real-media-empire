@@ -136,7 +136,7 @@ dag_configs = [
     ),
     ChannelDAGConfig(
         dag_id='infinite_quotes_inspiration__generate',
-        schedule_interval='0 2 * * *',
+        schedule_interval='0 0,4 * * *',
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\quotes_generate.py"'
             ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration_v2.yaml"'
@@ -184,7 +184,7 @@ dag_configs = [
     ),
     ChannelDAGConfig(
         dag_id='daily_mindset__shorts_publish',
-        schedule_interval="0 0,8,16 * * *",
+        schedule_interval="0 0,12 * * *",
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\shorts_publish.py"'
             ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\daily_mindset_shorts.yaml"',

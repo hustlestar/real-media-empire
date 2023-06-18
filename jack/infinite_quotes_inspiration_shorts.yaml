@@ -1,4 +1,4 @@
-youtube_channel_name: "Infinite Quotes Inspiration"
+youtube_channel_name: "Infinite Quotes Inspiration Shorts"
 youtube_channel_id: "UCVGWiWDnkLGoXZ3qz3sVE4w"
 youtube_client_secrets_file: "C:\\tools\\google\\infinite_quotes_inspiration.json"
 youtube_category: 22
@@ -9,14 +9,15 @@ youtube_tags:
   - listenable
   - quotes
   - stoic quotes
-youtube_title_suffix: " - #QUOTES #INSPIRATION"
+  - shorts
+youtube_title_suffix: " - #QUOTES #INSPIRATION #shorts"
 youtube_privacy_status: 'private' #private
 language: 'english'
 
-video_download_new: 'false'
-video_orientation: 'landscape' #portrait
-video_width: 1920
-video_height: 1080
+video_download_new: 'true'
+video_orientation: 'portrait' #portrait
+video_width: 1080
+video_height: 1920
 video_transition: ""
 video_transition_duration: 1
 video_start_end_delay: 5
@@ -42,7 +43,7 @@ main_prompt_narrative_types:
 all_extras:
   quote_sources:
     #    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\business_coaches.json"
-    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\historical_figures.json"
+    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\special_iqi_quotes.json"
 main_prompt_number_of_engagement_techniques: 2
 main_prompt_engagement_techniques:
   - "Begin story with a captivating opening."

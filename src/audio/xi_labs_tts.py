@@ -20,8 +20,8 @@ def synthesize_text(text, output_file, voice_language_code, voice_name, model_id
         "text": text,
         "model_id": model_id,
         "voice_settings": {
-            "stability": 0,
-            "similarity_boost": 0
+            "stability": 0.2,
+            "similarity_boost": 0.2
         }
     }
 

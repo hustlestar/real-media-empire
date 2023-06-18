@@ -10,10 +10,15 @@ import requests
 
 from config import CONFIG
 from text.helpers import pick_random_from_list
+import urllib3
+
+from video.utils import read_video_clip
 
 PEXELS_API_KEY = CONFIG.get("PEXEL_API_KEY")
 
 logger = logging.getLogger(__name__)
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def search_photos(query, orientation=None, size=None, color=None, page=1):
@@ -83,6 +88,7 @@ def search_videos(query, orientation=None, size=None, page=1):
 
 def read_page(page_url='https://api.pexels.com/videos/search', params=None):
     headers = {'Authorization': PEXELS_API_KEY}
+    logger.info(f"Reading page {page_url} with params {params}")
     response = requests.get(page_url, params=params, headers=headers, verify=False)
     response.raise_for_status()
     response_json = response.json()
@@ -193,7 +199,7 @@ class PexelsDownloadTask:
 
             else:
                 logger.info(f"Found {total_results_number} results matching your query: "
-                      f"{self.query}, {self.orientation}, {self.size} and desired amount of downloads {self.number_of_downloads}")
+                            f"{self.query}, {self.orientation}, {self.size} and desired amount of downloads {self.number_of_downloads}")
 
     def download_video(self):
         if self.is_video_download:
@@ -234,7 +240,7 @@ class PexelsDownloadTask:
 
             else:
                 logger.info(f"Found {total_results_number} results matching your query: "
-                      f"{self.query}, {self.orientation}, {self.size} and desired amount of downloads {self.number_of_downloads}")
+                            f"{self.query}, {self.orientation}, {self.size} and desired amount of downloads {self.number_of_downloads}")
 
     def find_all_matching_videos(self):
         videos, next_page, total_results_number = search_videos(self.query, self.orientation, self.size)
@@ -266,7 +272,19 @@ class PexelsDownloadTask:
                 raise StopIteration("No more items in the download queue")
             download_result = download(next_download[0], next_download[1], self.download_dir, on_exists_filename=True)
             if download_result:
+                logger.info(f"Downloaded {download_result} successfully")
                 yield download_result
+
+
+def download_matching_video(thematic_download_generator, required_duration):
+    filename = next(thematic_download_generator)
+    logger.info(f"Downloaded cli: {filename}")
+    clip = read_video_clip(filename)
+    if clip.duration >= required_duration:
+        return clip
+    else:
+        logger.warning(f"Clip duration is too short, trying to download another one")
+        return download_matching_video(thematic_download_generator, required_duration)
 
 
 if __name__ == '__main__':

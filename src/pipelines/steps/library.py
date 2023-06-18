@@ -279,13 +279,17 @@ def generate_quotes_video(params: PipelineParams) -> Output(video_file_path=str,
 
 def prepare_quote_intro_questions(quote, author):
     prompt_params = {
-        "main_idea": f"For the video with following quote by {author}:\n{' '.join(quote)}",
+        "main_idea": f"For the video with following quote by {author}:\n{''.join(quote)}",
     }
+    json_field_name = 'quote_intro_questions'
     args = [
         TemplateArg(
             text_definition="json array of 5 to 10 strings containing question about quote and author, that will spark viewers"
-                            "curiosity and engage them. Each question should be up to 6 words and it should end with three dots",
-            json_field_name='quote_intro_questions',
+                            "curiosity and engage them."
+                            " Question must not contain word quote. "
+                            " Use you instead of the word one. "
+                            "Each question should be up to 6 words and it should end with ...",
+            json_field_name=json_field_name,
             value='[]'
         ),
     ]
@@ -295,15 +299,7 @@ def prepare_quote_intro_questions(quote, author):
         prompt_params,
         tokens_number=1000
     )
-    return quote_intro_questions_dict['quote_intro_questions']
-
-
-def download_matching_video(thematic_download_generator, required_duration):
-    clip = next(thematic_download_generator)
-    if clip.duration >= required_duration:
-        return clip
-    else:
-        return download_matching_video(thematic_download_generator, required_duration)
+    return quote_intro_questions_dict[json_field_name]
 
 
 @step
@@ -317,58 +313,100 @@ def generate_quotes_shorts(params: PipelineParams) -> Output(video_file_path=str
     final_video_sequence = []
 
     quote = pick_random_from_list(author_dict.get('quotes'))
+    logger.info(f"Selected randomly following quote:\n{quote}\nwith length {len(quote)}")
 
-    if len(quote) > 35 * 5:
-        logger.warning(f"Quote is too long, skipping: {quote}")
-        raise Exception(f"Quote is too long, choose another one")
+    while len(quote) > 35 * 5:
+        quote = pick_random_from_list(author_dict.get('quotes'))
 
-    thematic_download_generator = prepare_thematic_generator(channel, quote)
-
-    intro_question, voice_over_index = prepare_intro_video(channel, thematic_download_generator, final_video_sequence, quote, author_dict.get('author'), 0)
-
+    author = author_dict.get('author')
+    thematic_download_generator = prepare_thematic_download_generator(channel, quote)
+    intro_questions = prepare_quote_intro_questions(quote, author)
+    voice_over_index = 0
     voice_over_file = single_voice_over(quote, channel, index=voice_over_index)
     voice_over_index = voice_over_index + 1
+    for i, intro_question in enumerate(intro_questions):
+        skip_question = is_bad_intro_question(intro_question)
 
-    required_duration = (read_audio_clip(voice_over_file).duration + BIG_PAUSE) * 1.2
-    bg_video = download_matching_video(thematic_download_generator, required_duration)
-    single_quote_video = video_with_quote_and_label(
-        bg_video,
-        LineToMp3File(quote, voice_over_file),
-        text_colors=['white'],
-        fonts_list=channel.config.video_fonts_list,
-        shadow_color='black',
-        additional_pause=BIG_PAUSE,
-    )
-    final_video_sequence.append(single_quote_video)
+        if skip_question:
+            logger.info(f"Skipping question: {intro_question}")
+            continue
+        intro_question, voice_over_index = prepare_intro_video(channel, final_video_sequence, voice_over_index, thematic_download_generator, intro_question=intro_question)
 
-    final_video = concatenate_videoclips(final_video_sequence, method="compose")
-    result_text_script = "".join([intro_question, quote])
-    with open(os.path.join(channel.result_dir, f"0_text_script.txt"), "w") as f:
-        f.write(result_text_script)
-    result_video_file_path = build_file_name(author_dict.get("author"), channel, 0, is_swamp=False, params=params)
-    save_final_video_file(final_video, result_video_file_path)
-    logger.info("Finished QUOTES shorts generation")
+        final_video_sequence.append(
+            video_with_text_full_sentence_many_clips(
+                channel,
+                [LineToMp3File(quote, voice_over_file)],
+                text_colors=['white'],
+                fonts_list=channel.config.video_fonts_list,
+                shadow_color='black',
+                thematic_download_generator=thematic_download_generator,
+                is_save_result=False,
+                single_clip_duration=3
+            )
+        )
+
+        if author.lower() not in intro_question.lower():
+            voice_over_file = single_voice_over(author, channel, index=voice_over_index)
+            final_video_sequence.append(
+                video_with_text_full_sentence_many_clips(
+                    channel,
+                    [LineToMp3File(author, voice_over_file)],
+                    text_colors=['yellow'],
+                    fonts_list=channel.config.video_fonts_list,
+                    shadow_color='black',
+                    thematic_download_generator=thematic_download_generator,
+                    is_save_result=False,
+                    single_clip_duration=4
+                )
+            )
+
+        logger.info(f"Final video sequence is {len(final_video_sequence)} videos long, concatenating them")
+        final_video = concatenate_videoclips(final_video_sequence, method="compose")
+
+        result_text_script = "".join([intro_question, quote])
+        with open(os.path.join(channel.result_dir, f"{i}_text_script.txt"), "w") as f:
+            f.write(result_text_script)
+        result_video_file_path = build_file_name(author_dict.get("author"), channel, i, is_swamp=False, params=params)
+        save_final_video_file(final_video, result_video_file_path)
+
+        logger.info("Finished QUOTES shorts generation")
     return result_video_file_path, result_text_script
 
 
-def prepare_intro_video(channel, thematic_download_generator, final_video_sequence, quote, author, voice_over_index):
-    intro_question = pick_random_from_list(prepare_quote_intro_questions(quote, author))
+def is_bad_intro_question(intro_question):
+    skip_question = False
+    for b in [
+        'what was the context in ',
+        'what other famous quotes ',
+        'what does the quote suggest ',
+        'what are some examples ',
+        'what is the context of',
+        'what is the famous quote '
+    ]:
+        if b in intro_question.lower():
+            skip_question = True
+    return skip_question
+
+
+def prepare_intro_video(channel, final_video_sequence, voice_over_index, generator=None, intro_question=None):
+    logger.info(f"Starting generation of INTRO video {intro_question}")
     voice_over_file = single_voice_over(intro_question, channel, index=voice_over_index, is_secondary=True)
-    required_duration = (read_audio_clip(voice_over_file).duration + BIG_PAUSE) * 1.2
-    bg_video = download_matching_video(thematic_download_generator, required_duration)
-    intro_video = video_with_quote_and_label(
-        bg_video,
-        LineToMp3File(intro_question, voice_over_file),
+    intro_video = video_with_text_full_sentence_many_clips(
+        channel,
+        [LineToMp3File(intro_question, voice_over_file)],
         text_colors=['yellow'],
         fonts_list=channel.config.video_fonts_list,
-        additional_pause=BIG_PAUSE
+        is_download_new_video=channel.config.video_download_new,
+        is_save_result=False,
+        thematic_download_generator=generator,
+        single_clip_duration=4
     )
     final_video_sequence.append(intro_video)
     return intro_question, voice_over_index + 1
 
 
-def prepare_thematic_generator(channel, quote):
-    background_themes_dict = ask_for_backround_themes(channel, quote)
+def prepare_thematic_download_generator(channel, quote):
+    background_themes_dict = ask_for_background_themes(channel, quote)
     thematic_download_generator = create_thematic_download_generator(channel, True, background_themes_dict)
     return thematic_download_generator
 
@@ -471,7 +509,7 @@ def create_shorts_with_voice(text_lines: List[str], voice_over_files: List[str],
 def shorts_with_voice(params, text_lines, voice_over_files, is_swamp=False):
     from video.utils import find_matching_video
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
-    background_themes_dict = ask_for_backround_themes(channel, text_lines)
+    background_themes_dict = ask_for_background_themes(channel, text_lines)
     for i in range(len(BG_CLIP_STRATEGIES)):
         try:
             clean_text = re.sub(r"[^a-zA-Z]+", " ", " ".join(text_lines))
@@ -513,16 +551,17 @@ def shorts_with_voice(params, text_lines, voice_over_files, is_swamp=False):
     return result_video_filename
 
 
-def ask_for_backround_themes(channel, text_lines):
-    background_themes_dict = None
+def ask_for_background_themes(channel, text_lines):
+    background_themes = None
     if channel.config.video_download_new:
         prompt_params = {
-            "main_idea": f"For the video with following text script:\n{' '.join(text_lines)}",
+            "main_idea": f"For the video with following text script:\n{''.join(text_lines)}",
         }
+        json_field_name = 'video_background_picture'
         args = [
             TemplateArg(
-                text_definition="json array of strings containing video background themes for the text script. Each theme should be up to 3 words",
-                json_field_name='video_background_themes',
+                text_definition="json array of strings containing matching picture for video background. Each picture topic should be up to 3 words",
+                json_field_name=json_field_name,
                 value='[]'
             ),
         ]
@@ -532,7 +571,8 @@ def ask_for_backround_themes(channel, text_lines):
             prompt_params,
             tokens_number=1000
         )
-    return background_themes_dict
+        background_themes = background_themes_dict[json_field_name]
+    return background_themes
 
 
 def build_file_name(clean_text, channel, i, is_swamp, params, bg_clip_strategy="", background_type=''):
