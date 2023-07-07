@@ -1,5 +1,5 @@
-youtube_channel_name: "Infinite Quotes Inspiration"
-youtube_channel_id: "UCVGWiWDnkLGoXZ3qz3sVE4w"
+youtube_channel_name: "Citas y Palabras Sabias"
+youtube_channel_id: ""
 youtube_client_secrets_file: "C:\\tools\\google\\infinite_quotes_inspiration.json"
 youtube_category: 22
 youtube_tags:
@@ -8,10 +8,10 @@ youtube_tags:
   - success
   - listenable
   - quotes
-  - stoic quotes
-youtube_title_suffix: " - #QUOTES #INSPIRATION"
+youtube_title_suffix: " #CITAS"
 youtube_privacy_status: 'private' #private
-language: 'english'
+youtube_title_include_author: true
+language: 'spanish'
 
 video_download_new: 'false'
 video_orientation: 'landscape' #portrait
@@ -28,7 +28,7 @@ video_background_presets:
     topics: [ ]
     topics_to_avoid: [ 'freight car','garbage truck, dustcart', 'golfcart, golf cart', 'convertible', 'sports car, sport car', 'car wheel', 'minivan', 'trailer truck, tractor trailer, trucking rig, rig, articulated lorry, semi', 'flagpole, flagstaff', 'street sign', 'cab, hack, taxi, taxicab', 'moving van' ]
 video_fonts_list:
-  - "THEBOLDFONT"
+  - "LeagueSpartan-ExtraBold"
 video_text_color_list:
   - "white"
 audio_background_dir_path: "E:\\MEDIA_GALLERY\\AUDIO\\daily_mindset"
@@ -42,18 +42,12 @@ main_prompt_narrative_types:
 all_extras:
   quote_sources:
     #    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\business_coaches.json"
-    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\historical_figures.json"
+    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\spanish\\first.json"
 main_prompt_number_of_engagement_techniques: 2
 main_prompt_engagement_techniques:
   - "Begin story with a captivating opening."
 main_prompt_template: |
-  Create {number_of_words} words {narrative_type} for youtube video about {theme} using data and style of {author} and his books. 
-  {engagement_techniques}
-  Avoid using word I. Be concise and inspiring. {mention_author}
-  Represent your answer as ssml for google text to speech api. 
-  Use 5 seconds breaks between different parts, emphasize important parts by increasing or decreasing pitch. 
-  Set prosody rate to slow.
-  Your answer should contain only xml.
+  stub
 main_ttt_api: "chat_gpt"
 main_ttt_model_name: "text-davinci-003"
 main_ttt_tokens_number: 7500
@@ -73,9 +67,8 @@ thumbnail_fonts_dir: "E:\\MEDIA_GALLERY\\FONTS\\daily_mindset"
 
 tts_api: "xi_labs_tts"
 tts_type: "text"
-#tts_voice_name: 'pNInz6obpgDQGcFmaJgB' # sam
-#tts_voice_name: 'ErXwobaYiN019PkySvjV' # antoni
 tts_voice_name: 'TxGEqnHWrfWFTfGW9XjX' # josh
 tts_secondary_voice_name: "21m00Tcm4TlvDq8ikWAM" # rachel
+tts_model: 'eleven_multilingual_v1'
 tts_api_key_or_path: "C:\\tools\\google\\credentials_to_google_apis.json"
 voice_over_speed: 1

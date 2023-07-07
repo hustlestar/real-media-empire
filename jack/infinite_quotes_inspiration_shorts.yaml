@@ -10,8 +10,9 @@ youtube_tags:
   - quotes
   - stoic quotes
   - shorts
-youtube_title_suffix: " - #QUOTES #INSPIRATION #shorts"
-youtube_privacy_status: 'private' #private
+youtube_title_suffix: " #QUOTES #INSPIRATION #shorts"
+youtube_privacy_status: 'public' #private
+youtube_title_include_author: false
 language: 'english'
 
 video_download_new: 'true'
@@ -79,4 +80,5 @@ tts_type: "text"
 tts_voice_name: 'TxGEqnHWrfWFTfGW9XjX' # josh
 tts_secondary_voice_name: "21m00Tcm4TlvDq8ikWAM" # rachel
 tts_api_key_or_path: "C:\\tools\\google\\credentials_to_google_apis.json"
+tts_model: 'eleven_monolingual_v1'
 voice_over_speed: 1

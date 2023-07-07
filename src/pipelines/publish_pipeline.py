@@ -34,9 +34,10 @@ def safe_simple_video_pipeline(
 @click.option("--execution_date", default="", help="Pipeline execution date")
 @click.option("--channel_config_path", default="", help="Learning rate for training")
 @click.option('--recover', '-r', is_flag=True, default=False, help='Recover previous failed run')
+@click.option('--is_simple_publish', '-r', is_flag=True, default=True, help='Publish from 1 to 1 dir')
 @click.argument('other_args', nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
-def main(click_context, execution_date: str, channel_config_path, recover, other_args):
+def main(click_context, execution_date: str, channel_config_path, recover, is_simple_publish, other_args):
     pipeline_params: PipelineParams = prepare_and_get_pipeline_params(click_context, PipelineParams)
     logger.info(f"Pipeline params are:\n{pipeline_params}")
     pipeline_params = recover_last_run_if_required(channel_config_path, pipeline_params, recover)

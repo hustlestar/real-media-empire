@@ -22,6 +22,7 @@ class ChannelConfigTemplate:
         self.youtube_tags: List[str] = None
         self.youtube_title_suffix: str = None
         self.youtube_privacy_status: str = None
+        self.youtube_title_include_author: bool = False
         self.language: str = 'en'
 
         self.all_extras: Dict[str, Any] = None

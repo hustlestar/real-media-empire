@@ -407,7 +407,7 @@ Your response should contain only json. Json must be valid. Don't include row nu
         TemplateArg(text_definition="author of quote with value [[author]]",
                     json_field_name='author',
                     value='\"[[author]]\"'),
-        TemplateArg(text_definition="short author description, if dead with years of living",
+        TemplateArg(text_definition="2-5 words description about author, if dead with years of living",
                     json_field_name='author_description',
                     value='\"years from - years to if dead, description\"'),
         TemplateArg(text_definition="array with 1-3 funny facts about author",

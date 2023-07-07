@@ -7,7 +7,7 @@ from pipelines.tasks.common_tasks import CommonTasks
 from text.chat_gpt import ChatGPTTask
 from text.helpers import extract_json_as_dict, has_json
 
-ENGLISH = 'english'
+ENGLISH_LANGUAGE = 'english'
 
 
 class TextTasks:
@@ -62,16 +62,16 @@ class TextTasks:
     def create_thumbnail_title(self, text, prompt=None):
         pass
 
-    def create_title_description_thumbnail_title(self, text, prompt=None, language=ENGLISH) -> Tuple[str, str, str, str, List[str]]:
+    def create_title_description_thumbnail_title(self, text, prompt=None, language=ENGLISH_LANGUAGE, include_author=False) -> Tuple[str, str, str, str, List[str]]:
         self.cleaned_text = re.sub(r'<.*?>', '', text) if '<speak>' in text else text
 
-        lang_str = f', values should all be in {language} language' if language and language != ENGLISH else ''
+        langauge_string = f', all values must be in {language} language' if language and language != ENGLISH_LANGUAGE else ''
         if not prompt:
             prompt = f"""
-Provide json with following data: title up to {100 - len(self.title_suffix) - 1} characters long, 
-3 to 7 sentences description including at least 20 hashtags in the bottom, 
+Provide json with following data: title up to {60 - len(self.title_suffix) - 1} characters long{'and include author name in title' if include_author else ''}, 
+3 to 7 sentences description including at least 15 hashtags in the bottom, 
 2 to 4 words thumbnail clickbait phrase, comment with question to engage audience,
-array with 5-10 tags for video seo{lang_str}.
+array with 5-10 tags for video seo{langauge_string}.
 In the following format:""" + \
                 """{
  "title": "",

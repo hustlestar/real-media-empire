@@ -32,7 +32,9 @@ if __name__ == '__main__':
     #         video_with_text(bg_video, lines, font=f, shadow_color=shadow.decode('utf-8'), result_file=f"{f}_{color}_{shadow.decode('utf-8')}.mp4")
     #     except Exception as x:
     #         print(f"failed on {shadow.decode('utf-8')}")
-    f = 'THEBOLDFONT'
+    #    - "LeagueSpartan-ExtraBold"
+    #   - "RubikMonoOne-Regular"
+    f = 'RubikMonoOne-Regular'
     # video_with_text(bg_video, lines, font=f, shadow_color='black', result_file=f"{f}.mp4")
     # yellows = ['yellow',
     #            'yellow1',
@@ -60,7 +62,7 @@ if __name__ == '__main__':
         font=f,
         shadow_color='black',
         darken_to=0.2 * i,
-        author_label=AuthorLabel("Steve Jobs", "Steve Jobs"),
+        author_label=AuthorLabel("Gabriel García Márquez", "gatos y llegó"),
         extra_label=ExtraLabel(f"Funny Fact", "green1"),
     ) for i in range(1)]
 

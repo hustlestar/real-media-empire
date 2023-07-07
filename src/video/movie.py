@@ -15,7 +15,7 @@ from audio.audio_processor import read_audio_clip
 from config import CONFIG
 from text.helpers import pick_random_from_list
 from video.downloader import PexelsDownloadTask, download_matching_video
-from video.utils import find_matching_video, read_video_clip
+from video.utils import find_matching_video, read_video_clip, pick_audio_background_file
 
 BIG_PAUSE = 4
 
@@ -541,6 +541,15 @@ def music_video(
 
     # Write the final clip to a file
     save_final_video_file(final_clip, result_file)
+
+
+def add_bg_audio_starting_at(channel, final_video, intro_video, audio_start_at=0, bg_volume_x=0.3):
+    logger.info(f"Adding background audio starting at {audio_start_at} to final video")
+    bg_audio_clip = read_audio_clip(pick_audio_background_file(channel))
+    bg_audio_clip = bg_audio_clip.set_duration(final_video.duration - intro_video.duration).volumex(bg_volume_x)
+    bg_audio_clip = bg_audio_clip.set_start(audio_start_at)
+    audio_with_bg_music = CompositeAudioClip([final_video.audio, bg_audio_clip])
+    final_video.set_audio(audio_with_bg_music)
 
 
 if __name__ == '__main__':

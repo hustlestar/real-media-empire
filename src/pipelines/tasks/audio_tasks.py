@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 
 class AudioTasks:
     def __init__(self, audio_background_dir_path=None, audio_background_api=None, audio_background_api_key_or_path=None, tts_api='google_tts', tts_type='ssml',
-                 tts_voice_name="en-US-Wavenet-J", tts_secondary_voice_name=None, tts_api_key_or_path=None, start_end_delay=None, results_dir=None, voice_over_speed=None):
+                 tts_voice_name="en-US-Wavenet-J", tts_secondary_voice_name=None, tts_api_key_or_path=None, start_end_delay=None, results_dir=None, voice_over_speed=None,
+                 tts_model=''):
         self.audio_background_dir_path = audio_background_dir_path
         self.audio_background_api = audio_background_api
         self.audio_background_api_key_or_path = audio_background_api_key_or_path
@@ -34,6 +35,7 @@ class AudioTasks:
         self.tts_voice_name = tts_voice_name
         self.tts_secondary_voice_name = tts_secondary_voice_name
         self.tts_api_key_or_path = tts_api_key_or_path
+        self.tts_model = tts_model
         self.results_dir = results_dir
         self.voice_over_speed = voice_over_speed
 
@@ -59,7 +61,9 @@ class AudioTasks:
                                 audio_config=texttospeech.AudioConfig(
                                     audio_encoding=AudioEncoding.MP3,
                                     speaking_rate=speaking_rate
-                                ))
+                                ),
+                                model_id=self.tts_model
+                                )
 
         return result_audio_file
 

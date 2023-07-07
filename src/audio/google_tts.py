@@ -11,11 +11,11 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CONFIG.get("GOOGLE_TEXT_TO_SPEECH
 
 
 class GoogleTextToSpeech(TextToSpeech):
-    def synthesize_ssml(self, ssml=None, output_file=None, voice_language_code='en-US', voice_name='en-US-Wavenet-D', gender=SsmlVoiceGender.MALE):
+    def synthesize_ssml(self, ssml=None, output_file=None, voice_language_code='en-US', voice_name='en-US-Wavenet-D', gender=SsmlVoiceGender.MALE, **kwargs):
         synthesize_ssml(ssml, output_file, voice_language_code, voice_name, gender)
 
     def synthesize_text(self, text=None, output_file=None, voice_language_code='en-US', voice_name='en-US-Wavenet-D', gender=SsmlVoiceGender.MALE,
-                        audio_config=texttospeech.AudioConfig(audio_encoding=AudioEncoding.MP3)):
+                        audio_config=texttospeech.AudioConfig(audio_encoding=AudioEncoding.MP3), **kwargs):
         synthesize_text(text, output_file, voice_language_code, voice_name, gender, audio_config)
 
 
@@ -122,4 +122,3 @@ if __name__ == '__main__':
         output_file='../video/4.mp3',
         voice_name='en-US-Wavenet-J',
     )
-

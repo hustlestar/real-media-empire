@@ -9,7 +9,8 @@ youtube_tags:
   - quotes
   - success
   - listenable
-youtube_title_suffix: " - #WISDOM #INSPIRATION"
+youtube_title_suffix: " #WISDOM #INSPIRATION"
+youtube_title_include_author: false
 youtube_privacy_status: 'public' #public
 language: 'english'
 
@@ -91,4 +92,5 @@ tts_type: "ssml"
 tts_voice_name: "en-US-Neural2-D"
 tts_secondary_voice_name: "en-US-Neural2-D"
 tts_api_key_or_path: "C:\\tools\\google\\credentials_to_google_apis.json"
+tts_model: ''
 voice_over_speed: 1

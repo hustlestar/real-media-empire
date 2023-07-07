@@ -7,7 +7,9 @@ class TextToSpeech(ABC):
                         output_file=None,
                         voice_language_code='en-US',
                         voice_name='en-US-Wavenet-D',
-                        gender=None):
+                        gender=None,
+                        **kwargs
+                        ):
         ...
 
     def synthesize_text(self,
@@ -16,5 +18,7 @@ class TextToSpeech(ABC):
                         voice_language_code='en-US',
                         voice_name='en-US-Wavenet-D',
                         gender=None,
-                        audio_config=None):
+                        audio_config=None,
+                        **kwargs
+                        ):
         ...

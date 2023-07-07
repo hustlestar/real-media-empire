@@ -10,7 +10,7 @@ from config import CONFIG
 from pipelines.tasks.audio_tasks import AudioTasks
 from pipelines.tasks.image_tasks import ImageTasks
 from pipelines.tasks.social_tasks import SocialTasks
-from pipelines.tasks.text_tasks import TextTasks
+from pipelines.tasks.text_tasks import TextTasks, ENGLISH_LANGUAGE
 from pipelines.tasks.video_tasks import VideoTasks
 from social.you_tube import VALID_PRIVACY_STATUSES
 from text.helpers import build_prompt
@@ -65,6 +65,7 @@ class YouTubeChannel:
             tts_voice_name=config.tts_voice_name,
             tts_secondary_voice_name=config.tts_secondary_voice_name,
             tts_api_key_or_path=config.tts_api_key_or_path,
+            tts_model=config.tts_model,
             start_end_delay=config.video_start_end_delay,
             results_dir=self.this_run_result_dir,
             voice_over_speed=config.voice_over_speed
@@ -109,6 +110,10 @@ class YouTubeChannel:
     def lake_dir(self):
         return self.lake_result_dir
 
+    def set_audio_results_dir(self, results_dir):
+        logger.info(f"Setting audio results dir to {results_dir}")
+        self.audio_manager.results_dir = results_dir
+
     def build_result_dir(self, date):
         return os.path.join(self.channel_root_dir, date)
 
@@ -138,7 +143,12 @@ class YouTubeChannel:
         return self.image_manager.create_thumbnail(title)
 
     def create_title_description_thumbnail_title(self, text, prompt=None) -> Tuple[str, str, str, str, List[str]]:
-        return self.text_manager.create_title_description_thumbnail_title(text, prompt=prompt, language=self.config.language)
+        return self.text_manager.create_title_description_thumbnail_title(
+            text,
+            prompt=prompt,
+            language=self.config.language,
+            include_author=self.config.youtube_title_include_author
+        )
 
     def create_basic_youtube_video(self, text_script, is_ssml) -> str:
         voice_over_audio_clip = self.create_audio_voice_over(text_script, is_ssml)
@@ -156,7 +166,7 @@ class YouTubeChannel:
         thumbnail_url = self.socials_manager.upload_thumbnail_for_youtube(thumbnail_image_path, video_id)
         return video_id, thumbnail_url
 
-    def find_unpublished_youtube_video(self, execution_date=None):
+    def find_unpublished_youtube_video(self, execution_date=None, is_simple=True):
         if not execution_date:
             dirs = os.listdir(self.channel_root_dir)
             for d in reversed(dirs):
@@ -164,12 +174,19 @@ class YouTubeChannel:
                     execution_date = d
                     dir_path = os.path.join(self.channel_root_dir, execution_date)
                     text_script_path = os.path.join(dir_path, f"0_text_script.txt")
+                    text_scripts = [f for f in os.listdir(dir_path) if f.endswith('_text_script.txt')]
 
-                    if not os.path.exists(text_script_path) or os.path.exists(os.path.join(dir_path, PUBLISHED)):
+                    if not is_simple and len(text_scripts) != 1:
+                        logger.info(f"Videos are not sorted properly, clean up garbage in {dir_path}")
+                        continue
+                    else:
+                        text_script_path = os.path.join(dir_path, text_scripts[0]) if not is_simple else text_script_path
+                    if is_simple and not os.path.exists(text_script_path) or os.path.exists(os.path.join(dir_path, PUBLISHED)):
                         continue
 
                     mp4_files = [f for f in os.listdir(dir_path) if f.endswith(".mp4")]
                     if len(mp4_files) != 1:
+                        logger.info(f"Videos are not sorted properly, clean up garbage in {dir_path}")
                         continue
 
                     return self.find_result(dir_path, mp4_files, text_script_path)

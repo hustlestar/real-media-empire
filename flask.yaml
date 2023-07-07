@@ -7,3 +7,4 @@ dependencies:
   - flask_swagger_ui
   - Flask-APScheduler
   - SQLAlchemy
+  - psycopg2

@@ -13,6 +13,7 @@ class PipelineParams(BaseParameters):
     number_of_videos: int = None
     is_split_quote: bool = False
     author: str = None
+    is_simple_publish: bool = True
 
 
 def prepare_and_get_pipeline_params(click_ctx, _pipeline_params_class: Callable):

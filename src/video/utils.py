@@ -10,6 +10,7 @@ from image.colors import get_image_main_colors
 from image.image_tagging import get_image_classes
 from image.video_to_image import extract_frames
 from pipelines.tasks import DEFAULT_ORIENTATION, DEFAULT_WIDTH, DEFAULT_HEIGHT
+from text.helpers import pick_random_from_list
 
 DIR_CACHE = {}
 
@@ -117,3 +118,7 @@ def read_n_video_clips(path_to_dir, number, video_format='mp4') -> List[VideoFil
 
 def read_video_clip(path_to_clip):
     return VideoFileClip(path_to_clip).without_audio()
+
+
+def pick_audio_background_file(channel):
+    return os.path.join(channel.config.audio_background_dir_path, pick_random_from_list(os.listdir(channel.config.audio_background_dir_path)))
