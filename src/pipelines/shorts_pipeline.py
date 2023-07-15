@@ -4,8 +4,10 @@ import click
 from zenml.pipelines import pipeline
 
 from pipelines.params.params_for_pipeline import PipelineParams, prepare_and_get_pipeline_params
-from pipelines.steps.library import create_quote_by_author, create_shorts_with_voice, create_voice_overs, upload_video_to_youtube, \
-    add_comment_to_youtube, create_video_meta_for_list
+from pipelines.steps.video_steps import create_shorts_with_voice
+from pipelines.steps.publish_steps import create_video_meta_for_list, upload_video_to_youtube, add_comment_to_youtube
+from pipelines.steps.audio_steps import create_voice_overs
+from pipelines.steps.gpt_steps import create_quote_by_author
 from pipelines.utils import recover_last_run_if_required
 from util.time import get_now
 

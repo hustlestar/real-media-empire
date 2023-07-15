@@ -4,8 +4,7 @@ import click
 from zenml.pipelines import pipeline
 
 from pipelines.params.params_for_pipeline import PipelineParams, prepare_and_get_pipeline_params
-from pipelines.steps.library import find_shorts_in_swamp, create_video_meta, add_comment_to_youtube, \
-    move_to_lake, upload_video_to_youtube_with_tags
+from pipelines.steps.publish_steps import find_shorts_in_swamp, move_to_lake, create_video_meta, upload_video_to_youtube_with_tags, add_comment_to_youtube
 from pipelines.utils import recover_last_run_if_required
 from util.time import get_now
 

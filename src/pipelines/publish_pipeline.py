@@ -3,10 +3,9 @@ import logging
 from zenml.pipelines import pipeline
 
 from pipelines.params.params_for_pipeline import PipelineParams, prepare_and_get_pipeline_params
-from pipelines.steps.library import find_youtube_video, create_video_meta, create_thumbnail, \
-    upload_thumbnail_to_youtube, add_comment_to_youtube, upload_video_to_youtube_with_tags, mark_video_as_published
+from pipelines.steps.publish_steps import find_youtube_video, mark_video_as_published, create_video_meta, create_thumbnail, upload_video_to_youtube_with_tags, \
+    upload_thumbnail_to_youtube, add_comment_to_youtube
 from pipelines.utils import recover_last_run_if_required
-from util.time import get_now
 
 logger = logging.getLogger(__name__)
 

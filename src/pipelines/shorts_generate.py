@@ -4,7 +4,7 @@ import click
 from zenml.pipelines import pipeline
 
 from pipelines.params.params_for_pipeline import PipelineParams, prepare_and_get_pipeline_params
-from pipelines.steps.library import generate_shorts_swamp
+from pipelines.steps.video_steps import generate_shorts_swamp
 from pipelines.utils import recover_last_run_if_required
 from util.time import get_now
 
