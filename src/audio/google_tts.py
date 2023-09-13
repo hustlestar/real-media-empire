@@ -1,3 +1,5 @@
+import logging
+
 import os
 import re
 
@@ -9,6 +11,7 @@ from config import CONFIG
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CONFIG.get("GOOGLE_TEXT_TO_SPEECH_API_KEY_PATH")
 
+logger = logging.getLogger(__name__)
 
 class GoogleTextToSpeech(TextToSpeech):
     def synthesize_ssml(self, ssml=None, output_file=None, voice_language_code='en-US', voice_name='en-US-Wavenet-D', gender=SsmlVoiceGender.MALE, **kwargs):
@@ -82,7 +85,11 @@ def remove_extra_spaces(text):
 
 
 def extract_only_ssml(text):
-    ssml = re.search(r'<speak.*>.*</speak>', text).group(0)
+    try:
+        ssml = re.search(r'<speak.*>.*</speak>', text).group(0)
+    except Exception as x:
+        logger.info(f"Failed to find pattern in this text: \n{text}")
+        raise x
     return ssml
 
 

@@ -495,7 +495,7 @@ def build_txt_clip(text_line, bg_width, bg_width_half, duration, font_size, pos_
     txt_clip = TextClip(text_line, font=font, fontsize=font_size, color=color).set_duration(duration).set_start(previous_end)
     txt_width = txt_clip.w
     if txt_width > bg_width:
-        raise Exception(f"Line text is too long {txt_width}")
+        raise Exception(f"Line text is too long {txt_width}: \n{text_line}")
     pos_w_rel = (bg_width_half - txt_width / 2) / bg_width + (pos_1[0] - 0.5)
     logger.info(f"Text Clip width for font {font} is {txt_clip.w} for '{text_line}' position is {pos_w_rel} {pos_1[1]} for {text_line}")
     txt_clip = txt_clip.set_position((pos_w_rel, pos_1[1]), relative=True)

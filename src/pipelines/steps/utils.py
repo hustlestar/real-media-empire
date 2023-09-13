@@ -114,7 +114,7 @@ def prepare_quote_intro_questions(quote, author):
     json_field_name = 'quote_intro_questions'
     args = [
         TemplateArg(
-            text_definition="json array of 5 to 10 strings containing question about quote and author, that will spark viewers"
+            text_definition="json array of 6 to 10 strings containing question about quote and author, that will spark viewers"
                             "curiosity and engage them."
                             " Question must not contain word quote. "
                             " Use you instead of the word one. "
@@ -139,6 +139,7 @@ def is_bad_intro_question(intro_question):
         'what other famous quotes ',
         'what other inspiring quotes ',
         'what other ',
+        'who wrote ',
         'what does the quote suggest ',
         'what are some examples ',
         'what is the context of',
@@ -200,7 +201,7 @@ def single_voice_over(line, channel, index, is_secondary=False):
 def shorts_with_voice(params, text_lines, voice_over_files, is_swamp=False):
     from video.utils import find_matching_video
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
-    background_themes_dict = ask_for_background_themes(channel, text_lines)
+    background_themes_list = ask_for_background_themes(channel, text_lines)
     for i in range(len(BG_CLIP_STRATEGIES)):
         try:
             clean_text = re.sub(r"[^a-zA-Z]+", " ", " ".join(text_lines))
@@ -222,7 +223,6 @@ def shorts_with_voice(params, text_lines, voice_over_files, is_swamp=False):
                                 )
             else:
                 for s in BG_CLIP_STRATEGIES:
-                    video_background_themes = background_themes_dict.get('video_background_themes', []) + VIDEO_BACKGROUND_THEMES
                     is_download_new_video = pick_random_from_list([True, False])
                     video_with_text_full_sentence_many_clips(
                         channel,
@@ -233,7 +233,6 @@ def shorts_with_voice(params, text_lines, voice_over_files, is_swamp=False):
                         text_colors=channel.config.video_text_color_list,
                         bg_clip_strategy=s,
                         single_clip_duration=2,
-                        video_background_themes=video_background_themes,
                         is_download_new_video=is_download_new_video
                     )
         except Exception as x:
