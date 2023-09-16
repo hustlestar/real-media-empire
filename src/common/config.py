@@ -73,6 +73,10 @@ class ChannelConfigTemplate:
         self.tts_model: str = None
         self.voice_over_speed: float = None
 
+        self.manual_publish_dir: str = None
+        self.manual_publish_lake_dir: str = None
+        self.manual_downloads_dir: str = None
+
 
 class ChannelConfig(Munch, ChannelConfigTemplate):
     pass

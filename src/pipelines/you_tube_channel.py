@@ -207,6 +207,18 @@ class YouTubeChannel:
                 raise Exception(f"More than one mp4 file found {mp4_files}")
             return self.find_result(dir_path, mp4_files, text_script_path)
 
+    def find_unpublished_manual_shorts(self):
+        dir_content = [f.split('_') for f in os.listdir(self.config.manual_publish_dir) if len(f.split('_')) == 2 and 'mp4' in f]
+        for x in dir_content:
+            video_transcript = x[0] + '_' + x[1].replace('.mp4', '.txt')
+            video_summary = f"{x[0]}_summary.txt"
+            with open(os.path.join(self.config.manual_publish_dir, video_transcript), "r") as f:
+                result_text = f.read()
+            with open(os.path.join(self.config.manual_publish_dir, video_summary), "r") as f:
+                result_text = result_text + "\n" + f.read()
+            return self.config.manual_publish_dir, os.path.join(self.config.manual_publish_dir, f"{x[0]}_{x[1]}"), result_text
+        raise Exception(f"Not found any unpublished videos in {self.config.manual_publish_dir}")
+
     @staticmethod
     def find_result(dir_path, mp4_files, text_script_path):
         with open(text_script_path, "r") as f:

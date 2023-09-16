@@ -52,6 +52,13 @@ def move_to_lake(video_path: str, video_id: str, params: PipelineParams) -> None
 
 
 @step
+def move_to_manual_lake(video_path: str, video_id: str, params: PipelineParams) -> None:
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    logger.info(f"Moving {video_path} from swamp to lake")
+    shutil.move(video_path, channel.config.manual_publish_lake_dir)
+
+
+@step
 def upload_video_and_thumbnail_to_youtube(final_video: str, text_script: str, params: PipelineParams) -> Output(video_id=str, thumbnail_url=str):
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     video_id, thumbnail_url = channel.upload_to_youtube_video_and_thumbnail(final_video, text_script)
@@ -63,6 +70,12 @@ def upload_video_and_thumbnail_to_youtube(final_video: str, text_script: str, pa
 def find_youtube_video(params: PipelineParams) -> Output(video_dir=str, video_file_path=str, text_script=str):
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     return channel.find_unpublished_youtube_video(params.execution_date, is_simple=params.is_simple_publish)
+
+
+@step(enable_cache=False)
+def find_unpublished_manual_shorts(params: PipelineParams) -> Output(video_dir=str, video_file_path=str, text_script=str):
+    channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
+    return channel.find_unpublished_manual_shorts()
 
 
 @step

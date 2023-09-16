@@ -1,3 +1,5 @@
+import logging
+
 import re
 
 from transformers import BertTokenizer, BertForMaskedLM
@@ -5,6 +7,7 @@ import torch
 import spacy
 
 nlp = spacy.load("en_core_web_lg")
+logger = logging.getLogger(__name__)
 
 
 def extract_keywords_from_transcript(transcript_text, num_keywords=10):
@@ -78,20 +81,20 @@ def calculate_sentence_scores(doc):
 def select_top_sentences(doc, scores, num_sentences):
     # Select the top N sentences based on scores
     sorted_sentences = [sent.text for _, sent in sorted(zip(scores, doc.sents), reverse=True)]
-    return sorted_sentences[:num_sentences] if len(sorted_sentences) > num_sentences else sorted_sentences
+    result_sentences = sorted_sentences[:num_sentences] if len(sorted_sentences) > num_sentences else sorted_sentences
+    return [s.text for s in doc.sents if s.text in result_sentences]
 
 
-def extract_keywords_with_timestamps(initial_transcript_lines, key_idea):
+def extract_keywords_with_timestamps(initial_transcript_lines, key_idea, last_line_index=0):
     # Split the cleaned transcript into key_sentences
     key_sentences = [s for s in key_idea.lower().split('\n') if s]
 
     # Initialize a list to store keyword matches
     keyword_matches = []
-    last_line_index = None
-    for i, initial_line in enumerate(initial_transcript_lines):
+    for i, initial_line in enumerate(initial_transcript_lines[last_line_index:]):
         # Extract the timestamp range from the keyword initial_line
         if not key_sentences:
-            last_line_index = i - 1
+            last_line_index = last_line_index + i - 1
             break
         timestamp_match = re.search(r'\[(\d+\.\d+)\s*-\s*(\d+\.\d+)\]', initial_line)
         if timestamp_match:

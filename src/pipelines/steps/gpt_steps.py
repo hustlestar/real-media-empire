@@ -2,7 +2,7 @@ import os
 
 import json
 
-from typing import List
+from typing import List, Dict
 
 import logging
 from zenml.steps import step, Output
@@ -13,6 +13,8 @@ from pipelines.steps.utils import predefined_quote_by_author
 from pipelines.you_tube_channel import YouTubeChannel
 from text import helpers
 from text.helpers import pick_random_from_list, TemplateArg, finish_line
+
+INT_VALUE = 'integer 1 to 10'
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +75,37 @@ def create_quote_by_author(params: PipelineParams) -> List[str]:
     return result
 
 
+def rate_text(text, context, prompt_template) -> Dict[str, str]:
+    prompt_params = {
+        "main_idea": "I'll provide you with text snipper and with short summary of the original full text. "
+                     "You'll rate this text snippet by several criteria in the grade of 1 to 10, where 1 is least matching criteria and 10 is most.\n"
+                     "Here's text snippet: " + text.replace("\n", " ") + "\nHere's short summary: " + context.replace("\n", " ") + "\n",
+    }
+    args = [
+        TemplateArg(
+            text_definition="is text snippet clear without full context",
+            json_field_name='clearness',
+            value=INT_VALUE
+        ),
+        TemplateArg(
+            text_definition="is text snippet engaging enough",
+            json_field_name='engaging',
+            value=INT_VALUE
+        ),
+        TemplateArg(
+            text_definition="is text snippet worth publishing as youtube shorts",
+            json_field_name='publishable',
+            value=INT_VALUE
+        ),
+    ]
+    result_dict = helpers.create_result_dict_from_prompt_template(
+        prompt_template,
+        args,
+        prompt_params,
+    )
+    return result_dict
+
+
 @step
 def use_predefined_quote_by_author(params: PipelineParams) -> List[str]:
     return predefined_quote_by_author(params)
@@ -83,3 +116,13 @@ def create_text_script(prompt: str, params: PipelineParams) -> Output(text_scrip
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     text_script, is_ssml = channel.create_text_script(prompt)
     return text_script, is_ssml
+
+
+if __name__ == '__main__':
+    channel = YouTubeChannel(channel_config_path="G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\daily_mindset_shorts.yaml")
+    for i in range(21):
+        print(f"Iteration {i}")
+        text = open(f"G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\downloads\\z-mJEZbHFLs_{i}.txt", "r").read()
+        context = open("G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\downloads\\z-mJEZbHFLs_summary.txt", "r").read()
+        print(rate_text(text, context, channel.config.main_prompt_template))
+        print(sum(rate_text(text, context, channel.config.main_prompt_template).values()))

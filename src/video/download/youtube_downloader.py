@@ -10,7 +10,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 DOWNLOADS_DIR = "downloads"
 
 
-def download_video_and_audio(video_url=None):
+def download_video_and_audio(video_url=None, downloads_dir=DOWNLOADS_DIR):
     print(f"Starting download for video {video_url}...")
     # Create a YouTube object
     yt = YouTube(video_url)
@@ -21,10 +21,10 @@ def download_video_and_audio(video_url=None):
     # Download the video and audio streams
     video_filename = f"{yt.video_id}_video.mp4"
     audio_filename = f"{yt.video_id}_audio.mp3"
-    video_path = os.path.join(DOWNLOADS_DIR, video_filename)
-    audio_path = os.path.join(DOWNLOADS_DIR, audio_filename)
-    video_stream.download(output_path=DOWNLOADS_DIR, filename=video_filename)
-    audio_stream.download(output_path=DOWNLOADS_DIR, filename=audio_filename)
+    video_path = os.path.join(downloads_dir, video_filename)
+    audio_path = os.path.join(downloads_dir, audio_filename)
+    video_stream.download(output_path=downloads_dir, filename=video_filename)
+    audio_stream.download(output_path=downloads_dir, filename=audio_filename)
     print("Video and audio downloaded successfully.")
     return yt, audio_path, video_path
 
@@ -51,11 +51,11 @@ def merge_audio_and_video(audio_path, video_path, result_name=None, from_timesta
     return final_path
 
 
-def download_video_transcript(video_id=None):
+def download_video_transcript(video_id=None, downloads_dir=DOWNLOADS_DIR):
     # Get the video transcript
     transcript = YouTubeTranscriptApi.get_transcript(video_id)
     # Save the transcript to a file
-    transcript_path = os.path.join(DOWNLOADS_DIR, f"{video_id}_transcript.txt")
+    transcript_path = os.path.join(downloads_dir, f"{video_id}_transcript.txt")
     with open(transcript_path, "w", encoding="utf-8") as f:
         for entry in transcript:
             f.write(f"[{entry['start']} - {entry['start'] + entry['duration']}] {entry['text']}\n")
@@ -64,5 +64,5 @@ def download_video_transcript(video_id=None):
 
 
 if __name__ == '__main__':
-    video_meta, audio_path, video_path = download_video_and_audio("https://www.youtube.com/watch?v=z-mJEZbHFLs")
+    video_meta, audio_path, video_path = download_video_and_audio("https://www.youtube.com/watch?v=J4_d7nENMFM")
     transcript_path = download_video_transcript(video_meta.video_id)
