@@ -29,7 +29,7 @@ def download_video_and_audio(video_url=None, downloads_dir=DOWNLOADS_DIR):
     return yt, audio_path, video_path
 
 
-def merge_audio_and_video(audio_path, video_path, result_name=None, from_timestamp=None, to_timestamp=None):
+def merge_audio_and_video(audio_path, video_path, result_name=None, from_timestamp=None, to_timestamp=None, downloads_dir=DOWNLOADS_DIR):
     # Merge video and audio into a single file
     print(f"Merging audio and video({from_timestamp}:{to_timestamp}) to result file {result_name}.mp4")
     video = VideoFileClip(video_path)
@@ -38,7 +38,7 @@ def merge_audio_and_video(audio_path, video_path, result_name=None, from_timesta
         video = video.subclip(from_timestamp, to_timestamp)
         audio = audio.subclip(from_timestamp, to_timestamp)
     final_output = video.set_audio(audio)
-    final_path = os.path.join(DOWNLOADS_DIR, f"{result_name}.mp4")
+    final_path = os.path.join(downloads_dir, f"{result_name}.mp4")
     final_output.write_videofile(final_path, codec="libx264")
     time.sleep(3)
     # Clean up downloaded video and audio files

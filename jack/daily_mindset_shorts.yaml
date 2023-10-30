@@ -135,3 +135,7 @@ tts_secondary_voice_name: "en-US-Wavenet-J"
 tts_api_key_or_path: "C:\\tools\\google\\credentials_to_google_apis.json"
 tts_model: ''
 voice_over_speed: 0.65
+
+manual_publish_dir: "F:\\My Drive\\DAILY_MINDSET_RESULTS"
+manual_publish_lake_dir: "F:\\My Drive\\DAILY_MINDSET_RESULTS\\PUBLISHED"
+manual_downloads_dir: "F:\\My Drive\\DAILY_MINDSET_RESULTS\\FRESH"

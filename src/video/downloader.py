@@ -291,10 +291,10 @@ if __name__ == '__main__':
     # 'Enter an orientation (landscape, portrait, or leave blank): '
     orientation = 'portrait'
     # 'Enter a size (small, medium, large, or leave blank): '
-    size = 'small'
-    task = PexelsDownloadTask(query="thunder storm", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=5000)
-    videos = task.find_all_matching_videos()
-    logger.info(next(task.download_generator(videos)))
+    # size = 'small'
+    # task = PexelsDownloadTask(query="thunder storm", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=5000)
+    # videos = task.find_all_matching_videos()
+    # logger.info(next(task.download_generator(videos)))
     # PexelsDownloadTask(
     #     query="mountain range",
     #     orientation='landscape', height=1920, width=1080,
@@ -319,19 +319,19 @@ if __name__ == '__main__':
     #     is_video_download=False,
     #     photo_size='large2x'
     # ).run()
-    # PexelsDownloadTask(query="model", download_dir=CONFIG.get('DOWNLOAD_DIR'),
-    #                    size='medium',
-    #                    height=1920,
-    #                    width=1080,
-    #                    orientation='portrait',
-    #                    number_of_downloads=10000).run()
-    # PexelsDownloadTask(query="waterfall",
-    #                    download_dir=CONFIG.get('DOWNLOAD_DIR'),
-    #                    size='medium',
-    #                    height=1920,
-    #                    width=1080,
-    #                    orientation='portrait',
-    #                    number_of_downloads=5000).run()
+    PexelsDownloadTask(query="mountain", download_dir=CONFIG.get('DOWNLOAD_DIR'),
+                       size='medium',
+                       height=1920,
+                       width=1080,
+                       orientation='portrait',
+                       number_of_downloads=10000).run()
+    PexelsDownloadTask(query="waterfall",
+                       download_dir=CONFIG.get('DOWNLOAD_DIR'),
+                       size='medium',
+                       height=1920,
+                       width=1080,
+                       orientation='portrait',
+                       number_of_downloads=5000).run()
     # PexelsDownloadTask(query="waterfall", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=5000).run()
     # PexelsDownloadTask(query="vibrant sunset", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()
     # PexelsDownloadTask(query="winding road", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=200).run()

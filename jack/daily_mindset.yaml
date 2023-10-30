@@ -52,6 +52,7 @@ main_prompt_topics_file: "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\moti
 main_prompt_narrative_types:
   - "motivational speech in the third person"
   - "inspiring talk in the third person"
+  - "practical guide"
 #  - "inspiring story in the third person"
   - "inspiring speech in the third person"
 main_prompt_number_of_engagement_techniques: 2

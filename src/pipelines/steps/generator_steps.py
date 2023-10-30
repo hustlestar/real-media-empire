@@ -14,7 +14,7 @@ me_init_logger()
 logger = logging.getLogger(__name__)
 
 
-def prepare_shorts_snippets_video_with_transcript(video_url, prompt_template, downloads_dir):
+def prepare_shorts_snippets_video_with_transcript(video_url, prompt_template, downloads_dir, rating_sum=15):
     video_meta, audio_path, video_path = download_video_and_audio(video_url, downloads_dir=downloads_dir)
 
     transcript_path = download_video_transcript(video_meta.video_id, downloads_dir=downloads_dir)
@@ -30,19 +30,20 @@ def prepare_shorts_snippets_video_with_transcript(video_url, prompt_template, do
     initial_transcript_lines = initial_transcript.split('\n')
     last_line_index = 0
     for i, sentence in enumerate(key_sentences):
-        logger.info(f"Processing video {i} with sentence: {sentence}")
+        logger.info(f"Processing video {i} with sentence:\n{sentence}")
         keyword_matches, last_line_index = extract_keywords_with_timestamps(initial_transcript_lines[last_line_index:], sentence)
         # logger.info the keyword matches
         if keyword_matches:
             ratings = rate_text(sentence, final_summary, prompt_template)
-            if sum(ratings.values()) >= 17:
+            if sum(ratings.values()) >= rating_sum:
                 from_timestamp = keyword_matches[0]['timestamp_range'][0]
                 to_timestamp = keyword_matches[-1]['timestamp_range'][1]
                 try:
                     if to_timestamp < from_timestamp:
                         raise ValueError("Timestamp Range is not valid: start is before end")
                     result_name = f"{video_meta.video_id}_{i}"
-                    final_path = merge_audio_and_video(audio_path, video_path, result_name=result_name, from_timestamp=from_timestamp, to_timestamp=to_timestamp)
+                    final_path = merge_audio_and_video(audio_path, video_path, result_name=result_name, downloads_dir=downloads_dir,
+                                                       from_timestamp=from_timestamp - 3 if from_timestamp > 3 else from_timestamp, to_timestamp=to_timestamp + 4)
                     with open(os.path.join(downloads_dir, f"{result_name}.txt"), 'w') as f:
                         f.write(sentence)
                     logger.info(f"Video {i} result path: {final_path}")
@@ -63,6 +64,7 @@ def provide_text_short_summary(initial_transcript, video_meta, downloads_dir=DOW
         logger.info("--- %s seconds ---" % (time.time() - start_time))
     with open(os.path.join(downloads_dir, f"{video_meta.video_id}_summary.txt"), 'w') as f:
         f.write(f"Initial Title: {video_meta.title}\n")
+        f.write(f"Initial Author: {video_meta.author}\n")
         f.write(final_summary)
     return final_summary
 
@@ -83,5 +85,8 @@ def test_prepare_shorts_snippets_video_with_transcript():
 
 if __name__ == '__main__':
     channel = YouTubeChannel(channel_config_path="G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\daily_mindset_shorts.yaml")
-    prepare_shorts_snippets_video_with_transcript("https://www.youtube.com/watch?v=z-mJEZbHFLs", channel.config.main_prompt_template, channel.config.manual_downloads_dir)
+    prepare_shorts_snippets_video_with_transcript("https://www.youtube.com/watch?v=i4EhddvJS2A&t=236s",
+                                                  channel.config.main_prompt_template,
+                                                  channel.config.manual_downloads_dir,
+                                                  rating_sum=7)
     # test_prepare_shorts_snippets_video_with_transcript()

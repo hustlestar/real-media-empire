@@ -67,6 +67,21 @@ def call_api_and_check_status(cmd=None, ts=None, msg=None, timeout=1.5 * 60 * 60
         raise Exception(f"Failed to run command!")
 
 
+def check_gas_and_trigger_swap(**kwargs):
+    eth_gas_api_url = 'https://api.etherscan.io/api?module=gastracker&action=gasoracle&apiKey=E2D38MIC5KT642R1MZ5C95QUFB38G5JFMS'
+    safe_gas_price = 20  # Adjust this threshold as needed
+
+    while True:
+        response = requests.get(eth_gas_api_url)
+        response_json = response.json()
+
+        if response_json['result']['SafeGasPrice'] < safe_gas_price:
+            print('Gas price is below 20')
+            return call_api_and_check_status(kwargs)
+
+        time.sleep(5)  # Wait for 5 seconds before the next check
+
+
 def prepare_msg(msg, status, stdout=None, stderr=None, command_id=None):
     if status != 'success':
         message = f"{msg}: #{status} \U0001F534\n" \
@@ -104,7 +119,7 @@ def generate_dag(dag_id, schedule_interval, **kwargs):
 
     api_task = PythonOperator(
         task_id='run_command_and_check_status',
-        python_callable=call_api_and_check_status,
+        python_callable=call_api_and_check_status if not kwargs.get("python_callable") else kwargs.get("python_callable"),
         op_kwargs={'cmd': kwargs.get('cmd'), 'msg': kwargs.get('custom_message'), 'ts': '{{ ts }}', 'timeout': kwargs.get('timeout')},
         execution_timeout=timedelta(hours=8),  # Set the timeout for this task
         dag=dag,
@@ -123,8 +138,31 @@ class ChannelDAGConfig:
 
 dag_configs = [
     ChannelDAGConfig(
+        dag_id='USDT_to_USDC',
+        schedule_interval='0 1 2-30/2 * *',
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
+            ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_USDT_to_USDC.bat'
+            ' --excel_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\1USDC_USDT\\input_SwapUsdtToUsdc.xlsx',
+        custom_message='Swapping USDT to USDC #usdTusdC: ',
+        timeout=6 * 60 * 60,
+        python_operator=check_gas_and_trigger_swap
+    ),
+    ChannelDAGConfig(
+        dag_id='USDC_to_USDT',
+        schedule_interval='0 4 1-31/2 * *',
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
+            ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_USDC_to_USDT.bat'
+            ' --excel_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\1USDC_USDT\\input_SwapUsdcToUsdt.xlsx',
+        custom_message='Swapping USDC to USDT #usdCusdT: ',
+        timeout=6 * 60 * 60,
+        python_operator=check_gas_and_trigger_swap
+    ),
+
+    ChannelDAGConfig(
         dag_id='citas_y_palabras__generate',
-        schedule_interval='0 2,6,10,14,18 * * *',
+        schedule_interval='0 2 * * *',
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\quotes_generate.py"'
             ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\citas_y_palabras.yaml"'
@@ -146,7 +184,7 @@ dag_configs = [
     ),
     ChannelDAGConfig(
         dag_id='infinite_quotes_inspiration__generate',
-        schedule_interval='0 0,4,8,12,16 * * *',
+        schedule_interval='0 0 * * *',
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\quotes_generate.py"'
             ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration.yaml"'

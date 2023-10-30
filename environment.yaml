@@ -32,3 +32,5 @@ dependencies:
     - opencv
     - httpx
     - psycopg2
+    - pytube
+    - youtube_transcript_api
