@@ -8,18 +8,19 @@ from video.utils import build_video_dir_path
 
 class VideoTasks:
     def __init__(
-            self,
-            topics: List[str] = None,
-            colors: List[str] = None,
-            colors_to_avoid: List[str] = None,
-            topics_to_avoid: List[str] = None,
-            start_end_delay: int = DEFAULT_START_END_DELAY,
-            orientation=DEFAULT_ORIENTATION,
-            height=DEFAULT_HEIGHT,
-            width=DEFAULT_WIDTH,
-            single_video_duration=10,
-            is_allow_duplicate_clips=False,
-            results_dir=None):
+        self,
+        topics: List[str] = None,
+        colors: List[str] = None,
+        colors_to_avoid: List[str] = None,
+        topics_to_avoid: List[str] = None,
+        start_end_delay: int = DEFAULT_START_END_DELAY,
+        orientation=DEFAULT_ORIENTATION,
+        height=DEFAULT_HEIGHT,
+        width=DEFAULT_WIDTH,
+        single_video_duration=10,
+        is_allow_duplicate_clips=False,
+        results_dir=None,
+    ):
         self.topics = topics
         self.colors = colors
         self.colors_to_avoid = colors_to_avoid
@@ -47,21 +48,19 @@ class VideoTasks:
             video_dir=build_video_dir_path(self.orientation, self.width, self.height),
             orientation=self.orientation,
             width=self.width,
-            height=self.height
+            height=self.height,
         )
         print(self.video)
         print(self.used_video_clips)
         return self.video
 
     def save_final_video(self, video, final_audio) -> str:
-        final_video_path = os.path.join(self.results_dir, '0_result_video.mp4')
+        final_video_path = os.path.join(self.results_dir, "0_result_video.mp4")
         self.video_task.prepare_and_save_final_video(video, final_audio, final_audio.duration, final_video_path)
         return final_video_path
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     VideoTasks(
-        topics=[1],
-        colors=['green', 'olive', 'mint', 'turquoise', 'teal'],
-        colors_to_avoid=['magenta', 'pink', 'coral', 'red']
+        topics=[1], colors=["green", "olive", "mint", "turquoise", "teal"], colors_to_avoid=["magenta", "pink", "coral", "red"]
     ).create_video_background()

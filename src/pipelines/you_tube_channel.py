@@ -27,24 +27,11 @@ class YouTubeChannel:
         logger.debug(f"Starting with following config:\n{json.dumps(config, indent=4)}")
         self.config: ChannelConfig = config
         neat_chanel_name = str(config.youtube_channel_name).lower().strip().replace(" ", "_")
-        self.channel_root_dir = os.path.join(
-            CONFIG.get("MEDIA_GALLERY_DIR"),
-            "RESULTS",
-            neat_chanel_name
-        )
+        self.channel_root_dir = os.path.join(CONFIG.get("MEDIA_GALLERY_DIR"), "RESULTS", neat_chanel_name)
         self.youtube_privacy_status = config.youtube_privacy_status
-        self.this_run_result_dir = os.path.join(
-            self.channel_root_dir,
-            get_now() if not execution_date else execution_date
-        )
-        self.swamp_result_dir = os.path.join(
-            self.channel_root_dir,
-            "0_SWAMP"
-        )
-        self.lake_result_dir = os.path.join(
-            self.channel_root_dir,
-            "0_LAKE"
-        )
+        self.this_run_result_dir = os.path.join(self.channel_root_dir, get_now() if not execution_date else execution_date)
+        self.swamp_result_dir = os.path.join(self.channel_root_dir, "0_SWAMP")
+        self.lake_result_dir = os.path.join(self.channel_root_dir, "0_LAKE")
         if not is_recover:
             os.makedirs(self.this_run_result_dir, exist_ok=True)
             os.makedirs(self.swamp_result_dir, exist_ok=True)
@@ -54,7 +41,7 @@ class YouTubeChannel:
             main_ttt_api=self.config.main_ttt_api,
             main_ttt_tokens_number=self.config.main_ttt_tokens_number,
             title_suffix=config.youtube_title_suffix,
-            results_dir=self.this_run_result_dir
+            results_dir=self.this_run_result_dir,
         )
         self.audio_manager = AudioTasks(
             audio_background_dir_path=config.audio_background_dir_path,
@@ -68,7 +55,7 @@ class YouTubeChannel:
             tts_model=config.tts_model,
             start_end_delay=config.video_start_end_delay,
             results_dir=self.this_run_result_dir,
-            voice_over_speed=config.voice_over_speed
+            voice_over_speed=config.voice_over_speed,
         )
         video_preset = config.video_background_presets[random.randint(0, len(config.video_background_presets) - 1)]
         logger.debug(f"Randomly selected following video preset {video_preset.name}")
@@ -83,19 +70,19 @@ class YouTubeChannel:
             width=config.video_width,
             single_video_duration=config.video_single_video_duration,
             is_allow_duplicate_clips=False,
-            results_dir=self.this_run_result_dir
+            results_dir=self.this_run_result_dir,
         )
         self.image_manager = ImageTasks(
             thumbnail_background_colors=config.thumbnail_background_colors,
             thumbnail_fonts_dir=config.thumbnail_fonts_dir,
-            results_dir=self.this_run_result_dir
+            results_dir=self.this_run_result_dir,
         )
         self.socials_manager = SocialTasks(
             youtube_api_key_path=config.youtube_client_secrets_file,
             youtube_channel_name=neat_chanel_name,
             youtube_channel_id=config.youtube_channel_id,
             youtube_tags=config.youtube_tags,
-            youtube_category=config.youtube_category
+            youtube_category=config.youtube_category,
         )
 
     @property
@@ -144,10 +131,7 @@ class YouTubeChannel:
 
     def create_title_description_thumbnail_title(self, text, prompt=None) -> Tuple[str, str, str, str, List[str]]:
         return self.text_manager.create_title_description_thumbnail_title(
-            text,
-            prompt=prompt,
-            language=self.config.language,
-            include_author=self.config.youtube_title_include_author
+            text, prompt=prompt, language=self.config.language, include_author=self.config.youtube_title_include_author
         )
 
     def create_basic_youtube_video(self, text_script, is_ssml) -> str:
@@ -174,7 +158,7 @@ class YouTubeChannel:
                     execution_date = d
                     dir_path = os.path.join(self.channel_root_dir, execution_date)
                     text_script_path = os.path.join(dir_path, f"0_text_script.txt")
-                    text_scripts = [f for f in os.listdir(dir_path) if f.endswith('_text_script.txt')]
+                    text_scripts = [f for f in os.listdir(dir_path) if f.endswith("_text_script.txt")]
 
                     if not is_simple and len(text_scripts) != 1:
                         logger.info(f"Videos are not sorted properly, clean up garbage in {dir_path}")
@@ -208,9 +192,9 @@ class YouTubeChannel:
             return self.find_result(dir_path, mp4_files, text_script_path)
 
     def find_unpublished_manual_shorts(self):
-        dir_content = [f.split('_') for f in os.listdir(self.config.manual_publish_dir) if len(f.split('_')) == 2 and 'mp4' in f]
+        dir_content = [f.split("_") for f in os.listdir(self.config.manual_publish_dir) if len(f.split("_")) == 2 and "mp4" in f]
         for x in dir_content:
-            video_transcript = x[0] + '_' + x[1].replace('.mp4', '.txt')
+            video_transcript = x[0] + "_" + x[1].replace(".mp4", ".txt")
             video_summary = f"{x[0]}_summary.txt"
             with open(os.path.join(self.config.manual_publish_dir, video_transcript), "r") as f:
                 result_text = f.read()
@@ -232,7 +216,7 @@ class YouTubeChannel:
             pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     channel = YouTubeChannel("G:\OLD_DISK_D_LOL\Projects\media-empire\jack\infinite_quotes_inspiration.yaml")
     # prompt = build_prompt(channel.config.main_prompt_template,
     #                       channel.config.main_prompt_topics_file,

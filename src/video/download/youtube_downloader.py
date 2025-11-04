@@ -63,6 +63,6 @@ def download_video_transcript(video_id=None, downloads_dir=DOWNLOADS_DIR):
     return transcript_path
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     video_meta, audio_path, video_path = download_video_and_audio("https://www.youtube.com/watch?v=J4_d7nENMFM")
     transcript_path = download_video_transcript(video_meta.video_id)

@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__)
 
 @pipeline(enable_cache=True)
 def shorts_video_pipeline(
-        create_quote_by_author,
-        create_voice_overs,
-        create_shorts_with_voice,
-        create_title_description_thumbnail_title_for_list,
-        upload_video_to_youtube,
-        add_comment_to_youtube
+    create_quote_by_author,
+    create_voice_overs,
+    create_shorts_with_voice,
+    create_title_description_thumbnail_title_for_list,
+    upload_video_to_youtube,
+    add_comment_to_youtube,
 ):
     lines_list = create_quote_by_author()
     mp3_files = create_voice_overs(lines_list)
@@ -34,8 +34,8 @@ def shorts_video_pipeline(
 @click.command(context_settings=dict(ignore_unknown_options=True))
 @click.option("--execution_date", default=get_now(), help="Pipeline execution date")
 @click.option("--channel_config_path", default="", help="Learning rate for training")
-@click.option('--recover', '-r', is_flag=True, default=False, help='Recover previous failed run')
-@click.argument('other_args', nargs=-1, type=click.UNPROCESSED)
+@click.option("--recover", "-r", is_flag=True, default=False, help="Recover previous failed run")
+@click.argument("other_args", nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
 def main(click_context, execution_date: str, channel_config_path, recover, other_args):
     pipeline_params: PipelineParams = prepare_and_get_pipeline_params(click_context, PipelineParams)
@@ -54,5 +54,5 @@ def main(click_context, execution_date: str, channel_config_path, recover, other
     pipeline.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

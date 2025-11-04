@@ -8,13 +8,35 @@ from audio.audio_processor import read_audio_clip
 from common.exception import WrongMediaException
 from data.dao import get_db, add_author_to_channel
 from pipelines.params.params_for_pipeline import PipelineParams
-from pipelines.steps.utils import predefined_quote_by_author, get_single_author, find_unused_author, prepare_author_title, prepare_extra_label, prepare_quote_intro_questions, \
-    is_bad_intro_question, prepare_intro_video, prepare_thematic_download_generator, read_video_for_channel, voice_overs, single_voice_over, shorts_with_voice, build_file_name
+from pipelines.steps.utils import (
+    predefined_quote_by_author,
+    get_single_author,
+    find_unused_author,
+    prepare_author_title,
+    prepare_extra_label,
+    prepare_quote_intro_questions,
+    is_bad_intro_question,
+    prepare_intro_video,
+    prepare_thematic_download_generator,
+    read_video_for_channel,
+    voice_overs,
+    single_voice_over,
+    shorts_with_voice,
+    build_file_name,
+)
 from pipelines.you_tube_channel import YouTubeChannel
 from text.helpers import pick_random_from_list
 from util.time import get_now
-from video.movie import LineToMp3File, trim_clip_duration, video_with_text_full_sentence_many_clips, \
-    video_with_quote_and_label, AuthorLabel, save_final_video_file, BIG_PAUSE, add_bg_audio_starting_at
+from video.movie import (
+    LineToMp3File,
+    trim_clip_duration,
+    video_with_text_full_sentence_many_clips,
+    video_with_quote_and_label,
+    AuthorLabel,
+    save_final_video_file,
+    BIG_PAUSE,
+    add_bg_audio_starting_at,
+)
 from video.utils import is_video_matching, find_matching_video, pick_audio_background_file
 from video.video_transitions import first_fade_out_second_fade_in_all
 
@@ -51,7 +73,7 @@ def generate_quotes_video(params: PipelineParams) -> Output(video_file_path=str,
     used_facts = set()
     all_quotes_videos = []
     voice_over_id = 0
-    quotes = author_dict.get('quotes')
+    quotes = author_dict.get("quotes")
     result_text_script = "".join(author_dict.get("quotes") + author_funny_facts + author_interesting_facts + author_inspiring_facts)
     with open(os.path.join(channel.result_dir, f"0_text_script.txt"), "w") as f:
         f.write(result_text_script)
@@ -67,11 +89,11 @@ def generate_quotes_video(params: PipelineParams) -> Output(video_file_path=str,
                 fact_video = video_with_quote_and_label(
                     bg_video,
                     LineToMp3File(fact_label_tuple[0], voice_over_file),
-                    text_colors=['yellow'],
+                    text_colors=["yellow"],
                     fonts_list=channel.config.video_fonts_list,
                     author_label=AuthorLabel(author_dict.get("author"), prepare_author_title(author_dict.get("author_description"))),
                     additional_pause=BIG_PAUSE,
-                    extra_label=fact_label_tuple[1]
+                    extra_label=fact_label_tuple[1],
                 )
                 if fact_video:
                     all_quotes_videos.append(fact_video)
@@ -88,9 +110,9 @@ def generate_quotes_video(params: PipelineParams) -> Output(video_file_path=str,
         single_quote_video = video_with_quote_and_label(
             bg_video,
             LineToMp3File(quote, voice_over_file),
-            text_colors=['white'],
+            text_colors=["white"],
             fonts_list=channel.config.video_fonts_list,
-            shadow_color='black',
+            shadow_color="black",
             author_label=AuthorLabel(author_dict.get("author"), prepare_author_title(author_dict.get("author_description"))),
             additional_pause=BIG_PAUSE,
         )
@@ -100,7 +122,7 @@ def generate_quotes_video(params: PipelineParams) -> Output(video_file_path=str,
     final_video = concatenate_videoclips(all_quotes_videos, method="compose")
     result_video_file_path = build_file_name(author_dict.get("author"), channel, 0, is_swamp=False, params=params)
     save_final_video_file(final_video, result_video_file_path)
-    add_author_to_channel(next(get_db()), channel_name=channel.config.youtube_channel_id, author_name=author_dict.get('author'))
+    add_author_to_channel(next(get_db()), channel_name=channel.config.youtube_channel_id, author_name=author_dict.get("author"))
     logger.info("Finished QUOTES generation")
     return result_video_file_path, result_text_script
 
@@ -115,13 +137,13 @@ def generate_quotes_shorts(params: PipelineParams) -> Output(video_file_path=str
     logger.info(f"Result author that was chosen\n{author_dict}")
     final_video_sequence = []
 
-    quote = pick_random_from_list(author_dict.get('quotes'))
+    quote = pick_random_from_list(author_dict.get("quotes"))
     logger.info(f"Selected randomly following quote:\n{quote}\nwith length {len(quote)}")
 
     while len(quote) > 35 * 5:
-        quote = pick_random_from_list(author_dict.get('quotes'))
+        quote = pick_random_from_list(author_dict.get("quotes"))
 
-    author = author_dict.get('author')
+    author = author_dict.get("author")
     thematic_download_generator = prepare_thematic_download_generator(channel, quote)
 
     voice_over_index = 0
@@ -139,19 +161,20 @@ def generate_quotes_shorts(params: PipelineParams) -> Output(video_file_path=str
             logger.info(f"Skipping question: {intro_question}")
             logger.info("!" * 100)
             continue
-        intro_video, intro_question, voice_over_index = prepare_intro_video(channel, final_video_sequence, voice_over_index, thematic_download_generator,
-                                                                            intro_question=intro_question)
+        intro_video, intro_question, voice_over_index = prepare_intro_video(
+            channel, final_video_sequence, voice_over_index, thematic_download_generator, intro_question=intro_question
+        )
 
         main_quote = video_with_text_full_sentence_many_clips(
             channel,
             [LineToMp3File(quote, voice_over_file)],
-            text_colors=['white'],
+            text_colors=["white"],
             fonts_list=channel.config.video_fonts_list,
-            shadow_color='black',
+            shadow_color="black",
             thematic_download_generator=thematic_download_generator,
             is_save_result=False,
             single_clip_duration=3,
-            bg_audio_filename=pick_audio_background_file(channel)
+            bg_audio_filename=pick_audio_background_file(channel),
         )
         final_video_sequence.append(main_quote)
 
@@ -159,12 +182,13 @@ def generate_quotes_shorts(params: PipelineParams) -> Output(video_file_path=str
             the_end_author = video_with_text_full_sentence_many_clips(
                 channel,
                 [LineToMp3File(author, author_voice_over_file)],
-                text_colors=['yellow'],
+                text_colors=["yellow"],
                 fonts_list=channel.config.video_fonts_list,
-                shadow_color='black',
+                shadow_color="black",
                 thematic_download_generator=thematic_download_generator,
                 is_save_result=False,
-                single_clip_duration=4)
+                single_clip_duration=4,
+            )
             final_video_sequence.append(the_end_author)
 
         logger.info(f"Final video sequence is {len(final_video_sequence)} videos long, concatenating them")
@@ -192,11 +216,13 @@ def music_video(params: PipelineParams) -> None:
         logger.info(f"Reading video clip {counter}")
         clip = read_video_for_channel(channel)
         try:
-            is_video_matching(clip,
-                              topics=channel.video_manager.topics,
-                              colors=channel.video_manager.colors,
-                              colors_to_avoid=channel.video_manager.colors_to_avoid,
-                              topics_to_avoid=channel.video_manager.topics_to_avoid)
+            is_video_matching(
+                clip,
+                topics=channel.video_manager.topics,
+                colors=channel.video_manager.colors,
+                colors_to_avoid=channel.video_manager.colors_to_avoid,
+                topics_to_avoid=channel.video_manager.topics_to_avoid,
+            )
         except WrongMediaException as x:
             logger.info(x)
             continue
@@ -227,21 +253,21 @@ def create_basic_youtube_video(text_script: str, is_ssml: bool, params: Pipeline
     return final_video
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     author_funny_facts = [
         "Isaac Newton was born premature and was so small he could fit into a quart-sized mug.",
         "He is said to have invented the cat flap, but there's no evidence of it.",
-        "Newton was known to have a great sense of humor and loved telling jokes."
+        "Newton was known to have a great sense of humor and loved telling jokes.",
     ]
     author_interesting_facts = [
         "Newton was the first person to describe the laws of motion and the law of gravity.",
         "He also made significant advances in the field of optics, discovering the properties of light and color.",
-        "Newton was a member of the Royal Society and served as its president from 1703 to 1727."
+        "Newton was a member of the Royal Society and served as its president from 1703 to 1727.",
     ]
     author_inspiring_facts = [
         "Despite facing many obstacles, Newton persevered in his scientific pursuits and left a lasting legacy in the field of physics.",
         "He once said, 'If I have seen further than others, it is by standing upon the shoulders of giants.'",
-        "Newton's dedication to his work and his willingness to question accepted knowledge continues to inspire scientists and thinkers today."
+        "Newton's dedication to his work and his willingness to question accepted knowledge continues to inspire scientists and thinkers today.",
     ]
     used_facts = set()
     for i in range(100):

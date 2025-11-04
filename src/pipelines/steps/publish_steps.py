@@ -85,15 +85,17 @@ def mark_video_as_published(video_dir: str, video_id: str, params: PipelineParam
 
 
 @step
-def create_video_meta(text_script: str, params: PipelineParams) \
-        -> Output(title=str, description=str, thumbnail_title=str, comment=str, tags=List[str]):
+def create_video_meta(
+    text_script: str, params: PipelineParams
+) -> Output(title=str, description=str, thumbnail_title=str, comment=str, tags=List[str]):
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     return channel.create_title_description_thumbnail_title(text_script)
 
 
 @step
-def create_video_meta_for_list(text_script: List[str], params: PipelineParams) \
-        -> Output(title=str, description=str, thumbnail_title=str, comment=str, tags=List[str]):
+def create_video_meta_for_list(
+    text_script: List[str], params: PipelineParams
+) -> Output(title=str, description=str, thumbnail_title=str, comment=str, tags=List[str]):
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     return channel.create_title_description_thumbnail_title(" ".join(text_script))
 
@@ -101,7 +103,7 @@ def create_video_meta_for_list(text_script: List[str], params: PipelineParams) \
 @step
 def create_thumbnail(thumbnail_title: str, params: PipelineParams) -> str:
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
-    return channel.create_thumbnail(thumbnail_title) if 'shorts' not in channel.config.youtube_channel_name.lower() else ""
+    return channel.create_thumbnail(thumbnail_title) if "shorts" not in channel.config.youtube_channel_name.lower() else ""
 
 
 @step
@@ -121,11 +123,7 @@ def upload_video_to_youtube_with_tags(final_video: str, title: str, description:
         tags = random_order_list[:15]
         logger.info(f"Picked 15 tags randomly: {tags}")
     video_id = channel.socials_manager.upload_video_to_youtube(
-        final_video,
-        title,
-        description,
-        privacy_status=channel.youtube_privacy_status,
-        tags=tags
+        final_video, title, description, privacy_status=channel.youtube_privacy_status, tags=tags
     )
     return video_id
 
@@ -133,7 +131,7 @@ def upload_video_to_youtube_with_tags(final_video: str, title: str, description:
 @step
 def upload_thumbnail_to_youtube(thumbnail_image_path: str, video_id: str, params: PipelineParams) -> str:
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
-    if 'shorts' not in channel.config.youtube_channel_name.lower():
+    if "shorts" not in channel.config.youtube_channel_name.lower():
         logger.info(f"Uploading {thumbnail_image_path} for video {video_id}")
         thumbnail_url = channel.socials_manager.upload_thumbnail_for_youtube(thumbnail_image_path, video_id)
         return thumbnail_url
@@ -145,8 +143,8 @@ def upload_thumbnail_to_youtube(thumbnail_image_path: str, video_id: str, params
 @step
 def add_comment_to_youtube(thumbnail_image_path: str, video_id: str, params: PipelineParams) -> str:
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
-    if channel.youtube_privacy_status == 'public':
+    if channel.youtube_privacy_status == "public":
         comment_id = channel.socials_manager.add_comment_to_youtube(thumbnail_image_path, video_id)
         return comment_id
     else:
-        return ''
+        return ""

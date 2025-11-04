@@ -2,9 +2,7 @@ import os
 import sqlite3
 import subprocess
 import threading
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from flask import Flask, request, jsonify, redirect, url_for
-from flask_apscheduler import APScheduler
 from flask_swagger_ui import get_swaggerui_blueprint
 from subprocess import TimeoutExpired
 
@@ -13,14 +11,6 @@ from _config import prepare_swagger_json
 MEDIA_EMPIRE_SRC = "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src"
 
 app = Flask(__name__)
-app.config['SCHEDULER_API_ENABLED'] = True
-app.config['SCHEDULER_JOBSTORES'] = {
-    'default': SQLAlchemyJobStore(url='sqlite:///jobs.db')
-}
-scheduler = APScheduler()
-scheduler.init_app(app)
-
-scheduler.start()
 db_name = "commands_status.db"
 
 # Swagger UI setup

@@ -23,12 +23,12 @@ class ChannelConfigTemplate:
         self.youtube_title_suffix: str = None
         self.youtube_privacy_status: str = None
         self.youtube_title_include_author: bool = False
-        self.language: str = 'en'
+        self.language: str = "en"
 
         self.all_extras: Dict[str, Any] = None
 
-        self.video_download_new:  bool = False
-        self.video_orientation: str = 'landscape'  # portrait
+        self.video_download_new: bool = False
+        self.video_orientation: str = "landscape"  # portrait
         self.video_width: int = 1920
         self.video_height: int = 1080
         self.video_transition: str = None
@@ -43,7 +43,7 @@ class ChannelConfigTemplate:
         self.audio_background_api: str = None
         self.audio_background_api_key_or_path: str = None
 
-        self.main_text_type: str = 'text'  # ssml
+        self.main_text_type: str = "text"  # ssml
         self.main_prompt_topics_file = None
         self.main_prompt_narrative_types: List[str] = None
         self.main_prompt_number_of_engagement_techniques: int = None
@@ -88,6 +88,6 @@ def read_config(config_path) -> ChannelConfig:
     return Munch.fromDict(ChannelConfig(config))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     config = read_config("D:\\Projects\\media-empire\\jack\\daily_mindset.yaml")
     print(config)

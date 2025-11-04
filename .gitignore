@@ -7,6 +7,18 @@ __pycache__
 *\__pycache__
 *\*\__pycache__
 .DS_Store
+
+# uv virtual environment
+.venv/
+
+# Python build artifacts
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+dist/
+*.egg-info/
 *oauth2.json
 *.mp4
 *.wav
@@ -16,3 +28,4 @@ __pycache__
 *.m4a
 *.db
 *.txt
+*.pptx

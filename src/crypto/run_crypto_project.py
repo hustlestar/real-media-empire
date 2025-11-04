@@ -9,20 +9,16 @@ CRYPTO_SRC = "G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno"
 
 
 @click.command()
-@click.option('--bat_file', required=True)
-@click.option('--excel_file', required=True)
+@click.option("--bat_file", required=True)
+@click.option("--excel_file", required=False)
 def main(bat_file, excel_file):
-    new_excel_file = excel_file.replace("input_", "")
-    rename_existing_excel_file(new_excel_file)
-    shutil.copy2(excel_file, new_excel_file)
-    click.echo(f"Created a copy of '{excel_file}' as '{new_excel_file}'")
-    process = subprocess.Popen(bat_file,
-                               shell=True,
-                               cwd=CRYPTO_SRC,
-                               text=True,
-                               encoding='utf-8',
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+    if excel_file:
+        new_excel_file = excel_file.replace("input_", "")
+        rename_existing_excel_file(new_excel_file)
+        shutil.copy2(excel_file, new_excel_file)
+        click.echo(f"Created a copy of '{excel_file}' as '{new_excel_file}'")
+
+    process = subprocess.Popen(bat_file, shell=True, cwd=CRYPTO_SRC, text=True, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     stdout, _ = process.communicate(timeout=600)
     click.echo("\nSTDOUT:\n" + stdout)

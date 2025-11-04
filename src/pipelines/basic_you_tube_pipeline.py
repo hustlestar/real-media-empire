@@ -5,7 +5,13 @@ from zenml.pipelines import pipeline
 
 from pipelines.params.params_for_pipeline import PipelineParams, prepare_and_get_pipeline_params
 from pipelines.steps.video_steps import create_basic_youtube_video
-from pipelines.steps.publish_steps import create_video_meta, create_thumbnail, upload_video_to_youtube_with_tags, upload_thumbnail_to_youtube, add_comment_to_youtube
+from pipelines.steps.publish_steps import (
+    create_video_meta,
+    create_thumbnail,
+    upload_video_to_youtube_with_tags,
+    upload_thumbnail_to_youtube,
+    add_comment_to_youtube,
+)
 from pipelines.steps.gpt_steps import build_prompt, create_text_script
 from pipelines.utils import recover_last_run_if_required
 from util.time import get_now
@@ -15,14 +21,14 @@ logger = logging.getLogger(__name__)
 
 @pipeline(enable_cache=True)
 def safe_simple_video_pipeline(
-        build_prompt,
-        create_text_script,
-        create_basic_youtube_video,
-        create_video_meta,
-        upload_video_to_youtube_with_tags,
-        create_thumbnail,
-        upload_thumbnail_to_youtube,
-        add_comment_to_youtube
+    build_prompt,
+    create_text_script,
+    create_basic_youtube_video,
+    create_video_meta,
+    upload_video_to_youtube_with_tags,
+    create_thumbnail,
+    upload_thumbnail_to_youtube,
+    add_comment_to_youtube,
 ):
     prompt = build_prompt()
     text_script, is_ssml = create_text_script(prompt)
@@ -37,8 +43,8 @@ def safe_simple_video_pipeline(
 @click.command(context_settings=dict(ignore_unknown_options=True))
 @click.option("--execution_date", default=get_now(), help="Pipeline execution date")
 @click.option("--channel_config_path", default="", help="Learning rate for training")
-@click.option('--recover', '-r', is_flag=True, default=False, help='Recover previous failed run')
-@click.argument('other_args', nargs=-1, type=click.UNPROCESSED)
+@click.option("--recover", "-r", is_flag=True, default=False, help="Recover previous failed run")
+@click.argument("other_args", nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
 def main(click_context, execution_date: str, channel_config_path, recover, other_args):
     pipeline_params: PipelineParams = prepare_and_get_pipeline_params(click_context, PipelineParams)
@@ -59,5 +65,5 @@ def main(click_context, execution_date: str, channel_config_path, recover, other
     pipeline.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

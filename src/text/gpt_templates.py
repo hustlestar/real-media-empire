@@ -18,7 +18,4 @@ en el siguiente formato:
 Tu respuesta solo debe contener json. El json debe ser válido.
 """
 
-GPT_TEMPLATES = {
-    "en": DEFAULT_TEMPLATE,
-    "es": ES_DEFAULT_TEMPLATE
-}
+GPT_TEMPLATES = {"en": DEFAULT_TEMPLATE, "es": ES_DEFAULT_TEMPLATE}

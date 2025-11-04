@@ -4,15 +4,15 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 class TextPosition(Enum):
-    TOP_LEFT = 'top-left'
-    TOP_CENTER = 'top-center'
-    TOP_RIGHT = 'top-right'
-    CENTER_LEFT = 'center-left'
-    CENTER = 'center'
-    CENTER_RIGHT = 'center-right'
-    BOTTOM_LEFT = 'bottom-left'
-    BOTTOM_CENTER = 'bottom-center'
-    BOTTOM_RIGHT = 'bottom-right'
+    TOP_LEFT = "top-left"
+    TOP_CENTER = "top-center"
+    TOP_RIGHT = "top-right"
+    CENTER_LEFT = "center-left"
+    CENTER = "center"
+    CENTER_RIGHT = "center-right"
+    BOTTOM_LEFT = "bottom-left"
+    BOTTOM_CENTER = "bottom-center"
+    BOTTOM_RIGHT = "bottom-right"
 
 
 def calculate_text_position(image_width, image_height, text_width, text_height, position):
@@ -60,22 +60,33 @@ def add_text_to_image(input_image_path, output_image_path, text, font_path, font
         img.save(output_image_path)
 
 
-if __name__ == '__main__':
-    add_text_to_image('E:\\MEDIA_GALLERY\\PHOTO\\landscape\\large2x\\1121477.jpg',
-                      'E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg',
-                      'POWER',
-                      'E:\\MEDIA_GALLERY\\FONTS\\LeagueSpartan-ExtraBold.ttf',
-                      300, (255, 255, 255), TextPosition.TOP_CENTER)
+if __name__ == "__main__":
+    add_text_to_image(
+        "E:\\MEDIA_GALLERY\\PHOTO\\landscape\\large2x\\1121477.jpg",
+        "E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg",
+        "POWER",
+        "E:\\MEDIA_GALLERY\\FONTS\\LeagueSpartan-ExtraBold.ttf",
+        300,
+        (255, 255, 255),
+        TextPosition.TOP_CENTER,
+    )
 
-    add_text_to_image('E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg',
-                      'E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg',
-                      'OF',
-                      'E:\\MEDIA_GALLERY\\FONTS\\LeagueSpartan-ExtraBold.ttf',
-                      300, (255, 255, 255), TextPosition.CENTER)
+    add_text_to_image(
+        "E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg",
+        "E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg",
+        "OF",
+        "E:\\MEDIA_GALLERY\\FONTS\\LeagueSpartan-ExtraBold.ttf",
+        300,
+        (255, 255, 255),
+        TextPosition.CENTER,
+    )
 
-    add_text_to_image('E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg',
-                      'E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg',
-                      'HABIT',
-                      'E:\\MEDIA_GALLERY\\FONTS\\LeagueSpartan-ExtraBold.ttf',
-                      300, (255, 255, 255), TextPosition.BOTTOM_CENTER)
-
+    add_text_to_image(
+        "E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg",
+        "E:\MEDIA_GALLERY\\THUMBNAILS\\1121477.jpg",
+        "HABIT",
+        "E:\\MEDIA_GALLERY\\FONTS\\LeagueSpartan-ExtraBold.ttf",
+        300,
+        (255, 255, 255),
+        TextPosition.BOTTOM_CENTER,
+    )

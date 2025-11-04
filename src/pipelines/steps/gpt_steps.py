@@ -14,7 +14,7 @@ from pipelines.you_tube_channel import YouTubeChannel
 from text import helpers
 from text.helpers import pick_random_from_list, TemplateArg, finish_line
 
-INT_VALUE = 'integer 1 to 10'
+INT_VALUE = "integer 1 to 10"
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def build_prompt(params: PipelineParams) -> str:
         channel.config.main_prompt_topics_file,
         narrative_types=channel.config.main_prompt_narrative_types,
         engagement_techniques=channel.config.main_prompt_engagement_techniques,
-        number_of_words=channel.config.main_prompt_number_of_words
+        number_of_words=channel.config.main_prompt_number_of_words,
     )
     return prompt
 
@@ -37,24 +37,16 @@ def build_prompt(params: PipelineParams) -> str:
 def create_quote_by_author(params: PipelineParams) -> List[str]:
     channel = YouTubeChannel(channel_config_path=params.channel_config_path, execution_date=params.execution_date)
     channel.socials_manager.youtube_uploader.authenticate()
-    author = pick_random_from_list(json.loads(open(channel.config.main_prompt_topics_file).read())['authors'])
+    author = pick_random_from_list(json.loads(open(channel.config.main_prompt_topics_file).read())["authors"])
     topic = pick_random_from_list(channel.config.main_prompt_narrative_types)
-    prompt_params = {
-        "topic": topic,
-        "author": author,
-        "main_idea": ""
-    }
+    prompt_params = {"topic": topic, "author": author, "main_idea": ""}
     args = [
         TemplateArg(
             text_definition="field named quote having [[topic]] by [[author]] as string. It shouldn't be well known or popular, it should be random",
-            json_field_name='quote',
-            value='\"\"'
+            json_field_name="quote",
+            value='""',
         ),
-        TemplateArg(
-            text_definition="field named author having author of quote",
-            json_field_name='author',
-            value='\"\"'
-        ),
+        TemplateArg(text_definition="field named author having author of quote", json_field_name="author", value='""'),
     ]
     quote_dict = helpers.create_result_dict_from_prompt_template(
         channel.config.main_prompt_template,
@@ -78,25 +70,13 @@ def create_quote_by_author(params: PipelineParams) -> List[str]:
 def rate_text(text, context, prompt_template) -> Dict[str, str]:
     prompt_params = {
         "main_idea": "I'll provide you with text snipper and with short summary of the original full text. "
-                     "You'll rate this text snippet by several criteria in the grade of 1 to 10, where 1 is least matching criteria and 10 is most.\n"
-                     "Here's text snippet: " + text.replace("\n", " ") + "\nHere's short summary: " + context.replace("\n", " ") + "\n",
+        "You'll rate this text snippet by several criteria in the grade of 1 to 10, where 1 is least matching criteria and 10 is most.\n"
+        "Here's text snippet: " + text.replace("\n", " ") + "\nHere's short summary: " + context.replace("\n", " ") + "\n",
     }
     args = [
-        TemplateArg(
-            text_definition="is text snippet clear without full context",
-            json_field_name='clearness',
-            value=INT_VALUE
-        ),
-        TemplateArg(
-            text_definition="is text snippet engaging enough",
-            json_field_name='engaging',
-            value=INT_VALUE
-        ),
-        TemplateArg(
-            text_definition="is text snippet worth publishing as youtube shorts",
-            json_field_name='publishable',
-            value=INT_VALUE
-        ),
+        TemplateArg(text_definition="is text snippet clear without full context", json_field_name="clearness", value=INT_VALUE),
+        TemplateArg(text_definition="is text snippet engaging enough", json_field_name="engaging", value=INT_VALUE),
+        TemplateArg(text_definition="is text snippet worth publishing as youtube shorts", json_field_name="publishable", value=INT_VALUE),
     ]
     result_dict = helpers.create_result_dict_from_prompt_template(
         prompt_template,
@@ -118,7 +98,7 @@ def create_text_script(prompt: str, params: PipelineParams) -> Output(text_scrip
     return text_script, is_ssml
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     channel = YouTubeChannel(channel_config_path="G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\daily_mindset_shorts.yaml")
     for i in range(21):
         print(f"Iteration {i}")

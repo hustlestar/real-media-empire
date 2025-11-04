@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @pipeline(enable_cache=True)
 def generate_quotes_video_pipeline(
-        generate_quotes_shorts,
+    generate_quotes_shorts,
 ):
     video_file_path, text_script = generate_quotes_shorts()
 
@@ -22,9 +22,9 @@ def generate_quotes_video_pipeline(
 @click.option("--channel_config_path", default="", help="Learning rate for training")
 @click.option("--author", default="", help="Author of the quote")
 @click.option("--number_of_videos", default=1, help="Learning rate for training")
-@click.option('--is_split_quote', '-s', is_flag=True, default=False, help='To split quote or not')
-@click.option('--recover', '-r', is_flag=True, default=False, help='Recover previous failed run')
-@click.argument('other_args', nargs=-1, type=click.UNPROCESSED)
+@click.option("--is_split_quote", "-s", is_flag=True, default=False, help="To split quote or not")
+@click.option("--recover", "-r", is_flag=True, default=False, help="Recover previous failed run")
+@click.argument("other_args", nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
 def main(click_context, execution_date: str, channel_config_path, author, number_of_videos, is_split_quote, recover, other_args):
     pipeline_params: PipelineParams = prepare_and_get_pipeline_params(click_context, PipelineParams)
@@ -38,5 +38,5 @@ def main(click_context, execution_date: str, channel_config_path, author, number
     pipeline.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

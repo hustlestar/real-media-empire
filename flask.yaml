@@ -3,8 +3,9 @@ channels:
   - defaults
 dependencies:
   - python=3.9
+  - pip
   - flask
-  - flask_swagger_ui
-  - Flask-APScheduler
   - SQLAlchemy
   - psycopg2
+  - pip:
+      - flask_swagger_ui

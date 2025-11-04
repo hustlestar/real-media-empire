@@ -17,14 +17,14 @@ def take_random_transition(number_of_transitions=0):
 
 def prepare_result_file(transition_name):
     now = get_now()
-    res_file = os.path.join(CONFIG.get('TMP_DOWNLOAD_DIR'), f"{now}_{transition_name}.mp4")
-    res_file_without_tr = os.path.join(CONFIG.get('TMP_DOWNLOAD_DIR'), f"{now}_without_transition.mp4")
+    res_file = os.path.join(CONFIG.get("TMP_DOWNLOAD_DIR"), f"{now}_{transition_name}.mp4")
+    res_file_without_tr = os.path.join(CONFIG.get("TMP_DOWNLOAD_DIR"), f"{now}_without_transition.mp4")
     if os.path.exists(res_file):
         os.remove(res_file)
     return res_file, res_file_without_tr
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # # task = PexelsDownloadTask(query="city", download_dir=CONFIG.get('DOWNLOAD_DIR'), number_of_downloads=5).run()
     # #
     # # video_clips = create_all_video_clips(task.downloaded_files)
@@ -78,15 +78,16 @@ if __name__ == '__main__':
     # concatenate_videoclips(video_clips).write_videofile(res_file_without_tr)
     # print(results_with_transition)
     prompt = "Provide me with 2000 words motivational speech for video about good and useful habits using ideas from Brian Tracy and his books. "
-    prompt = prompt + \
-             "Avoid using word I, be concise and inspiring." \
-             "Represent your answer as ssml for google text to speech api." \
-             "Use 5 seconds breaks between different parts, emphasize important parts by increasing or decreasing pitch." \
-             "Set prosody rate to slow." \
-             "Your answer should contain only xml"
+    prompt = (
+        prompt + "Avoid using word I, be concise and inspiring."
+        "Represent your answer as ssml for google text to speech api."
+        "Use 5 seconds breaks between different parts, emphasize important parts by increasing or decreasing pitch."
+        "Set prosody rate to slow."
+        "Your answer should contain only xml"
+    )
     print(prompt)
-    voice_name = 'en-US-Wavenet-J'
-    audio_file_path = os.path.join(CONFIG.get('MEDIA_GALLERY_DIR'), "VOICE", f"{get_now()}_{voice_name}.mp3")
+    voice_name = "en-US-Wavenet-J"
+    audio_file_path = os.path.join(CONFIG.get("MEDIA_GALLERY_DIR"), "VOICE", f"{get_now()}_{voice_name}.mp3")
     CommonTasks(
         prompt=prompt,
         audio_output_file=audio_file_path,

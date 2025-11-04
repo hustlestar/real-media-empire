@@ -3,8 +3,15 @@ import logging
 from zenml.pipelines import pipeline
 
 from pipelines.params.params_for_pipeline import PipelineParams, prepare_and_get_pipeline_params
-from pipelines.steps.publish_steps import find_youtube_video, mark_video_as_published, create_video_meta, create_thumbnail, upload_video_to_youtube_with_tags, \
-    upload_thumbnail_to_youtube, add_comment_to_youtube
+from pipelines.steps.publish_steps import (
+    find_youtube_video,
+    mark_video_as_published,
+    create_video_meta,
+    create_thumbnail,
+    upload_video_to_youtube_with_tags,
+    upload_thumbnail_to_youtube,
+    add_comment_to_youtube,
+)
 from pipelines.utils import recover_last_run_if_required
 
 logger = logging.getLogger(__name__)
@@ -12,13 +19,13 @@ logger = logging.getLogger(__name__)
 
 @pipeline(enable_cache=True)
 def safe_simple_video_pipeline(
-        find_youtube_video,
-        create_video_meta,
-        upload_video_to_youtube_with_tags,
-        mark_video_as_published,
-        create_thumbnail,
-        upload_thumbnail_to_youtube,
-        add_comment_to_youtube
+    find_youtube_video,
+    create_video_meta,
+    upload_video_to_youtube_with_tags,
+    mark_video_as_published,
+    create_thumbnail,
+    upload_thumbnail_to_youtube,
+    add_comment_to_youtube,
 ):
     video_dir, final_video, text_script = find_youtube_video()
     title, description, thumbnail_title, comment, tags = create_video_meta(text_script)
@@ -32,9 +39,9 @@ def safe_simple_video_pipeline(
 @click.command(context_settings=dict(ignore_unknown_options=True))
 @click.option("--execution_date", default="", help="Pipeline execution date")
 @click.option("--channel_config_path", default="", help="Learning rate for training")
-@click.option('--recover', '-r', is_flag=True, default=False, help='Recover previous failed run')
-@click.option('--is_simple_publish', '-r', is_flag=True, default=True, help='Publish from 1 to 1 dir')
-@click.argument('other_args', nargs=-1, type=click.UNPROCESSED)
+@click.option("--recover", "-r", is_flag=True, default=False, help="Recover previous failed run")
+@click.option("--is_simple_publish", "-r", is_flag=True, default=True, help="Publish from 1 to 1 dir")
+@click.argument("other_args", nargs=-1, type=click.UNPROCESSED)
 @click.pass_context
 def main(click_context, execution_date: str, channel_config_path, recover, is_simple_publish, other_args):
     pipeline_params: PipelineParams = prepare_and_get_pipeline_params(click_context, PipelineParams)
@@ -54,5 +61,5 @@ def main(click_context, execution_date: str, channel_config_path, recover, is_si
     pipeline.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -69,14 +69,14 @@ def call_api_and_check_status(cmd=None, ts=None, msg=None, timeout=1.5 * 60 * 60
 
 def check_gas_and_trigger_swap(**kwargs):
     eth_gas_api_url = 'https://api.etherscan.io/api?module=gastracker&action=gasoracle&apiKey=E2D38MIC5KT642R1MZ5C95QUFB38G5JFMS'
-    safe_gas_price = 20  # Adjust this threshold as needed
+    safe_gas_price = 40  # Adjust this threshold as needed
 
     while True:
         response = requests.get(eth_gas_api_url)
         response_json = response.json()
 
         if response_json['result']['SafeGasPrice'] < safe_gas_price:
-            print('Gas price is below 20')
+            print(f'Gas price is below {safe_gas_price}')
             return call_api_and_check_status(kwargs)
 
         time.sleep(5)  # Wait for 5 seconds before the next check
@@ -139,7 +139,7 @@ class ChannelDAGConfig:
 dag_configs = [
     ChannelDAGConfig(
         dag_id='USDT_to_USDC',
-        schedule_interval='0 1 2-30/2 * *',
+        schedule_interval='0 1,5 * * *',
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
             ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_USDT_to_USDC.bat'
@@ -150,7 +150,7 @@ dag_configs = [
     ),
     ChannelDAGConfig(
         dag_id='USDC_to_USDT',
-        schedule_interval='0 4 1-31/2 * *',
+        schedule_interval='0 3,7 * * *',
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
             ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_USDC_to_USDT.bat'
@@ -159,7 +159,36 @@ dag_configs = [
         timeout=6 * 60 * 60,
         python_operator=check_gas_and_trigger_swap
     ),
-
+    ChannelDAGConfig(
+        dag_id='USDT_to_ETH',
+        schedule_interval='0 5 * * *',
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
+            ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_ANY_to_ANY_USDT_to_ETH.bat',
+        custom_message='Swapping USDT to ETH #usdTetH: ',
+        timeout=6 * 60 * 60,
+        python_operator=check_gas_and_trigger_swap
+    ),
+    ChannelDAGConfig(
+        dag_id='USDC_to_ETH',
+        schedule_interval='0 2 * * *',
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
+            ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_ANY_to_ANY_USDC_to_ETH.bat',
+        custom_message='Swapping USDC to ETH #usdCetH: ',
+        timeout=6 * 60 * 60,
+        python_operator=check_gas_and_trigger_swap
+    ),
+    ChannelDAGConfig(
+        dag_id='ANY_to_ANY',
+        schedule_interval='0 1 * * *',
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
+            ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_ANY_to_ANY.bat',
+        custom_message='Swapping ANY to ANY #any: ',
+        timeout=6 * 60 * 60,
+        python_operator=check_gas_and_trigger_swap
+    ),
     ChannelDAGConfig(
         dag_id='citas_y_palabras__generate',
         schedule_interval='0 2 * * *',

@@ -8,9 +8,7 @@ def extract_frames(video_path, num_frames=10):
     if not video_cap.isOpened():
         raise ValueError(f"Error opening video file {video_path}")
     total_frames = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    frame_indices = set(
-        [int(i) for i in np.linspace(0, total_frames - 1, num=num_frames)]
-    )
+    frame_indices = set([int(i) for i in np.linspace(0, total_frames - 1, num=num_frames)])
     extracted_frames = []
     frame_idx = 0
     while True:
@@ -41,7 +39,7 @@ def save_frames(extracted_frames, output_dir):
     return res
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     video_path = "D:\\Projects\\media-empire\\tmp\\2023-03-10T15-25-33_slide_in_top_all.mp4"
     frames = extract_frames(video_path, num_frames=10)
 

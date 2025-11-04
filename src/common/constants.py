@@ -1,5 +1,20 @@
-EXTRA_LABEL_COLORS = ['orange1', 'DarkOrange', 'CadetBlue1', 'DeepSkyBlue', 'SkyBlue', 'purple1', 'MediumPurple1', 'SpringGreen2', 'SpringGreen1', 'SeaGreen1', 'green1',
-                      'IndianRed1', 'PaleVioletRed1', 'Red1', 'VioletRed1']
+EXTRA_LABEL_COLORS = [
+    "orange1",
+    "DarkOrange",
+    "CadetBlue1",
+    "DeepSkyBlue",
+    "SkyBlue",
+    "purple1",
+    "MediumPurple1",
+    "SpringGreen2",
+    "SpringGreen1",
+    "SeaGreen1",
+    "green1",
+    "IndianRed1",
+    "PaleVioletRed1",
+    "Red1",
+    "VioletRed1",
+]
 VIDEO_BACKGROUND_THEMES = [
     "Sunrise",
     "Forest",
@@ -18,6 +33,6 @@ VIDEO_BACKGROUND_THEMES = [
     "Clouds",
     "fireworks",
     "sexy girl",
-    "woman"
+    "woman",
 ]
 QUOTE_TXT = "1_quote.txt"

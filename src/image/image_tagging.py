@@ -12,8 +12,8 @@ def get_image_classes(raw_image=None, image_ndarray=None, number_of_classes=10):
         image = Image.open(raw_image)
     else:
         image = Image.fromarray(image_ndarray)
-    processor = ViTImageProcessor.from_pretrained('google/vit-base-patch16-224')
-    model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224')
+    processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+    model = ViTForImageClassification.from_pretrained("google/vit-base-patch16-224")
     inputs = processor(images=image, return_tensors="pt")
     outputs = model(**inputs)
     logits = outputs.logits
@@ -25,12 +25,12 @@ def get_image_classes(raw_image=None, image_ndarray=None, number_of_classes=10):
     return result
 
 
-if __name__ == '__main__':
-    url = 'http://images.cocodataset.org/val2017/000000039769.jpg'
+if __name__ == "__main__":
+    url = "http://images.cocodataset.org/val2017/000000039769.jpg"
     image = Image.open(requests.get(url, stream=True).raw)
 
-    processor = ViTImageProcessor.from_pretrained('google/vit-base-patch16-224')
-    model = ViTForImageClassification.from_pretrained('google/vit-base-patch16-224')
+    processor = ViTImageProcessor.from_pretrained("google/vit-base-patch16-224")
+    model = ViTForImageClassification.from_pretrained("google/vit-base-patch16-224")
 
     inputs = processor(images=image, return_tensors="pt")
     outputs = model(**inputs)

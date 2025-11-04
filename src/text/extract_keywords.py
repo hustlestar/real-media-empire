@@ -67,7 +67,7 @@ def extract_key_sentences(transcript, num_sentences=5):
 
 def preprocess_transcript(transcript):
     # Remove timestamps and [Music]
-    cleaned_transcript = re.sub(r'\[\d+\.\d+\s*-\s*\d+\.\d+\]\s*|\[Music\]\s*', '', transcript)
+    cleaned_transcript = re.sub(r"\[\d+\.\d+\s*-\s*\d+\.\d+\]\s*|\[Music\]\s*", "", transcript)
     return cleaned_transcript
 
 
@@ -87,7 +87,7 @@ def select_top_sentences(doc, scores, num_sentences):
 
 def extract_keywords_with_timestamps(initial_transcript_lines, key_idea, last_line_index=0):
     # Split the cleaned transcript into key_sentences
-    key_sentences = [s for s in key_idea.lower().split('\n') if s]
+    key_sentences = [s for s in key_idea.lower().split("\n") if s]
 
     # Initialize a list to store keyword matches
     keyword_matches = []
@@ -96,7 +96,7 @@ def extract_keywords_with_timestamps(initial_transcript_lines, key_idea, last_li
         if not key_sentences:
             last_line_index = last_line_index + i - 1
             break
-        timestamp_match = re.search(r'\[(\d+\.\d+)\s*-\s*(\d+\.\d+)\]', initial_line)
+        timestamp_match = re.search(r"\[(\d+\.\d+)\s*-\s*(\d+\.\d+)\]", initial_line)
         if timestamp_match:
             start_time = float(timestamp_match.group(1))
             end_time = float(timestamp_match.group(2))
@@ -106,16 +106,13 @@ def extract_keywords_with_timestamps(initial_transcript_lines, key_idea, last_li
                 keyword_text = key_sentences[0]
                 key_sentences.remove(keyword_text)
                 # Append the keyword and its corresponding text to the list
-                keyword_matches.append({
-                    'timestamp_range': (start_time, end_time),
-                    'keyword_text': keyword_text.strip()
-                })
+                keyword_matches.append({"timestamp_range": (start_time, end_time), "keyword_text": keyword_text.strip()})
     if key_sentences:
         print(f"Didn't find match for key_sentences:\n{key_sentences}")
     return keyword_matches, last_line_index
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example usage:
     initial_transcript = open("G:\\OLD_DISK_D_LOL\\Projects\media-empire\\src\\video\\download\\downloads\\oBXFBTHSqas_transcript.txt", "r").read()
     # keywords = extract_keywords_from_transcript(transcript)

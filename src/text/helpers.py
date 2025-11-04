@@ -28,22 +28,23 @@ def extract_json_as_dict(text_with_json):
     return result_dict
 
 
-def build_prompt(prompt_template: str,
-                 topics_json_filepath: str,
-                 narrative_types: List[str] = None,
-                 engagement_techniques: List[str] = None,
-                 is_authored=None,
-                 author=None,
-                 number_of_ideas=3,
-                 number_of_words=2500
-                 ):
+def build_prompt(
+    prompt_template: str,
+    topics_json_filepath: str,
+    narrative_types: List[str] = None,
+    engagement_techniques: List[str] = None,
+    is_authored=None,
+    author=None,
+    number_of_ideas=3,
+    number_of_words=2500,
+):
     with open(topics_json_filepath) as f:
         topics_list = json.load(f)
-    if author and any(author == f['author'] for f in topics_list):
-        author_collection = filter(lambda x: x['author'] == author, topics_list)[0]
+    if author and any(author == f["author"] for f in topics_list):
+        author_collection = filter(lambda x: x["author"] == author, topics_list)[0]
     else:
         author_collection = topics_list[random.randint(0, len(topics_list) - 1)]
-        author = author_collection['author']
+        author = author_collection["author"]
 
     is_book = False
     if is_authored is not None:
@@ -74,14 +75,14 @@ def build_prompt(prompt_template: str,
     else:
         techniques = ""
 
-    prompt = (prompt_template
-              .replace("{number_of_words}", str(number_of_words))
-              .replace("{theme}", theme)
-              .replace("{author}", author)
-              .replace("{mention_author}", mention_author)
-              .replace("{narrative_type}", narrative_type)
-              .replace("{engagement_techniques}", techniques)
-              )
+    prompt = (
+        prompt_template.replace("{number_of_words}", str(number_of_words))
+        .replace("{theme}", theme)
+        .replace("{author}", author)
+        .replace("{mention_author}", mention_author)
+        .replace("{narrative_type}", narrative_type)
+        .replace("{engagement_techniques}", techniques)
+    )
     logger.info("-" * 100)
     logger.info(f"Built following prompt:\n{prompt}")
     logger.info("-" * 100)
@@ -89,7 +90,7 @@ def build_prompt(prompt_template: str,
 
 
 def pick_topic_theme(author_collection):
-    topics = author_collection['topics']
+    topics = author_collection["topics"]
     return pick_random_from_list(topics)
 
 
@@ -98,7 +99,7 @@ def pick_random_from_list(any_list):
 
 
 def pick_book_theme(author_collection):
-    books = author_collection['books']
+    books = author_collection["books"]
     return f"{pick_random_from_list(books)}"
 
 
@@ -118,7 +119,9 @@ def create_thoughts_list(topic="from Michael Hyatt's Your Best Year Ever book", 
     raise Exception("Failed to create required json using ChatGPT")
 
 
-def create_result_dict_from_prompt_template(prompt_template: str, args, params, model_name='gpt-3.5-turbo', results_dir=None, tokens_number=700) -> Dict[str, Any]:
+def create_result_dict_from_prompt_template(
+    prompt_template: str, args, params, model_name="gpt-3.5-turbo", results_dir=None, tokens_number=700
+) -> Dict[str, Any]:
     prompt = create_prompt_from_template(args, params, prompt_template)
     retry_counter = 0
     while retry_counter < 5:
@@ -137,10 +140,10 @@ def create_result_dict_from_prompt_template(prompt_template: str, args, params, 
 
 
 def has_json(result_text):
-    return '{' in result_text and '}' in result_text
+    return "{" in result_text and "}" in result_text
 
 
-TemplateArg = namedtuple('TemplateArg', ['text_definition', 'json_field_name', 'value'])
+TemplateArg = namedtuple("TemplateArg", ["text_definition", "json_field_name", "value"])
 
 
 def create_prompt_from_template(args: List[TemplateArg], params: Dict[str, str], template_string: str = DEFAULT_TEMPLATE):
@@ -149,12 +152,8 @@ def create_prompt_from_template(args: List[TemplateArg], params: Dict[str, str],
     for i, a in enumerate(args):
         arg1 = f"\t{i + 1}. {a.text_definition}" + ("" if i == len(args) - 1 else """,\n${arg1}""")
         arg2 = a.json_field_name
-        arg3 = f'{a.value}' + ("" if i == len(args) - 1 else f""",\n\t"${{arg2}}": ${{arg3}}""")
-        res = (res.replace("""${arg1}""", arg1)
-               .replace("""${arg2}""", arg2)
-               .replace("""${arg3}""", arg3)
-               .replace("""${n}""", number_of_fields)
-               )
+        arg3 = f"{a.value}" + ("" if i == len(args) - 1 else f""",\n\t"${{arg2}}": ${{arg3}}""")
+        res = res.replace("""${arg1}""", arg1).replace("""${arg2}""", arg2).replace("""${arg3}""", arg3).replace("""${n}""", number_of_fields)
     for k, v in params.items():
         res = res.replace(f"[[{k}]]", v)
     print(res)
@@ -162,27 +161,27 @@ def create_prompt_from_template(args: List[TemplateArg], params: Dict[str, str],
 
 
 def find_split_index(line, max_line_length):
-    index = line.find('but') if 'but' in line.lower() else -1
+    index = line.find("but") if "but" in line.lower() else -1
     if 11 < index < 25:
         print(f"but index {index}")
         return index
-    index = line.find('and') if 'and' in line.lower() else -1
+    index = line.find("and") if "and" in line.lower() else -1
     if 11 < index < 25:
         print(f"and index {index}")
         return index
-    index = line.find(',') if ',' in line else -1
+    index = line.find(",") if "," in line else -1
     if 11 < index < 25:
         print(f"comma index {index}")
         return index
-    index = line.find(';') if ';' in line else -1
+    index = line.find(";") if ";" in line else -1
     if 11 < index < 25:
         print(f"semicolom index {index}")
         return index
-    index = line.find(' is ') if ' is ' in line else -1
+    index = line.find(" is ") if " is " in line else -1
     if 11 < index < 25:
         print(f"is index {index}")
         return index
-    index = line.find(' are ') if ' are ' in line else -1
+    index = line.find(" are ") if " are " in line else -1
     if 11 < index < 25:
         print(f"are index {index}")
         return index
@@ -249,64 +248,37 @@ def prepare_all_quotes():
     all_authors_and_quotes = {}
     for c in categories:
         category_args = [
-            TemplateArg(
-                text_definition=f"100 {c} names as strings in array field called authors",
-                json_field_name='authors',
-                value='[]'
-            ),
+            TemplateArg(text_definition=f"100 {c} names as strings in array field called authors", json_field_name="authors", value="[]"),
         ]
-        category_params = {
-            "main_idea": ""
-        }
+        category_params = {"main_idea": ""}
         authors_dict = create_result_dict_from_prompt_template(
-            DEFAULT_TEMPLATE,
-            category_args,
-            category_params,
-            model_name='text-davinci-003',
-            tokens_number=3500
+            DEFAULT_TEMPLATE, category_args, category_params, model_name="text-davinci-003", tokens_number=3500
         )
         print(authors_dict)
         all_quotes_in_category = []
-        for a in authors_dict.get('authors'):
-            params = {
-                "topic": "quotes",
-                "author": a,
-                "main_idea": ""
-            }
+        for a in authors_dict.get("authors"):
+            params = {"topic": "quotes", "author": a, "main_idea": ""}
             args = [
-                TemplateArg(
-                    text_definition="100 [[topic]] by [[author]] in array field called quotes",
-                    json_field_name='quotes',
-                    value='[]'
-                ),
-                TemplateArg(
-                    text_definition="author of quote",
-                    json_field_name='author',
-                    value='\"\"'
-                ),
+                TemplateArg(text_definition="100 [[topic]] by [[author]] in array field called quotes", json_field_name="quotes", value="[]"),
+                TemplateArg(text_definition="author of quote", json_field_name="author", value='""'),
             ]
             try:
                 if a in all_authors_and_quotes.keys():
                     print("-" * 100)
                     print(f"Cache hit for author {a}")
                     print("-" * 100)
-                    all_quotes_in_category.append({
-                        "author": a,
-                        "quotes": all_authors_and_quotes[a]
-                    })
+                    all_quotes_in_category.append({"author": a, "quotes": all_authors_and_quotes[a]})
                 else:
-                    quotes_by_author = create_result_dict_from_prompt_template(DEFAULT_TEMPLATE,
-                                                                               args,
-                                                                               params,
-                                                                               model_name='text-davinci-003',
-                                                                               tokens_number=3500)
-                    quotes_by_author['quotes'] = list(set(quotes_by_author['quotes']))
-                    all_authors_and_quotes[quotes_by_author['author']] = quotes_by_author['quotes']
+                    quotes_by_author = create_result_dict_from_prompt_template(
+                        DEFAULT_TEMPLATE, args, params, model_name="text-davinci-003", tokens_number=3500
+                    )
+                    quotes_by_author["quotes"] = list(set(quotes_by_author["quotes"]))
+                    all_authors_and_quotes[quotes_by_author["author"]] = quotes_by_author["quotes"]
                     all_quotes_in_category.append(quotes_by_author)
             except:
                 print(f"Failed to get quotes by {a}")
 
-        with open(f"G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\{c.lower().replace(' ', '_')}.json", 'w') as r:
+        with open(f"G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\{c.lower().replace(' ', '_')}.json", "w") as r:
             r.write(json.dumps(all_quotes_in_category))
 
 
@@ -330,64 +302,37 @@ def prepare_all_authors():
     all_authors_and_quotes = {}
     for c in categories:
         category_args = [
-            TemplateArg(
-                text_definition=f"100 {c} names as strings in array field called authors",
-                json_field_name='authors',
-                value='[]'
-            ),
+            TemplateArg(text_definition=f"100 {c} names as strings in array field called authors", json_field_name="authors", value="[]"),
         ]
-        category_params = {
-            "main_idea": ""
-        }
+        category_params = {"main_idea": ""}
         authors_dict = create_result_dict_from_prompt_template(
-            DEFAULT_TEMPLATE,
-            category_args,
-            category_params,
-            model_name='text-davinci-003',
-            tokens_number=3500
+            DEFAULT_TEMPLATE, category_args, category_params, model_name="text-davinci-003", tokens_number=3500
         )
         print(authors_dict)
         all_quotes_in_category = []
-        for a in authors_dict.get('authors'):
-            params = {
-                "topic": "quotes",
-                "author": a,
-                "main_idea": ""
-            }
+        for a in authors_dict.get("authors"):
+            params = {"topic": "quotes", "author": a, "main_idea": ""}
             args = [
-                TemplateArg(
-                    text_definition="100 [[topic]] by [[author]] in array field called quotes",
-                    json_field_name='quotes',
-                    value='[]'
-                ),
-                TemplateArg(
-                    text_definition="author of quote",
-                    json_field_name='author',
-                    value='\"\"'
-                ),
+                TemplateArg(text_definition="100 [[topic]] by [[author]] in array field called quotes", json_field_name="quotes", value="[]"),
+                TemplateArg(text_definition="author of quote", json_field_name="author", value='""'),
             ]
             try:
                 if a in all_authors_and_quotes.keys():
                     print("-" * 100)
                     print(f"Cache hit for author {a}")
                     print("-" * 100)
-                    all_quotes_in_category.append({
-                        "author": a,
-                        "quotes": all_authors_and_quotes[a]
-                    })
+                    all_quotes_in_category.append({"author": a, "quotes": all_authors_and_quotes[a]})
                 else:
-                    quotes_by_author = create_result_dict_from_prompt_template(DEFAULT_TEMPLATE,
-                                                                               args,
-                                                                               params,
-                                                                               model_name='text-davinci-003',
-                                                                               tokens_number=3500)
-                    quotes_by_author['quotes'] = list(set(quotes_by_author['quotes']))
-                    all_authors_and_quotes[quotes_by_author['author']] = quotes_by_author['quotes']
+                    quotes_by_author = create_result_dict_from_prompt_template(
+                        DEFAULT_TEMPLATE, args, params, model_name="text-davinci-003", tokens_number=3500
+                    )
+                    quotes_by_author["quotes"] = list(set(quotes_by_author["quotes"]))
+                    all_authors_and_quotes[quotes_by_author["author"]] = quotes_by_author["quotes"]
                     all_quotes_in_category.append(quotes_by_author)
             except:
                 print(f"Failed to get quotes by {a}")
 
-        with open(f"G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\{c.lower().replace(' ', '_')}.json", 'w') as r:
+        with open(f"G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\{c.lower().replace(' ', '_')}.json", "w") as r:
             r.write(json.dumps(all_quotes_in_category))
 
 
@@ -404,45 +349,32 @@ Your response should contain only json. Json must be valid. Don't include row nu
 """
     params = {}
     args = [
-        TemplateArg(text_definition="author of quote with value [[author]]",
-                    json_field_name='author',
-                    value='\"[[author]]\"'),
-        TemplateArg(text_definition="2-5 words description about author, if dead with years of living",
-                    json_field_name='author_description',
-                    value='\"years from - years to if dead, description\"'),
-        TemplateArg(text_definition="array with 1-3 funny facts about author",
-                    json_field_name='author_funny_facts',
-                    value='[]'),
-        TemplateArg(text_definition="array with 1-3 interesting facts about author",
-                    json_field_name='author_interesting_facts',
-                    value='[]'),
-        TemplateArg(text_definition="array with 1-3 inspiring facts about author",
-                    json_field_name='author_inspiring_facts',
-                    value='[]'),
+        TemplateArg(text_definition="author of quote with value [[author]]", json_field_name="author", value='"[[author]]"'),
+        TemplateArg(
+            text_definition="2-5 words description about author, if dead with years of living",
+            json_field_name="author_description",
+            value='"years from - years to if dead, description"',
+        ),
+        TemplateArg(text_definition="array with 1-3 funny facts about author", json_field_name="author_funny_facts", value="[]"),
+        TemplateArg(text_definition="array with 1-3 interesting facts about author", json_field_name="author_interesting_facts", value="[]"),
+        TemplateArg(text_definition="array with 1-3 inspiring facts about author", json_field_name="author_inspiring_facts", value="[]"),
     ]
     for q in os.listdir(jack_quotes):
         with open(os.path.join(jack_quotes, q)) as f:
             quotes = json.loads(f.read())
         new_quotes = []
         for k in quotes:
-            params['author'] = k.get('author')
+            params["author"] = k.get("author")
             quotes_by_author = None
             while quotes_by_author is None:
                 try:
                     quotes_by_author = create_result_dict_from_prompt_template(
-                        quote_template,
-                        args,
-                        params,
-                        model_name='gpt-3.5-turbo',
-                        tokens_number=1500)
+                        quote_template, args, params, model_name="gpt-3.5-turbo", tokens_number=1500
+                    )
                 except Exception as x:
                     print(x)
-            new_quotes.append({
-                "quotes": list(set(k.get('quotes'))),
-                **quotes_by_author,
-                "author": k.get('author')
-            })
-        with open(os.path.join(jack_quotes, f"clean_{q}"), 'w') as o:
+            new_quotes.append({"quotes": list(set(k.get("quotes"))), **quotes_by_author, "author": k.get("author")})
+        with open(os.path.join(jack_quotes, f"clean_{q}"), "w") as o:
             o.write(json.dumps(new_quotes))
 
 
@@ -455,14 +387,14 @@ def more_than_n_quotes(number_of_quotes=30):
             quotes = json.loads(f.read())
         new_quotes = []
         for k in quotes:
-            if len(k.get('quotes')) > number_of_quotes:
+            if len(k.get("quotes")) > number_of_quotes:
                 new_quotes.append({**k})
         print(f"Writing {len(new_quotes)} quotes to file more_than_{number_of_quotes}_quotes_{q}, initially there were {len(quotes)}")
-        with open(os.path.join(jack_quotes, f"more_than_20_quotes_{q}"), 'w') as o:
+        with open(os.path.join(jack_quotes, f"more_than_20_quotes_{q}"), "w") as o:
             o.write(json.dumps(new_quotes))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # prepare_all_quotes()
 
     # quote_lines = [f"{s}." for s in quote.split(".") if s]
