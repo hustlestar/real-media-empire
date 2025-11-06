@@ -19,7 +19,7 @@ export default function TagFilter({ selectedTags, onTagToggle, onClearAll }: Tag
     )
   }
 
-  if (!tagsData || tagsData.tags.length === 0) {
+  if (!tagsData || !tagsData.tags || tagsData.tags.length === 0) {
     return (
       <div className="text-sm text-muted-foreground p-4">
         No tags available
