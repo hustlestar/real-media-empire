@@ -5,12 +5,14 @@ from moviepy.video.compositing.transitions import *
 
 
 def first_fade_out_second_fade_in(clip1: VideoClip, clip2, duration):
-    return concatenate_videoclips([
-        clip1.subclip(0, clip1.duration - duration),
-        clip1.subclip(clip1.duration - duration).fx(vfx.fadeout, duration),
-        clip2.subclip(0, duration).fx(vfx.fadein, duration),
-        clip2.subclip(duration)
-    ])
+    return concatenate_videoclips(
+        [
+            clip1.subclip(0, clip1.duration - duration),
+            clip1.subclip(clip1.duration - duration).fx(vfx.fadeout, duration),
+            clip2.subclip(0, duration).fx(vfx.fadein, duration),
+            clip2.subclip(duration),
+        ]
+    )
 
 
 def first_fade_out_second_fade_in_all(clips: List[VideoClip], duration):
@@ -67,24 +69,24 @@ def slide_in_top_all(clips: List[VideoClip], duration=2):
     """
     Slides from right to left over duration to replace clip1.
     """
-    return slide_in_to_all(clips, duration, side='top')
+    return slide_in_to_all(clips, duration, side="top")
 
 
 def slide_in_bottom_all(clips: List[VideoClip], duration=2):
     """
     Slides from right to left over duration to replace clip1.
     """
-    return slide_in_to_all(clips, duration, side='bottom')
+    return slide_in_to_all(clips, duration, side="bottom")
 
 
-def slide_in_to_all(clips, duration, side='left'):
+def slide_in_to_all(clips, duration, side="left"):
     slided_clips = []
     for i, clip in enumerate(clips):
         if not i:
             slided_clips.append(clip)
         else:
             slided_clips.append(CompositeVideoClip([clip.fx(transfx.slide_in, duration=duration, side=side)]))
-    return concatenate_videoclips(slided_clips, method='compose', padding=-1 * duration)
+    return concatenate_videoclips(slided_clips, method="compose", padding=-1 * duration)
 
 
 def slideleft(clip1, clip2, duration):
@@ -92,7 +94,7 @@ def slideleft(clip1, clip2, duration):
     Slides clip2 from right to left over duration to replace clip1.
     """
 
-    return CompositeVideoClip([slide_out(clip1, duration, 'left'), slide_in(clip2, duration, 'right')])
+    return CompositeVideoClip([slide_out(clip1, duration, "left"), slide_in(clip2, duration, "right")])
 
 
 def slideright(clip1, clip2, duration):
@@ -197,7 +199,7 @@ TRANSITIONS_FOR_LIST = {
     first_fade_in_all.__name__: first_fade_in_all,
     slide_in_left_all.__name__: slide_in_left_all,
     slide_in_top_all.__name__: slide_in_top_all,
-    slide_in_bottom_all.__name__: slide_in_bottom_all
+    slide_in_bottom_all.__name__: slide_in_bottom_all,
 }
 
 DEFAULT_TRANSITION = fadeinout

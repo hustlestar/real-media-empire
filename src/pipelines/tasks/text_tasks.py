@@ -7,19 +7,24 @@ from pipelines.tasks.common_tasks import CommonTasks
 from text.chat_gpt import ChatGPTTask
 from text.helpers import extract_json_as_dict, has_json
 
+ENGLISH_LANGUAGE = "english"
+
 
 class TextTasks:
-    def __init__(self, main_ttt_api=None,
-                 main_ttt_model_name=None,
-                 main_ttt_tokens_number=None,
-                 description_ttt_api=None,
-                 description_ttt_model_name=None,
-                 title_ttt_api=None,
-                 title_ttt_model_name=None,
-                 thumbnail_ttt_api=None,
-                 thumbnail_model_name=None,
-                 title_suffix=None,
-                 results_dir=None):
+    def __init__(
+        self,
+        main_ttt_api=None,
+        main_ttt_model_name=None,
+        main_ttt_tokens_number=None,
+        description_ttt_api=None,
+        description_ttt_model_name=None,
+        title_ttt_api=None,
+        title_ttt_model_name=None,
+        thumbnail_ttt_api=None,
+        thumbnail_model_name=None,
+        title_suffix=None,
+        results_dir=None,
+    ):
         self.main_ttt_api: str = main_ttt_api
         self.main_ttt_model_name: str = main_ttt_model_name
         self.main_ttt_tokens_number: int = main_ttt_tokens_number
@@ -42,12 +47,12 @@ class TextTasks:
 
         self.title, self.description, self.thumbnail_title, self.comment, self.tags = None, None, None, None, None
 
-    def create_text(self, prompt, text_type='text') -> Tuple[str, bool]:
+    def create_text(self, prompt, text_type="text") -> Tuple[str, bool]:
         common_tasks = CommonTasks(prompt=prompt, model_name=self.main_ttt_model_name, tokens_number=self.main_ttt_tokens_number)
         self.text_for_voiceover, self.is_ssml = common_tasks.prepare_text_for_voiceover()
-        with open(os.path.join(self.results_dir, '1_text_script.txt'), 'w') as f:
+        with open(os.path.join(self.results_dir, "1_text_script.txt"), "w") as f:
             f.write(self.text_for_voiceover)
-        with open(os.path.join(self.results_dir, '0_prompt.txt'), 'w') as k:
+        with open(os.path.join(self.results_dir, "0_prompt.txt"), "w") as k:
             k.write(prompt)
         return self.text_for_voiceover, self.is_ssml
 
@@ -60,50 +65,63 @@ class TextTasks:
     def create_thumbnail_title(self, text, prompt=None):
         pass
 
-    def create_title_description_thumbnail_title(self, text, prompt=None) -> Tuple[str, str, str, str, List[str]]:
-        pass
-        self.cleaned_text = re.sub(r'<.*?>', '', text) if '<speak>' in text else text
+    def create_title_description_thumbnail_title(
+        self, text, prompt=None, language=ENGLISH_LANGUAGE, include_author=False
+    ) -> Tuple[str, str, str, str, List[str]]:
+        self.cleaned_text = re.sub(r"<.*?>", "", text) if "<speak>" in text else text
+
+        langauge_string = f", all values must be in {language} language" if language and language != ENGLISH_LANGUAGE else ""
         if not prompt:
-            prompt = f"""
-            Provide json with following data: title up to {100 - len(self.title_suffix) - 1} characters long,  2 to 5 sentences description including at least 20 hashtags in the bottom, 2 to 4 words thumbnail clickbait phrase, comment with question to engage audience, array with 5-10 tags for video seo.
-            in the following format:""" + \
-                     """{
-                         "title": "",
-                         "description_from_2_to_5_sentences": "",
-                         "thumbnail_from_2_to_4_words_clickbait_phrase": "",
-                         "question_comment": "",
-                         "tags": []
-                     }
-                     Your response should contain only json.
-                     for the following video script:\n""" + self.cleaned_text
+            prompt = (
+                f"""
+Provide json with following data: title up to {60 - len(self.title_suffix) - 1} characters long{'and include author name in title' if include_author else ''}, 
+3 to 7 sentences description including at least 15 hashtags in the bottom, 
+2 to 4 words thumbnail clickbait phrase, comment with question to engage audience,
+array with 5-10 tags for video seo{langauge_string}.
+In the following format:"""
+                + """{
+ "title": "",
+ "description_from_3_to_7_sentences": "",
+ "thumbnail_from_2_to_4_words_clickbait_phrase": "",
+ "question_comment": "",
+ "tags": []
+}
+Your response should contain only json.
+for the following video script:\n"""
+                + self.cleaned_text
+            )
             retry_counter = 0
             while retry_counter < 5:
                 result_text = ChatGPTTask(prompt=prompt, tokens_number=500).run().text
                 print(f"CHAT GPT response \n{result_text}")
                 if has_json(result_text):
                     result_dict = extract_json_as_dict(result_text)
-                    if ("title" in result_dict.keys()
-                            and "description_from_2_to_5_sentences" in result_dict.keys()
-                            and "thumbnail_from_2_to_4_words_clickbait_phrase" in result_dict.keys()
+                    if (
+                        "title" in result_dict.keys()
+                        and "description_from_3_to_7_sentences" in result_dict.keys()
+                        and "thumbnail_from_2_to_4_words_clickbait_phrase" in result_dict.keys()
                     ):
                         self.title, self.description, self.thumbnail_title, self.comment, self.tags = (
                             result_dict["title"],
-                            result_dict["description_from_2_to_5_sentences"],
+                            result_dict["description_from_3_to_7_sentences"],
                             result_dict["thumbnail_from_2_to_4_words_clickbait_phrase"],
                             result_dict["question_comment"],
                             result_dict["tags"],
                         )
                         self.title = (str(self.title).upper().strip() + f" {self.title_suffix}").strip()
                         self.thumbnail_title = str(self.thumbnail_title).upper()
-                        with open(os.path.join(self.results_dir, '4_youtube_meta.json'), 'w') as f:
-                            f.write(json.dumps(
-                                {
-                                    "title": self.title,
-                                    "description": self.description,
-                                    "thumbnail_title": self.thumbnail_title,
-                                    "comment": self.comment,
-                                    "tags": self.tags
-                                }, indent=4)
+                        with open(os.path.join(self.results_dir, "4_youtube_meta.json"), "w") as f:
+                            f.write(
+                                json.dumps(
+                                    {
+                                        "title": self.title,
+                                        "description": self.description,
+                                        "thumbnail_title": self.thumbnail_title,
+                                        "comment": self.comment,
+                                        "tags": self.tags,
+                                    },
+                                    indent=4,
+                                )
                             )
                         return self.title, self.description, self.thumbnail_title, self.comment, self.tags
                 print(f"Invalid ChatGPT response in try {retry_counter}, going on retry")
@@ -114,7 +132,7 @@ class TextTasks:
             raise NotImplementedError("Please provide logic")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # text_tasks = TextTasks()
     # with open("D:\\Projects\\media-empire\\tmp\\test_text.xml", 'r') as f:
     #     text = f.read()

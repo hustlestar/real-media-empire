@@ -13,17 +13,30 @@ from audio import google_tts, cyber_voice_tts, xi_labs_tts
 from audio.text_to_speech import TextToSpeech
 
 TTS_APIS: Dict[str, TextToSpeech] = {
-    'google_tts': google_tts.GoogleTextToSpeech(),
-    'cyber_voice_tts': cyber_voice_tts.CyberVoiceTextToSpeech(),
-    'xi_labs_tts': xi_labs_tts.ElevenLabsTextToSpeech(),
+    "google_tts": google_tts.GoogleTextToSpeech(),
+    "cyber_voice_tts": cyber_voice_tts.CyberVoiceTextToSpeech(),
+    "xi_labs_tts": xi_labs_tts.ElevenLabsTextToSpeech(),
 }
 
 logger = logging.getLogger(__name__)
 
 
 class AudioTasks:
-    def __init__(self, audio_background_dir_path=None, audio_background_api=None, audio_background_api_key_or_path=None, tts_api='google_tts', tts_type='ssml',
-                 tts_voice_name="en-US-Wavenet-J", tts_secondary_voice_name=None, tts_api_key_or_path=None, start_end_delay=None, results_dir=None, voice_over_speed=None):
+    def __init__(
+        self,
+        audio_background_dir_path=None,
+        audio_background_api=None,
+        audio_background_api_key_or_path=None,
+        tts_api="google_tts",
+        tts_type="ssml",
+        tts_voice_name="en-US-Wavenet-J",
+        tts_secondary_voice_name=None,
+        tts_api_key_or_path=None,
+        start_end_delay=None,
+        results_dir=None,
+        voice_over_speed=None,
+        tts_model="",
+    ):
         self.audio_background_dir_path = audio_background_dir_path
         self.audio_background_api = audio_background_api
         self.audio_background_api_key_or_path = audio_background_api_key_or_path
@@ -34,12 +47,13 @@ class AudioTasks:
         self.tts_voice_name = tts_voice_name
         self.tts_secondary_voice_name = tts_secondary_voice_name
         self.tts_api_key_or_path = tts_api_key_or_path
+        self.tts_model = tts_model
         self.results_dir = results_dir
         self.voice_over_speed = voice_over_speed
 
     def create_audio_background(self):
         if self.audio_background_dir_path:
-            all_mp3 = [f for f in os.listdir(self.audio_background_dir_path) if f.endswith('.mp3')]
+            all_mp3 = [f for f in os.listdir(self.audio_background_dir_path) if f.endswith(".mp3")]
             random_background_mp3 = os.path.join(self.audio_background_dir_path, all_mp3[random.randint(0, len(all_mp3) - 1)])
             print(f"Audio background clip {random_background_mp3}")
             return random_background_mp3
@@ -53,13 +67,17 @@ class AudioTasks:
         text_script = text_script.replace(" live", "leeve")
         result_audio_file = os.path.join(self.results_dir, result_file)
         if is_ssml:
-            api.synthesize_ssml(text_script, output_file=result_audio_file, voice_name=self.tts_voice_name if not is_secondary else self.tts_secondary_voice_name)
+            api.synthesize_ssml(
+                text_script, output_file=result_audio_file, voice_name=self.tts_voice_name if not is_secondary else self.tts_secondary_voice_name
+            )
         else:
-            api.synthesize_text(text_script, output_file=result_audio_file, voice_name=self.tts_voice_name if not is_secondary else self.tts_secondary_voice_name,
-                                audio_config=texttospeech.AudioConfig(
-                                    audio_encoding=AudioEncoding.MP3,
-                                    speaking_rate=speaking_rate
-                                ))
+            api.synthesize_text(
+                text_script,
+                output_file=result_audio_file,
+                voice_name=self.tts_voice_name if not is_secondary else self.tts_secondary_voice_name,
+                audio_config=texttospeech.AudioConfig(audio_encoding=AudioEncoding.MP3, speaking_rate=speaking_rate),
+                model_id=self.tts_model,
+            )
 
         return result_audio_file
 

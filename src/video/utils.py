@@ -10,7 +10,7 @@ from image.colors import get_image_main_colors
 from image.image_tagging import get_image_classes
 from image.video_to_image import extract_frames
 from pipelines.tasks import DEFAULT_ORIENTATION, DEFAULT_WIDTH, DEFAULT_HEIGHT
-from video.downloader import PexelsDownloadTask
+from text.helpers import pick_random_from_list
 
 DIR_CACHE = {}
 
@@ -20,16 +20,23 @@ logger = logging.getLogger(__name__)
 def find_matching_video(channel, required_duration=None):
     bg_video = None
     while bg_video is None:
-        clip = read_n_video_clips(os.path.join(CONFIG.get('MEDIA_GALLERY_DIR'),
-                                               "VIDEO",
-                                               channel.config.video_orientation,
-                                               f"{channel.config.video_width}_{channel.config.video_height}"), 1)[0]
+        clip = read_n_video_clips(
+            os.path.join(
+                CONFIG.get("MEDIA_GALLERY_DIR"),
+                "VIDEO",
+                channel.config.video_orientation,
+                f"{channel.config.video_width}_{channel.config.video_height}",
+            ),
+            1,
+        )[0]
         try:
-            is_video_matching(clip,
-                              topics=channel.video_manager.topics,
-                              colors=channel.video_manager.colors,
-                              colors_to_avoid=channel.video_manager.colors_to_avoid,
-                              topics_to_avoid=channel.video_manager.topics_to_avoid)
+            is_video_matching(
+                clip,
+                topics=channel.video_manager.topics,
+                colors=channel.video_manager.colors,
+                colors_to_avoid=channel.video_manager.colors_to_avoid,
+                topics_to_avoid=channel.video_manager.topics_to_avoid,
+            )
             if required_duration and clip.duration < required_duration:
                 raise WrongMediaException(f"Video duration is too short {clip.duration}")
             bg_video = clip
@@ -71,15 +78,16 @@ def extract_video_colors_and_topics(clip, colors, topics):
 
 
 def build_video_dir_path(orientation=DEFAULT_ORIENTATION, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
-    return os.path.join(CONFIG.get('MEDIA_GALLERY_DIR'),
-                        "VIDEO",
-                        orientation,
-                        f"{width}_{height}")
+    return os.path.join(CONFIG.get("MEDIA_GALLERY_DIR"), "VIDEO", orientation, f"{width}_{height}")
 
 
 def prepare_clip(video_dir, is_should_download, topics, orientation, width, height):
+    from video.downloader import PexelsDownloadTask
+
     if is_should_download and topics:
-        res = PexelsDownloadTask(query=topics[random.randint(0, len(topics))], number_of_downloads=1, orientation=orientation, height=height, width=width).run()
+        res = PexelsDownloadTask(
+            query=topics[random.randint(0, len(topics))], number_of_downloads=1, orientation=orientation, height=height, width=width
+        ).run()
         clip = read_video_clip(res.downloaded_files[0])
     else:
         clip = read_n_video_clips(video_dir, 1)[0]
@@ -87,18 +95,25 @@ def prepare_clip(video_dir, is_should_download, topics, orientation, width, heig
 
 
 def download_new_videos(topic, number, channel) -> List[Any]:
-    task = PexelsDownloadTask(query=topic, number_of_downloads=number, orientation=channel.config.video_orientation, height=channel.config.video_height,
-                              width=channel.config.video_width, )
+    from video.downloader import PexelsDownloadTask
+
+    task = PexelsDownloadTask(
+        query=topic,
+        number_of_downloads=number,
+        orientation=channel.config.video_orientation,
+        height=channel.config.video_height,
+        width=channel.config.video_width,
+    )
     res = task.find_all_matching_videos()
     task.download_generator(res)
     return None
 
 
-def read_all_video_clips(path_to_dir, video_format='mp4'):
+def read_all_video_clips(path_to_dir, video_format="mp4"):
     return [VideoFileClip(os.path.join(path_to_dir, f)).setout_audio() for f in os.listdir(path_to_dir) if f.endswith(video_format)]
 
 
-def read_n_video_clips(path_to_dir, number, video_format='mp4') -> List[VideoFileClip]:
+def read_n_video_clips(path_to_dir, number, video_format="mp4") -> List[VideoFileClip]:
     dir_files = DIR_CACHE.get(path_to_dir)
     if not dir_files:
         dir_files = os.listdir(path_to_dir)
@@ -115,3 +130,7 @@ def read_n_video_clips(path_to_dir, number, video_format='mp4') -> List[VideoFil
 
 def read_video_clip(path_to_clip):
     return VideoFileClip(path_to_clip).without_audio()
+
+
+def pick_audio_background_file(channel):
+    return os.path.join(channel.config.audio_background_dir_path, pick_random_from_list(os.listdir(channel.config.audio_background_dir_path)))

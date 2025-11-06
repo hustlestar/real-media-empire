@@ -10,7 +10,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CONFIG.get("GOOGLE_TEXT_TO_SPEECH
 
 
 def convert_mp3_to_wav(audio_file):
-    command = ['ffmpeg', '-i', audio_file, '-vn', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '1', '-y', f"{audio_file}.wav"]
+    command = ["ffmpeg", "-i", audio_file, "-vn", "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "1", "-y", f"{audio_file}.wav"]
     subprocess.call(command)
 
 
@@ -24,10 +24,7 @@ def transcribe_audio_with_timecodes(audio_file):
 
     audio = speech.RecognitionAudio(content=content)
 
-    config = speech.RecognitionConfig(
-        language_code="en",
-        enable_word_time_offsets=True
-    )
+    config = speech.RecognitionConfig(language_code="en", enable_word_time_offsets=True)
 
     response = client.recognize(config=config, audio=audio)
 
@@ -43,5 +40,5 @@ def transcribe_audio_with_timecodes(audio_file):
     return transcript
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(transcribe_audio_with_timecodes("E:\\MEDIA_GALLERY\\RESULTS\\daily_mindset_shorts\\2023_04_07_19_59_03\\0_voiceover.mp3"))

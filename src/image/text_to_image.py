@@ -1,5 +1,4 @@
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     prompt = "youtube thumbnail for the video with title 4 best advices for your morning"
     # from diffusers import StableDiffusionPipeline
     # import torch
@@ -17,7 +16,6 @@ if __name__ == '__main__':
 
     model_id = "CompVis/stable-diffusion-v1-4"
     # device = "cuda"
-
 
     pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
     # pipe = pipe.to(device)

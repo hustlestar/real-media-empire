@@ -1,0 +1,72 @@
+[
+  {
+    "shot_id": "shot_001",
+    "shot_number": 1,
+    "shot_type": "wide",
+    "enhanced_prompt": "8K cinematic comedy shot, wide angle establishing shot, sunny suburban backyard with green grass and wooden fence, a large black crow perched on fence post eyeing something mischievously, a fluffy orange tabby cat peacefully lying in grass sunbathing completely unaware, bright daylight, vibrant colors, photorealistic, slight comedy timing",
+    "negative_prompt": "cartoon, anime, low quality, dark, blurry, multiple crows, ugly animals",
+    "duration": 3,
+    "dialogue": null,
+    "characters": ["crow", "cat"],
+    "landscapes": ["backyard", "suburban", "grass"],
+    "styles": ["cinematic", "comedy", "bright"],
+    "mood": "calm_before_storm",
+    "time_of_day": "midday"
+  },
+  {
+    "shot_id": "shot_002",
+    "shot_number": 2,
+    "shot_type": "medium",
+    "enhanced_prompt": "8K cinematic medium shot, the black crow slowly hopping closer to the unsuspecting orange tabby cat, crow's head tilting side to side with mischievous intent, cat still relaxed with closed eyes enjoying the sun, crow getting into attack position, photorealistic animal behavior, comedy timing, bright natural lighting",
+    "negative_prompt": "cartoon, anime, low quality, blurry, deformed animals, multiple crows",
+    "duration": 4,
+    "dialogue": null,
+    "characters": ["crow", "cat"],
+    "landscapes": ["backyard", "grass"],
+    "styles": ["cinematic", "comedy", "suspense"],
+    "mood": "mischievous",
+    "time_of_day": "midday"
+  },
+  {
+    "shot_id": "shot_003",
+    "shot_number": 3,
+    "shot_type": "close-up",
+    "enhanced_prompt": "8K cinematic extreme close-up, the crow's sharp black beak wide open moving rapidly toward camera, fierce bird eyes, detailed feathers, motion blur on beak movement, dramatic comedy moment, photorealistic bird details, bright daylight",
+    "negative_prompt": "cartoon, anime, low quality, blurry, fake looking, deformed beak",
+    "duration": 2,
+    "dialogue": null,
+    "characters": ["crow"],
+    "landscapes": ["backyard"],
+    "styles": ["cinematic", "comedy", "dramatic"],
+    "mood": "attack",
+    "time_of_day": "midday"
+  },
+  {
+    "shot_id": "shot_004",
+    "shot_number": 4,
+    "shot_type": "medium",
+    "enhanced_prompt": "8K cinematic comedy gold shot, medium angle on orange tabby cat's rear end getting pecked by crow's beak, cat's entire body jolting upward in shock, all four paws leaving the ground simultaneously, tail shooting straight up, exaggerated shocked cat expression, motion blur on jumping movement, photorealistic but comedic timing, bright daylight, freeze-frame comedy moment",
+    "negative_prompt": "cartoon, anime, low quality, static pose, boring, dark, blurry",
+    "duration": 3,
+    "dialogue": "MEOOOWWW!!!",
+    "characters": ["crow", "cat"],
+    "landscapes": ["backyard", "grass"],
+    "styles": ["cinematic", "comedy", "slapstick"],
+    "mood": "hilarious_chaos",
+    "time_of_day": "midday"
+  },
+  {
+    "shot_id": "shot_005",
+    "shot_number": 5,
+    "shot_type": "wide",
+    "enhanced_prompt": "8K cinematic wide comedy shot, orange tabby cat running away at full speed in panic with arched back and puffed tail, crow proudly strutting in foreground looking satisfied, cat disappearing into distance, motion blur on running cat, crow casually walking like a boss, photorealistic animals, comedy payoff, bright suburban backyard, perfect comedic timing",
+    "negative_prompt": "cartoon, anime, low quality, static, boring composition, dark, blurry",
+    "duration": 5,
+    "dialogue": null,
+    "characters": ["crow", "cat"],
+    "landscapes": ["backyard", "suburban", "grass", "fence"],
+    "styles": ["cinematic", "comedy", "triumphant"],
+    "mood": "victorious_comedy",
+    "time_of_day": "midday"
+  }
+]

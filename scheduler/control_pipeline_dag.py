@@ -67,6 +67,21 @@ def call_api_and_check_status(cmd=None, ts=None, msg=None, timeout=1.5 * 60 * 60
         raise Exception(f"Failed to run command!")
 
 
+def check_gas_and_trigger_swap(**kwargs):
+    eth_gas_api_url = 'https://api.etherscan.io/api?module=gastracker&action=gasoracle&apiKey=E2D38MIC5KT642R1MZ5C95QUFB38G5JFMS'
+    safe_gas_price = 40  # Adjust this threshold as needed
+
+    while True:
+        response = requests.get(eth_gas_api_url)
+        response_json = response.json()
+
+        if response_json['result']['SafeGasPrice'] < safe_gas_price:
+            print(f'Gas price is below {safe_gas_price}')
+            return call_api_and_check_status(kwargs)
+
+        time.sleep(5)  # Wait for 5 seconds before the next check
+
+
 def prepare_msg(msg, status, stdout=None, stderr=None, command_id=None):
     if status != 'success':
         message = f"{msg}: #{status} \U0001F534\n" \
@@ -104,7 +119,7 @@ def generate_dag(dag_id, schedule_interval, **kwargs):
 
     api_task = PythonOperator(
         task_id='run_command_and_check_status',
-        python_callable=call_api_and_check_status,
+        python_callable=call_api_and_check_status if not kwargs.get("python_callable") else kwargs.get("python_callable"),
         op_kwargs={'cmd': kwargs.get('cmd'), 'msg': kwargs.get('custom_message'), 'ts': '{{ ts }}', 'timeout': kwargs.get('timeout')},
         execution_timeout=timedelta(hours=8),  # Set the timeout for this task
         dag=dag,
@@ -123,11 +138,73 @@ class ChannelDAGConfig:
 
 dag_configs = [
     ChannelDAGConfig(
+        dag_id='USDT_to_USDC',
+        schedule_interval='0 1,5 * * *',
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
+            ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_USDT_to_USDC.bat'
+            ' --excel_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\1USDC_USDT\\input_SwapUsdtToUsdc.xlsx',
+        custom_message='Swapping USDT to USDC #usdTusdC: ',
+        timeout=6 * 60 * 60,
+        python_operator=check_gas_and_trigger_swap
+    ),
+    ChannelDAGConfig(
+        dag_id='USDC_to_USDT',
+        schedule_interval='0 3,7 * * *',
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
+            ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_USDC_to_USDT.bat'
+            ' --excel_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\1USDC_USDT\\input_SwapUsdcToUsdt.xlsx',
+        custom_message='Swapping USDC to USDT #usdCusdT: ',
+        timeout=6 * 60 * 60,
+        python_operator=check_gas_and_trigger_swap
+    ),
+    ChannelDAGConfig(
+        dag_id='USDT_to_ETH',
+        schedule_interval='0 5 * * *',
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
+            ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_ANY_to_ANY_USDT_to_ETH.bat',
+        custom_message='Swapping USDT to ETH #usdTetH: ',
+        timeout=6 * 60 * 60,
+        python_operator=check_gas_and_trigger_swap
+    ),
+    ChannelDAGConfig(
+        dag_id='USDC_to_ETH',
+        schedule_interval='0 2 * * *',
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
+            ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_ANY_to_ANY_USDC_to_ETH.bat',
+        custom_message='Swapping USDC to ETH #usdCetH: ',
+        timeout=6 * 60 * 60,
+        python_operator=check_gas_and_trigger_swap
+    ),
+    ChannelDAGConfig(
+        dag_id='ANY_to_ANY',
+        schedule_interval='0 1 * * *',
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\crypto\\run_crypto_project.py"'
+            ' --bat_file G:\\OLD_DISK_D_LOL\\Projects\\ZZZenno\\zksync_ANY_to_ANY.bat',
+        custom_message='Swapping ANY to ANY #any: ',
+        timeout=6 * 60 * 60,
+        python_operator=check_gas_and_trigger_swap
+    ),
+    ChannelDAGConfig(
+        dag_id='citas_y_palabras__generate',
+        schedule_interval='0 2 * * *',
+        cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
+            ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\quotes_generate.py"'
+            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\citas_y_palabras.yaml"'
+            ' --execution_date [ym_ts]',
+        custom_message='Citas y Palabras #CYP #QUOTES_VIDEO_GENERATE pipeline finished with status: ',
+        timeout=7 * 60 * 60
+    ),
+    ChannelDAGConfig(
         dag_id='infinite_quotes_inspiration__generation_test',
         schedule_interval=None,
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\quotes_generate.py"'
-            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration_v2.yaml"'
+            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration.yaml"'
             ' --execution_date [ym_ts]'
             ' --author "{{ dag_run.conf["author"] }}"'
         ,
@@ -136,17 +213,17 @@ dag_configs = [
     ),
     ChannelDAGConfig(
         dag_id='infinite_quotes_inspiration__generate',
-        schedule_interval='0 2 * * *',
+        schedule_interval='0 0 * * *',
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\quotes_generate.py"'
-            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration_v2.yaml"'
+            ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration.yaml"'
             ' --execution_date [ym_ts]',
         custom_message='Infinite Quotes Inspiration #IQI #QUOTES_VIDEO_GENERATE pipeline finished with status: ',
         timeout=7 * 60 * 60
     ),
     ChannelDAGConfig(
         dag_id='infinite_quotes_inspiration__publish',
-        schedule_interval='0 13 * * *',
+        schedule_interval='0 20 * * *',
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\publish_pipeline.py"'
             ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\infinite_quotes_inspiration.yaml"',
@@ -184,7 +261,7 @@ dag_configs = [
     ),
     ChannelDAGConfig(
         dag_id='daily_mindset__shorts_publish',
-        schedule_interval="0 0,8,16 * * *",
+        schedule_interval="0 12 * * *",
         cmd='set PYTHONPATH=%PYTHONPATH%;G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\ &'
             ' C:\\Users\\hustlestar\\Anaconda3\\envs\\media-empire\\python.exe "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\src\\pipelines\\shorts_publish.py"'
             ' --channel_config_path "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\daily_mindset_shorts.yaml"',

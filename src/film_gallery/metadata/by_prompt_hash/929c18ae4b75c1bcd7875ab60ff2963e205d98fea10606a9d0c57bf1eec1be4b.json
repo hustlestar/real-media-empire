@@ -1,0 +1,31 @@
+{
+  "asset_id": "929c18ae4b75c1bcd7875ab60ff2963e205d98fea10606a9d0c57bf1eec1be4b",
+  "asset_type": "image",
+  "content_hash": "929c18ae4b75c1bcd7875ab60ff2963e205d98fea10606a9d0c57bf1eec1be4b",
+  "file_path": "film_gallery\\cache\\images\\929c18ae4b75c1bcd7875ab60ff2963e205d98fea10606a9d0c57bf1eec1be4b.jpg",
+  "characters": [],
+  "landscapes": [],
+  "styles": [],
+  "mood": null,
+  "time_of_day": null,
+  "shot_type": null,
+  "prompt": "8K cinematic medium shot, the black crow slowly hopping closer to the unsuspecting orange tabby cat, crow's head tilting side to side with mischievous intent, cat still relaxed with closed eyes enjoying the sun, crow getting into attack position, photorealistic animal behavior, comedy timing, bright natural lighting",
+  "negative_prompt": "cartoon, anime, low quality, blurry, deformed animals, multiple crows",
+  "provider": "FAL.ai",
+  "model": "fal-ai/flux/dev",
+  "config": {
+    "width": 1024,
+    "height": 576,
+    "guidance_scale": 3.5,
+    "inference_steps": 28,
+    "num_images": 1,
+    "enable_safety_checker": false,
+    "output_format": "jpeg",
+    "model": "fal-ai/flux/dev"
+  },
+  "cost_usd": "0.003",
+  "generation_time_seconds": 518,
+  "created_at": "2025-11-06 12:04:12.691811",
+  "used_in_projects": [],
+  "reuse_count": 0
+}

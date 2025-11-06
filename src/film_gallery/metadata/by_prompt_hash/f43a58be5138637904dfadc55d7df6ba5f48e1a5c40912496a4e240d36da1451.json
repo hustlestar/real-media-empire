@@ -1,0 +1,27 @@
+{
+  "asset_id": "f43a58be5138637904dfadc55d7df6ba5f48e1a5c40912496a4e240d36da1451",
+  "asset_type": "video",
+  "content_hash": "f43a58be5138637904dfadc55d7df6ba5f48e1a5c40912496a4e240d36da1451",
+  "file_path": "film_gallery\\cache\\videos\\f43a58be5138637904dfadc55d7df6ba5f48e1a5c40912496a4e240d36da1451.mp4",
+  "characters": [],
+  "landscapes": [],
+  "styles": [],
+  "mood": null,
+  "time_of_day": null,
+  "shot_type": null,
+  "prompt": "8K cinematic comedy gold shot, medium angle on orange tabby cat's rear end getting pecked by crow's beak, cat's entire body jolting upward in shock, all four paws leaving the ground simultaneously, tail shooting straight up, exaggerated shocked cat expression, motion blur on jumping movement, photorealistic but comedic timing, bright daylight, freeze-frame comedy moment",
+  "negative_prompt": null,
+  "provider": "Minimax",
+  "model": "minimax-video-01",
+  "config": {
+    "duration": 3,
+    "fps": 24,
+    "mode": "standard",
+    "model": null
+  },
+  "cost_usd": "0.05",
+  "generation_time_seconds": 289,
+  "created_at": "2025-11-06 12:04:18.592226",
+  "used_in_projects": [],
+  "reuse_count": 0
+}

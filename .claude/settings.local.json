@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv --version:*)",
+      "Bash(uv sync)",
+      "Bash(uv run python:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv add:*)",
+      "Bash(zenml init:*)",
+      "Bash(uv run:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

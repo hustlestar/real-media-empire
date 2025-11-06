@@ -1,0 +1,27 @@
+{
+  "asset_id": "7d69ee825839585b295e92611fb85b45a99ecb4741cdc6328cc41583d3132ea3",
+  "asset_type": "video",
+  "content_hash": "7d69ee825839585b295e92611fb85b45a99ecb4741cdc6328cc41583d3132ea3",
+  "file_path": "film_gallery\\cache\\videos\\7d69ee825839585b295e92611fb85b45a99ecb4741cdc6328cc41583d3132ea3.mp4",
+  "characters": [],
+  "landscapes": [],
+  "styles": [],
+  "mood": null,
+  "time_of_day": null,
+  "shot_type": null,
+  "prompt": "8K cinematic comedy shot, wide angle establishing shot, sunny suburban backyard with green grass and wooden fence, a large black crow perched on fence post eyeing something mischievously, a fluffy orange tabby cat peacefully lying in grass sunbathing completely unaware, bright daylight, vibrant colors, photorealistic, slight comedy timing",
+  "negative_prompt": null,
+  "provider": "Minimax",
+  "model": "minimax-video-01",
+  "config": {
+    "duration": 3,
+    "fps": 24,
+    "mode": "standard",
+    "model": null
+  },
+  "cost_usd": "0.05",
+  "generation_time_seconds": 229,
+  "created_at": "2025-11-06 11:59:28.988378",
+  "used_in_projects": [],
+  "reuse_count": 0
+}

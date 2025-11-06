@@ -5,12 +5,13 @@ youtube_category: 22
 youtube_tags:
   - motivation
   - inspiration
-  - success
   - listenable
   - quotes
-  - quote
-youtube_title_suffix: " - #QUOTES #INSPIRATION"
-youtube_privacy_status: 'public' #private
+  - stoic quotes
+youtube_title_suffix: " #QUOTES #INSPIRATION"
+youtube_privacy_status: 'private' #private
+youtube_title_include_author: true
+language: 'english'
 
 video_download_new: 'false'
 video_orientation: 'landscape' #portrait
@@ -42,6 +43,8 @@ all_extras:
   quote_sources:
     #    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\business_coaches.json"
     - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\historical_figures.json"
+    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\leaders.json"
+    - "G:\\OLD_DISK_D_LOL\\Projects\\media-empire\\jack\\quotes\\philosophers.json"
 main_prompt_number_of_engagement_techniques: 2
 main_prompt_engagement_techniques:
   - "Begin story with a captivating opening."
@@ -70,9 +73,12 @@ thumbnail_background_colors:
   - 'green'
 thumbnail_fonts_dir: "E:\\MEDIA_GALLERY\\FONTS\\daily_mindset"
 
-tts_api: "cyber_voice_tts"
+tts_api: "xi_labs_tts"
 tts_type: "text"
-tts_voice_name: 37
-tts_secondary_voice_name: 72
+#tts_voice_name: 'pNInz6obpgDQGcFmaJgB' # sam
+#tts_voice_name: 'ErXwobaYiN019PkySvjV' # antoni
+tts_voice_name: 'TxGEqnHWrfWFTfGW9XjX' # josh
+tts_secondary_voice_name: "21m00Tcm4TlvDq8ikWAM" # rachel
 tts_api_key_or_path: "C:\\tools\\google\\credentials_to_google_apis.json"
+tts_model: 'eleven_monolingual_v1'
 voice_over_speed: 1

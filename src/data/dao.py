@@ -6,7 +6,11 @@ from data.models import Base, Channel, Author
 from config import CONFIG
 
 engine = create_engine(
-    f'postgresql://{CONFIG.get("JDBC_USER_NAME")}:{CONFIG.get("JDBC_PASSWORD")}@{CONFIG.get("JDBC_HOST")}:{CONFIG.get("JDBC_PORT")}/{CONFIG.get("JDBC_DATABASE")}')
+    f'postgresql://{CONFIG.get("JDBC_USER_NAME")}:{CONFIG.get("JDBC_PASSWORD")}@{CONFIG.get("JDBC_HOST")}:{CONFIG.get("JDBC_PORT")}/{CONFIG.get("JDBC_DATABASE")}',
+    pool_size=20,
+    max_overflow=100,
+)
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -56,5 +60,5 @@ def is_author_used_in_channel(db: Session, channel_name, author_name):
     return False
 
 
-if __name__ == '__main__':
-    add_channel(next(get_db()), 'xxx')
+if __name__ == "__main__":
+    add_channel(next(get_db()), "xxx")

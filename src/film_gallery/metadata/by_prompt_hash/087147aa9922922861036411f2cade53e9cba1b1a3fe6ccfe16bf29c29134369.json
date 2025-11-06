@@ -1,0 +1,27 @@
+{
+  "asset_id": "087147aa9922922861036411f2cade53e9cba1b1a3fe6ccfe16bf29c29134369",
+  "asset_type": "video",
+  "content_hash": "087147aa9922922861036411f2cade53e9cba1b1a3fe6ccfe16bf29c29134369",
+  "file_path": "film_gallery\\cache\\videos\\087147aa9922922861036411f2cade53e9cba1b1a3fe6ccfe16bf29c29134369.mp4",
+  "characters": [],
+  "landscapes": [],
+  "styles": [],
+  "mood": null,
+  "time_of_day": null,
+  "shot_type": null,
+  "prompt": "8K cinematic extreme close-up, the crow's sharp black beak wide open moving rapidly toward camera, fierce bird eyes, detailed feathers, motion blur on beak movement, dramatic comedy moment, photorealistic bird details, bright daylight",
+  "negative_prompt": null,
+  "provider": "Minimax",
+  "model": "minimax-video-01",
+  "config": {
+    "duration": 2,
+    "fps": 24,
+    "mode": "standard",
+    "model": null
+  },
+  "cost_usd": "0.05",
+  "generation_time_seconds": 218,
+  "created_at": "2025-11-06 11:59:18.096079",
+  "used_in_projects": [],
+  "reuse_count": 0
+}

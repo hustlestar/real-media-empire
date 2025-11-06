@@ -10,6 +10,7 @@ openai.api_key = CONFIG.get("OPEN_AI_API_KEY")
 
 logger = logging.getLogger(__name__)
 
+
 class ChatGPTTask:
     def __init__(self, prompt, model_name="text-davinci-003", tokens_number=3700):
         self.prompt = prompt
@@ -52,18 +53,18 @@ def chat_completion(prompt, model_name="gpt-3.5-turbo", tokens_number=3700):
         stop=None,
         temperature=0.7,
     )
-    message = response.choices[0]['message']['content'].strip()
+    message = response.choices[0]["message"]["content"].strip()
     return message
 
 
 def save_results(prompt, text):
-    prompt_dir = os.path.join(CONFIG.get("MEDIA_GALLERY_DIR"), 'TEXT')
-    prompt_index_file = os.path.join(prompt_dir, '.chatGPT_prompt_index.txt')
+    prompt_dir = os.path.join(CONFIG.get("MEDIA_GALLERY_DIR"), "TEXT")
+    prompt_index_file = os.path.join(prompt_dir, ".chatGPT_prompt_index.txt")
     now = get_now()
     filename = os.path.join(prompt_dir, f"{now}_prompt.txt".lower())
 
-    with open(prompt_index_file, 'a' if os.path.exists(prompt_index_file) else 'w') as f:
-        cleaned_prompt = prompt.replace('\n', ' ')
+    with open(prompt_index_file, "a" if os.path.exists(prompt_index_file) else "w") as f:
+        cleaned_prompt = prompt.replace("\n", " ")
         f.write(f"{filename}={cleaned_prompt}\n")
 
     print(f"Saving prompt result to {filename}")
@@ -84,14 +85,14 @@ def print_models():
 
 
 def generate_text(prompt, model_name, tokens_number):
-    if model_name and model_name.startswith('gpt-3.5-turbo') or model_name.startswith('gpt-4'):
+    if model_name and model_name.startswith("gpt-3.5-turbo") or model_name.startswith("gpt-4"):
         result_text = chat_completion(prompt, model_name=model_name, tokens_number=tokens_number)
     else:
         result_text = ask_chatgpt(prompt, model_name=model_name, tokens_number=tokens_number)
     return result_text
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print_models()
     # prompt = "Provide me with 1000 words motivational story about Achieving Goals in the style of Tony Robbins. " \
     #          "Represent your answer as ssml for google text to speech api." \

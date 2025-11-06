@@ -19,19 +19,19 @@ logger = logging.getLogger(__name__)
 
 class CommonTasks:
     def __init__(
-            self,
-            prompt=None,
-            background_audio_file=None,
-            voice_name=None,
-            number_of_trials=5,
-            text=None,
-            voice_audio_file=None,
-            audio_output_file=None,
-            start_end_voice_delay=6,
-            single_video_duration=10,
-            is_allow_duplicate_clips=False,
-            tokens_number=3700,
-            model_name="text-davinci-003"
+        self,
+        prompt=None,
+        background_audio_file=None,
+        voice_name=None,
+        number_of_trials=5,
+        text=None,
+        voice_audio_file=None,
+        audio_output_file=None,
+        start_end_voice_delay=6,
+        single_video_duration=10,
+        is_allow_duplicate_clips=False,
+        tokens_number=3700,
+        model_name="text-davinci-003",
     ):
         self.start_end_voice_delay = start_end_voice_delay
         if voice_audio_file and audio_output_file:
@@ -54,7 +54,7 @@ class CommonTasks:
         is_ssml = False
         if self.text:
             text_for_voiceover = self.text
-            if '<speak>' in self.text:
+            if "<speak>" in self.text:
                 is_ssml = True
         else:
             if not self.text:
@@ -63,7 +63,7 @@ class CommonTasks:
                 gpt_result = self.text
 
             gpt_result_trimmed = remove_extra_spaces(gpt_result)
-            if 'ssml' not in self.prompt:
+            if "ssml" not in self.prompt:
                 text_for_voiceover = gpt_result_trimmed
             else:
                 text_for_voiceover = extract_only_ssml(gpt_result_trimmed)
@@ -105,19 +105,20 @@ class CommonTasks:
         return final_audio, final_duration
 
     def prepare_video(
-            self,
-            final_duration,
-            topics: List[str] = None,
-            colors: List[str] = None,
-            colors_to_avoid: List[str] = None,
-            topics_to_avoid: List[str] = None,
-            is_should_download=False,
-            video_dir=build_video_dir_path(),
-            orientation=DEFAULT_ORIENTATION,
-            width=DEFAULT_WIDTH,
-            height=DEFAULT_HEIGHT
+        self,
+        final_duration,
+        topics: List[str] = None,
+        colors: List[str] = None,
+        colors_to_avoid: List[str] = None,
+        topics_to_avoid: List[str] = None,
+        is_should_download=False,
+        video_dir=build_video_dir_path(),
+        orientation=DEFAULT_ORIENTATION,
+        width=DEFAULT_WIDTH,
+        height=DEFAULT_HEIGHT,
     ):
         from video.movie import trim_clip_duration
+
         video = None
         videos_list = []
         used_video_clips = set()
@@ -150,12 +151,7 @@ class CommonTasks:
         video = video.set_duration(final_duration)
         logger.info(f"Final video duration would be {video.duration}")
         res_filename = result_filename
-        video.write_videofile(res_filename,
-                              codec='libx264',
-                              audio_codec='aac',
-                              temp_audiofile='temp-audio.m4a',
-                              threads=6,
-                              remove_temp=True)
+        video.write_videofile(res_filename, codec="libx264", audio_codec="aac", temp_audiofile="temp-audio.m4a", threads=6, remove_temp=True)
         self.result_video_clips.append(res_filename)
         logger.info(f"Final video saved to {res_filename}")
 
@@ -168,7 +164,7 @@ class CommonTasks:
             video, used_video_clips = self.prepare_video(final_duration)
             used_videos_str = "_".join([os.path.splitext(os.path.basename(f))[0] for f in used_video_clips])
             filename = f"{self.now}_{i}_N_{used_videos_str}"
-            filename = filename[:180] + '.mp4' if len(filename) > 180 else filename + '.mp4'
-            result_filename = os.path.join(CONFIG.get('MEDIA_GALLERY_DIR'), "RESULT", filename)
+            filename = filename[:180] + ".mp4" if len(filename) > 180 else filename + ".mp4"
+            result_filename = os.path.join(CONFIG.get("MEDIA_GALLERY_DIR"), "RESULT", filename)
             self.prepare_and_save_final_video(video, final_audio, final_duration, result_filename=result_filename)
         return self

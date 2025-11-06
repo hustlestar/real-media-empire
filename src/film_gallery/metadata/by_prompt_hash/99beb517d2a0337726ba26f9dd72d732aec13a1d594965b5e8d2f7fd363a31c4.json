@@ -1,0 +1,31 @@
+{
+  "asset_id": "99beb517d2a0337726ba26f9dd72d732aec13a1d594965b5e8d2f7fd363a31c4",
+  "asset_type": "image",
+  "content_hash": "99beb517d2a0337726ba26f9dd72d732aec13a1d594965b5e8d2f7fd363a31c4",
+  "file_path": "film_gallery\\cache\\images\\99beb517d2a0337726ba26f9dd72d732aec13a1d594965b5e8d2f7fd363a31c4.jpg",
+  "characters": [],
+  "landscapes": [],
+  "styles": [],
+  "mood": null,
+  "time_of_day": null,
+  "shot_type": null,
+  "prompt": "8K cinematic wide comedy shot, orange tabby cat running away at full speed in panic with arched back and puffed tail, crow proudly strutting in foreground looking satisfied, cat disappearing into distance, motion blur on running cat, crow casually walking like a boss, photorealistic animals, comedy payoff, bright suburban backyard, perfect comedic timing",
+  "negative_prompt": "cartoon, anime, low quality, static, boring composition, dark, blurry",
+  "provider": "FAL.ai",
+  "model": "fal-ai/flux/dev",
+  "config": {
+    "width": 1024,
+    "height": 576,
+    "guidance_scale": 3.5,
+    "inference_steps": 28,
+    "num_images": 1,
+    "enable_safety_checker": false,
+    "output_format": "jpeg",
+    "model": "fal-ai/flux/dev"
+  },
+  "cost_usd": "0.003",
+  "generation_time_seconds": 7,
+  "created_at": "2025-11-06 11:59:37.935666",
+  "used_in_projects": [],
+  "reuse_count": 0
+}
