@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
-import './lib/api-config'
 import ContentPage from './pages/ContentPage'
 import JobsPage from './pages/JobsPage'
 import ContentDetailPage from './pages/ContentDetailPage'
