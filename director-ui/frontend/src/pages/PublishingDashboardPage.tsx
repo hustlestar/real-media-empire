@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Clock, CheckCircle, XCircle, BarChart3, Users, TrendingUp } from 'lucide-react';
+import { Send, Clock, CheckCircle, XCircle, BarChart3, Users, TrendingUp, Calendar } from 'lucide-react';
 import PublishQueue from '../components/publishing/PublishQueue';
 import AccountManager from '../components/publishing/AccountManager';
 import PublishStats from '../components/publishing/PublishStats';
 import QuickPublish from '../components/publishing/QuickPublish';
+import PublishingCalendar from '../components/publishing/PublishingCalendar';
+import BatchScheduler from '../components/publishing/BatchScheduler';
 import { apiUrl } from '../config/api';
 
 const PublishingDashboardPage: React.FC = () => {
@@ -11,6 +13,7 @@ const PublishingDashboardPage: React.FC = () => {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [recentJobs, setRecentJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'queue' | 'calendar'>('queue');
 
   useEffect(() => {
     fetchDashboardData();
@@ -54,6 +57,28 @@ const PublishingDashboardPage: React.FC = () => {
                 </span>
               )}
             </div>
+            <div className="flex items-center space-x-3">
+              <BatchScheduler accounts={accounts} onSchedule={fetchDashboardData} />
+              <div className="flex bg-gray-800 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('queue')}
+                  className={`px-4 py-2 rounded-md transition-colors ${
+                    viewMode === 'queue' ? 'bg-green-600' : 'hover:bg-gray-700'
+                  }`}
+                >
+                  Queue View
+                </button>
+                <button
+                  onClick={() => setViewMode('calendar')}
+                  className={`px-4 py-2 rounded-md transition-colors flex items-center space-x-2 ${
+                    viewMode === 'calendar' ? 'bg-blue-600' : 'hover:bg-gray-700'
+                  }`}
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Calendar View</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -96,25 +121,32 @@ const PublishingDashboardPage: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Quick Publish */}
-            <QuickPublish accounts={accounts} onPublish={fetchDashboardData} />
-
-            {/* Publishing Queue */}
-            <PublishQueue jobs={recentJobs} onRefresh={fetchDashboardData} />
-
-            {/* Statistics */}
-            <PublishStats queueStats={queueStats} />
-          </div>
-
-          {/* Sidebar */}
+        {viewMode === 'calendar' ? (
           <div className="space-y-8">
-            {/* Account Manager */}
+            <PublishingCalendar onSchedule={fetchDashboardData} />
             <AccountManager accounts={accounts} onUpdate={fetchDashboardData} />
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="xl:col-span-2 space-y-8">
+              {/* Quick Publish */}
+              <QuickPublish accounts={accounts} onPublish={fetchDashboardData} />
+
+              {/* Publishing Queue */}
+              <PublishQueue jobs={recentJobs} onRefresh={fetchDashboardData} />
+
+              {/* Statistics */}
+              <PublishStats queueStats={queueStats} />
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-8">
+              {/* Account Manager */}
+              <AccountManager accounts={accounts} onUpdate={fetchDashboardData} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

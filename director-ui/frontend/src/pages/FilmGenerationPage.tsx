@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlayCircle, Film, Sparkles, Save, Download, Zap } from 'lucide-react';
+import { PlayCircle, Film, Sparkles, Save, Download, Zap, Users } from 'lucide-react';
 import StyleSelector from '../components/film/StyleSelector';
 import ShotTypeSelector from '../components/film/ShotTypeSelector';
 import LightingSelector from '../components/film/LightingSelector';
@@ -7,6 +7,7 @@ import EmotionSelector from '../components/film/EmotionSelector';
 import PromptBuilder from '../components/film/PromptBuilder';
 import SceneSequencer from '../components/film/SceneSequencer';
 import PromptPreview from '../components/film/PromptPreview';
+import CharacterPickerModal from '../components/CharacterPickerModal';
 import { apiUrl } from '../config/api';
 
 interface PromptConfig {
@@ -20,12 +21,14 @@ interface PromptConfig {
   additionalDetails: string;
   characterConsistency: string;
   cameraMotion: string;
+  selectedCharacters: any[];
 }
 
 const FilmGenerationPage: React.FC = () => {
   const [mode, setMode] = useState<'single' | 'scene'>('single');
   const [aiEnhance, setAiEnhance] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [showCharacterPicker, setShowCharacterPicker] = useState<boolean>(false);
   const [promptConfig, setPromptConfig] = useState<PromptConfig>({
     subject: '',
     action: '',
@@ -36,7 +39,8 @@ const FilmGenerationPage: React.FC = () => {
     emotion: 'contemplation_reflection',
     additionalDetails: '',
     characterConsistency: '',
-    cameraMotion: ''
+    cameraMotion: '',
+    selectedCharacters: []
   });
 
   const [generatedPrompt, setGeneratedPrompt] = useState<any>(null);
@@ -116,7 +120,7 @@ const FilmGenerationPage: React.FC = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6 py-8 max-w-screen-2xl">
         {/* Mode Selector */}
         <div className="mb-8">
           <div className="flex space-x-4 bg-black bg-opacity-30 p-2 rounded-lg inline-flex">
@@ -150,9 +154,9 @@ const FilmGenerationPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Left Panel - Configuration */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="xl:col-span-2 space-y-6">
             {/* Prompt Builder */}
             <div className="bg-black bg-opacity-40 backdrop-blur-md rounded-xl p-6 border border-purple-500 border-opacity-30">
               <h2 className="text-xl font-bold mb-4 flex items-center space-x-2">
@@ -164,7 +168,80 @@ const FilmGenerationPage: React.FC = () => {
                 config={promptConfig}
                 onChange={setPromptConfig}
               />
+
+              {/* Character Selection */}
+              <div className="mt-6 pt-6 border-t border-purple-500 border-opacity-30">
+                <h3 className="text-lg font-semibold mb-3 flex items-center space-x-2">
+                  <Users className="w-5 h-5 text-purple-400" />
+                  <span>Characters</span>
+                </h3>
+
+                {promptConfig.selectedCharacters.length > 0 ? (
+                  <div className="space-y-2">
+                    {promptConfig.selectedCharacters.map((char: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-purple-900 bg-opacity-30 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center">
+                            {char.reference_images && char.reference_images[0] ? (
+                              <img src={char.reference_images[0]} alt={char.name} className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                              <User className="w-6 h-6 text-gray-400" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-semibold">{char.name}</div>
+                            <div className="text-sm text-gray-400">{char.description}</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setPromptConfig({
+                              ...promptConfig,
+                              selectedCharacters: promptConfig.selectedCharacters.filter((_, i) => i !== idx)
+                            });
+                          }}
+                          className="px-3 py-1 bg-red-600 bg-opacity-50 hover:bg-opacity-70 rounded text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-400 bg-gray-900 bg-opacity-30 rounded-lg">
+                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No characters selected</p>
+                    <p className="text-sm mt-1">Add characters for consistent visual identity</p>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setShowCharacterPicker(true)}
+                  className="mt-4 w-full px-4 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-semibold flex items-center justify-center space-x-2"
+                >
+                  <Users className="w-5 h-5" />
+                  <span>Add Character</span>
+                </button>
+              </div>
             </div>
+
+            {/* Character Picker Modal */}
+            {showCharacterPicker && (
+              <CharacterPickerModal
+                isOpen={showCharacterPicker}
+                onClose={() => setShowCharacterPicker(false)}
+                onSelect={(character) => {
+                  setPromptConfig({
+                    ...promptConfig,
+                    selectedCharacters: [...promptConfig.selectedCharacters, character],
+                    characterConsistency: character.consistency_prompt,
+                    subject: character.name
+                  });
+                  setShowCharacterPicker(false);
+                }}
+                title="Select Character for Film"
+              />
+            )}
 
             {/* Style Selection */}
             <div className="bg-black bg-opacity-40 backdrop-blur-md rounded-xl p-6 border border-purple-500 border-opacity-30">
