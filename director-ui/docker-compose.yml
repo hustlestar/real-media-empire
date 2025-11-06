@@ -32,8 +32,44 @@ services:
     networks:
       - bot-network
 
+  redis:
+    image: redis:7-alpine
+    container_name: pdf-link-youtube-to-anything-tg-bot-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bot-network
+    ports:
+      - "6379:6379"
+
+  celery-worker:
+    build: .
+    container_name: pdf-link-youtube-to-anything-tg-bot-celery
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://botuser:botpass@postgres:5432/pdf_link_youtube_to_anything_tg_bot
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: celery -A src.workers.celery_app worker --loglevel=info
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - bot-network
+
 volumes:
   postgres-data:
+  redis-data:
 
 networks:
   bot-network:

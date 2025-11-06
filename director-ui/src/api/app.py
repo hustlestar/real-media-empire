@@ -89,11 +89,20 @@ app.include_router(publishing.router, prefix="/api", tags=["publishing"])
 app.include_router(characters.router, prefix="/api", tags=["characters"])
 app.include_router(assets.router, prefix="/api", tags=["assets"])
 
+# Mount WebSocket app
+from src.websocket.manager import socket_app
+app.mount("/ws", socket_app)
+
+# Register error handlers
+from src.api.error_handlers import register_error_handlers
+register_error_handlers(app)
+
 @app.on_event("startup")
 async def startup_event():
     """Startup event handler."""
     logger.info(f"Starting Content Processing API on {config.api_host}:{config.api_port}")
     logger.info(f"API Documentation: http://{config.api_host}:{config.api_port}/docs")
+    logger.info(f"WebSocket endpoint: ws://{config.api_host}:{config.api_port}/ws/socket.io/")
     logger.info(f"Storage path: {config.storage_base_path}")
 
 @app.on_event("shutdown")
