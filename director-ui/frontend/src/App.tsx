@@ -8,6 +8,11 @@ import ContentDetailPage from './pages/ContentDetailPage'
 import JobDetailPage from './pages/JobDetailPage'
 import { BundlesPage } from './pages/BundlesPage'
 import { BundleDetailPage } from './pages/BundleDetailPage'
+import FilmGenerationPage from './pages/FilmGenerationPage'
+import PPTXGenerationPage from './pages/PPTXGenerationPage'
+import AssetGalleryPage from './pages/AssetGalleryPage'
+import PublishingDashboardPage from './pages/PublishingDashboardPage'
+import CharacterLibraryPage from './pages/CharacterLibraryPage'
 import { BundlerProvider } from './context/BundlerContext'
 import { BundlerPanel } from './components/BundlerPanel'
 
@@ -35,6 +40,17 @@ function App() {
               <Route path="/jobs/:id" element={<JobDetailPage />} />
               <Route path="/bundles" element={<BundlesPage />} />
               <Route path="/bundles/:bundleId" element={<BundleDetailPage />} />
+
+              {/* Creation Tools */}
+              <Route path="/film-generation" element={<FilmGenerationPage />} />
+              <Route path="/pptx-generation" element={<PPTXGenerationPage />} />
+
+              {/* Library */}
+              <Route path="/assets" element={<AssetGalleryPage />} />
+              <Route path="/characters" element={<CharacterLibraryPage />} />
+
+              {/* Publishing */}
+              <Route path="/publishing" element={<PublishingDashboardPage />} />
             </Routes>
           </Layout>
           <BundlerPanel />
