@@ -4,9 +4,9 @@ set -e
 echo "🚀 Generating API client from OpenAPI spec..."
 
 # Check if API is running
-if ! curl -s http://localhost:10000/api/health > /dev/null; then
-    echo "❌ API server not running on http://localhost:10000"
-    echo "   Start it with: PYTHONPATH=src .venv/bin/python -m api.main"
+if ! curl -s http://localhost:8000/api/health > /dev/null; then
+    echo "❌ API server not running on http://localhost:8000"
+    echo "   Start it with: cd director-ui && uv run uvicorn src.api.app:app --reload --host 0.0.0.0 --port 8000"
     exit 1
 fi
 
@@ -14,7 +14,7 @@ echo "✓ API server is running"
 
 # Download OpenAPI spec
 echo "📥 Downloading OpenAPI spec..."
-curl -s http://localhost:10000/openapi.json -o openapi.json
+curl -s http://localhost:8000/openapi.json -o openapi.json
 
 if [ ! -f openapi.json ]; then
     echo "❌ Failed to download openapi.json"

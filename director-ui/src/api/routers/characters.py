@@ -7,8 +7,8 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 
-from src.data.models import Character
-from src.data.dao import get_db
+from data.models import Character
+from data.dao import get_db
 
 router = APIRouter()
 

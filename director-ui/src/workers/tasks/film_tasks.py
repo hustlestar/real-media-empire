@@ -4,8 +4,8 @@ import logging
 import asyncio
 from typing import Dict, Any
 from celery import Task
-from src.workers.celery_app import app
-from src.websocket.manager import broadcast_job_progress, broadcast_job_completed, broadcast_job_failed
+from workers.celery_app import app
+from websocket.manager import broadcast_job_progress, broadcast_job_completed, broadcast_job_failed
 
 logger = logging.getLogger(__name__)
 
