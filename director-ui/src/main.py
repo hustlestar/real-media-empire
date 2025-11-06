@@ -56,20 +56,20 @@ def main(locale: str, debug: bool, support: bool, config_file: str, dry_run: boo
 
         # Force enable support bot if requested
         if support and not config.has_support_bot:
-            click.echo("⚠️  Support bot requested but not properly configured in environment")
+            click.echo("WARNING: Support bot requested but not properly configured in environment")
             click.echo("   Please set SUPPORT_BOT_TOKEN and SUPPORT_CHAT_ID")
             sys.exit(1)
 
         config.validate()
 
-        click.echo(f"🤖 {config.bot_name} v{config.bot_version}")
-        click.echo(f"📍 Language: {config.default_language}")
-        click.echo(f"🤖 AI Support: {'✅' if config.has_ai_support else '❌'}")
-        click.echo(f"🆘 Support Bot: {'✅' if config.has_support_bot else '❌'}")
+        click.echo(f"{config.bot_name} v{config.bot_version}")
+        click.echo(f"Language: {config.default_language}")
+        click.echo(f"AI Support: {'enabled' if config.has_ai_support else 'disabled'}")
+        click.echo(f"Support Bot: {'enabled' if config.has_support_bot else 'disabled'}")
 
         if dry_run:
-            click.echo("✅ Configuration validation passed")
-            click.echo("🔍 Dry run mode - bot not started")
+            click.echo("Configuration validation passed")
+            click.echo("Dry run mode - bot not started")
             return
 
         if stats:
@@ -78,15 +78,15 @@ def main(locale: str, debug: bool, support: bool, config_file: str, dry_run: boo
 
         # Determine what to run
         if api_only:
-            click.echo("🚀 Starting API server only...")
+            click.echo("Starting API server only...")
             start_api(config)
         elif bot_only:
-            click.echo("🚀 Starting bot only...")
+            click.echo("Starting bot only...")
             bot = TelegramBot(config)
             asyncio.run(bot.run())
         else:
             # Start both API and bot
-            click.echo("🚀 Starting API server and Telegram bot...")
+            click.echo("Starting API server and Telegram bot...")
             api_thread = threading.Thread(target=start_api, args=(config,), daemon=True)
             api_thread.start()
 
@@ -98,7 +98,7 @@ def main(locale: str, debug: bool, support: bool, config_file: str, dry_run: boo
             asyncio.run(bot.run())
 
     except KeyboardInterrupt:
-        click.echo("\n👋 Bot stopped by user")
+        click.echo("\nBot stopped by user")
     except Exception as e:
         logger.error(f"Fatal error: {e}")
         raise e
@@ -129,21 +129,21 @@ async def show_stats(config: BotConfig):
 
         stats = await bot.get_stats()
 
-        click.echo("\n📊 Bot Statistics:")
+        click.echo("\nBot Statistics:")
         click.echo("=" * 40)
 
         for key, value in stats.items():
             if isinstance(value, dict):
                 click.echo(f"{key.replace('_', ' ').title()}:")
                 for sub_key, sub_value in value.items():
-                    click.echo(f"  • {sub_key}: {sub_value}")
+                    click.echo(f"  - {sub_key}: {sub_value}")
             else:
                 click.echo(f"{key.replace('_', ' ').title()}: {value}")
 
         await bot.stop()
 
     except Exception as e:
-        click.echo(f"❌ Error getting stats: {e}", err=True)
+        click.echo(f"ERROR: Error getting stats: {e}", err=True)
 
 @click.group()
 def cli():
@@ -157,14 +157,14 @@ def validate():
         config = BotConfig.from_env()
         config.validate()
 
-        click.echo("✅ Configuration is valid")
-        click.echo(f"🤖 Bot: {config.bot_name}")
-        click.echo(f"🔗 Database: {config.database_url[:20]}...")
-        click.echo(f"🤖 AI: {'Enabled' if config.has_ai_support else 'Disabled'}")
-        click.echo(f"🆘 Support: {'Enabled' if config.has_support_bot else 'Disabled'}")
+        click.echo("Configuration is valid")
+        click.echo(f"Bot: {config.bot_name}")
+        click.echo(f"Database: {config.database_url[:20]}...")
+        click.echo(f"AI: {'Enabled' if config.has_ai_support else 'Disabled'}")
+        click.echo(f"Support: {'Enabled' if config.has_support_bot else 'Disabled'}")
 
     except Exception as e:
-        click.echo(f"❌ Configuration error: {e}", err=True)
+        click.echo(f"ERROR: Configuration error: {e}", err=True)
         sys.exit(1)
 
 @cli.command()
@@ -179,18 +179,18 @@ def test_db():
 
             db = DatabaseManager(config.database_url)
 
-            click.echo("🔄 Testing database connection...")
+            click.echo("Testing database connection...")
             await db.setup()
 
             # Test basic operations
             stats = await db.get_stats()
-            click.echo("✅ Database connection successful")
-            click.echo(f"📊 Total users: {stats.get('total_users', 0)}")
+            click.echo("Database connection successful")
+            click.echo(f"Total users: {stats.get('total_users', 0)}")
 
             await db.close()
 
         except Exception as e:
-            click.echo(f"❌ Database test error: {e}", err=True)
+            click.echo(f"ERROR: Database test error: {e}", err=True)
 
     asyncio.run(_test())
 

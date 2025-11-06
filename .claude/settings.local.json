@@ -7,7 +7,11 @@
       "Bash(uv sync:*)",
       "Bash(uv add:*)",
       "Bash(zenml init:*)",
-      "Bash(uv run:*)"
+      "Bash(uv run:*)",
+      "Bash(docker compose:*)",
+      "Bash(test:*)",
+      "Bash(timeout 3 sleep:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

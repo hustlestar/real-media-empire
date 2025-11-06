@@ -58,7 +58,7 @@ services:
       - DATABASE_URL=postgresql://botuser:botpass@postgres:5432/pdf_link_youtube_to_anything_tg_bot
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    command: celery -A src.workers.celery_app worker --loglevel=info
+    command: uv run celery -A src.workers.celery_app worker --loglevel=info
     depends_on:
       redis:
         condition: service_healthy
