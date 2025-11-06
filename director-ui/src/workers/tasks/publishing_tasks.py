@@ -3,7 +3,7 @@
 import logging
 from typing import Dict, Any, List
 from celery import Task
-from src.workers.celery_app import app
+from workers.celery_app import app
 
 logger = logging.getLogger(__name__)
 

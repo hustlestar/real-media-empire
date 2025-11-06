@@ -90,11 +90,11 @@ app.include_router(characters.router, prefix="/api", tags=["characters"])
 app.include_router(assets.router, prefix="/api", tags=["assets"])
 
 # Mount WebSocket app
-from src.websocket.manager import socket_app
+from websocket.manager import socket_app
 app.mount("/ws", socket_app)
 
 # Register error handlers
-from src.api.error_handlers import register_error_handlers
+from api.error_handlers import register_error_handlers
 register_error_handlers(app)
 
 @app.on_event("startup")

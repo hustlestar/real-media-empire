@@ -10,8 +10,8 @@ import os
 import shutil
 from pathlib import Path
 
-from src.data.models import Asset
-from src.data.dao import get_db
+from data.models import Asset
+from data.dao import get_db
 
 router = APIRouter()
 

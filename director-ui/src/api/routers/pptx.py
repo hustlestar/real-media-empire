@@ -24,7 +24,7 @@ from decimal import Decimal
 # Import content processors
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from processors.youtube_processor import YouTubeProcessor
-from processors.web_scraper import WebScraper
+from processors.web_scraper import WebScraperProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -138,10 +138,12 @@ async def generate_outline(request: GenerateOutlineRequest):
 
         elif request.content_source == "web" and request.web_url:
             logger.info(f"Scraping web content: {request.web_url}")
-            scraper = WebScraper()
-            result = await scraper.scrape_url(request.web_url)
-            content = result.get("content", "")
-            title = result.get("title", title)
+            result = await WebScraperProcessor.extract_content_from_url(request.web_url)
+            if result:
+                content = result.get("content", "")
+                title = result.get("title", title)
+            else:
+                content = ""
 
         elif request.content_source == "ai":
             content = f"Topic: {request.topic}\n\nBrief: {request.brief or 'No additional context provided'}"
@@ -243,10 +245,12 @@ async def generate_presentation(
 
         elif content_source == "web" and web_url:
             logger.info(f"Scraping web URL: {web_url}")
-            scraper = WebScraper()
-            result = await scraper.scrape_url(web_url)
-            reference_content = result.get("content", "")
-            actual_topic = result.get("title", actual_topic)
+            result = await WebScraperProcessor.extract_content_from_url(web_url)
+            if result:
+                reference_content = result.get("content", "")
+                actual_topic = result.get("title", actual_topic)
+            else:
+                reference_content = ""
 
         elif content_source == "file" and file:
             logger.info(f"Reading uploaded file: {file.filename}")
