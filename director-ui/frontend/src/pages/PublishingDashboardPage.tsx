@@ -4,6 +4,7 @@ import PublishQueue from '../components/publishing/PublishQueue';
 import AccountManager from '../components/publishing/AccountManager';
 import PublishStats from '../components/publishing/PublishStats';
 import QuickPublish from '../components/publishing/QuickPublish';
+import { apiUrl } from '../config/api';
 
 const PublishingDashboardPage: React.FC = () => {
   const [queueStats, setQueueStats] = useState<any>(null);
@@ -20,9 +21,9 @@ const PublishingDashboardPage: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       const [statsRes, jobsRes, accountsRes] = await Promise.all([
-        fetch('http://localhost:8000/api/publishing/queue/stats'),
-        fetch('http://localhost:8000/api/publishing/jobs?limit=10'),
-        fetch('http://localhost:8000/api/publishing/accounts')
+        fetch(apiUrl('/api/publishing/queue/stats')),
+        fetch(apiUrl('/api/publishing/jobs?limit=10')),
+        fetch(apiUrl('/api/publishing/accounts'))
       ]);
 
       const stats = await statsRes.json();

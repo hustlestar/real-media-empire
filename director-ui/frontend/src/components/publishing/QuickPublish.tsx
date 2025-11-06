@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Send, Zap } from 'lucide-react';
+import { apiUrl } from '../../config/api';
 
 const QuickPublish: React.FC<any> = ({ accounts, onPublish }) => {
   const [videoPath, setVideoPath] = useState('');
@@ -11,7 +12,7 @@ const QuickPublish: React.FC<any> = ({ accounts, onPublish }) => {
     if (!videoPath || !title || platforms.length === 0 || !accountId) return;
 
     try {
-      await fetch('http://localhost:8000/api/publishing/publish/immediate', {
+      await fetch(apiUrl('/api/publishing/publish/immediate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

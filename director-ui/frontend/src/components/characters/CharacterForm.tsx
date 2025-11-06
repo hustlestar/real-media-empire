@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Save, Upload } from 'lucide-react';
+import { apiUrl } from '../../config/api';
 
 const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -19,7 +20,7 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
 
   const handleSave = async () => {
     try {
-      await fetch('http://localhost:8000/api/characters', {
+      await fetch(apiUrl('/api/characters'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

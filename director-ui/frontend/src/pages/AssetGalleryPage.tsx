@@ -5,6 +5,7 @@ import AssetList from '../components/assets/AssetList';
 import AssetFilters from '../components/assets/AssetFilters';
 import AssetDetails from '../components/assets/AssetDetails';
 import AssetUpload from '../components/assets/AssetUpload';
+import { apiUrl } from '../config/api';
 
 type ViewMode = 'grid' | 'list';
 type AssetType = 'all' | 'image' | 'video' | 'audio' | 'document';
@@ -54,7 +55,7 @@ const AssetGalleryPage: React.FC = () => {
   const fetchAssets = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:8000/api/assets');
+      const response = await fetch(apiUrl('/api/assets'));
       const data = await response.json();
       setAssets(data.assets || []);
     } catch (error) {
@@ -136,7 +137,7 @@ const AssetGalleryPage: React.FC = () => {
     if (!confirm(`Delete ${selectedAssets.size} asset(s)?`)) return;
 
     try {
-      await fetch('http://localhost:8000/api/assets/batch-delete', {
+      await fetch(apiUrl('/api/assets/batch-delete'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ asset_ids: Array.from(selectedAssets) })

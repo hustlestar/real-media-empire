@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Upload, File } from 'lucide-react';
+import { apiUrl } from '../../config/api';
 
 const AssetUpload: React.FC<any> = ({ onClose, onUploadComplete }) => {
   const [files, setFiles] = useState<File[]>([]);
@@ -13,7 +14,7 @@ const AssetUpload: React.FC<any> = ({ onClose, onUploadComplete }) => {
     files.forEach(file => formData.append('files', file));
 
     try {
-      await fetch('http://localhost:8000/api/assets/upload', {
+      await fetch(apiUrl('/api/assets/upload'), {
         method: 'POST',
         body: formData
       });

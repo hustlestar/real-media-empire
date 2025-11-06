@@ -3,6 +3,7 @@ import { Users, Plus, Image, Tag, Star } from 'lucide-react';
 import CharacterCard from '../components/characters/CharacterCard';
 import CharacterDetails from '../components/characters/CharacterDetails';
 import CharacterForm from '../components/characters/CharacterForm';
+import { apiUrl } from '../config/api';
 
 interface Character {
   id: string;
@@ -38,7 +39,7 @@ const CharacterLibraryPage: React.FC = () => {
 
   const fetchCharacters = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/characters');
+      const response = await fetch(apiUrl('/api/characters'));
       const data = await response.json();
       setCharacters(data.characters || []);
     } catch (error) {

@@ -1,0 +1,238 @@
+"""Character API router for visual consistency tracking."""
+
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+import uuid
+
+from src.data.models import Character
+from src.data.dao import get_db
+
+router = APIRouter()
+
+
+class CharacterAttributes(BaseModel):
+    """Character attributes schema."""
+    age: str
+    gender: str
+    ethnicity: str
+    hair_color: str
+    hair_style: str
+    eye_color: str
+    height: str
+    build: str
+    clothing_style: str
+    distinctive_features: List[str]
+
+
+class CharacterCreate(BaseModel):
+    """Character creation schema."""
+    name: str
+    description: str
+    reference_images: List[str] = []
+    attributes: CharacterAttributes
+    projects_used: List[str] = []
+
+
+class CharacterUpdate(BaseModel):
+    """Character update schema."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    reference_images: Optional[List[str]] = None
+    attributes: Optional[CharacterAttributes] = None
+    projects_used: Optional[List[str]] = None
+
+
+class CharacterResponse(BaseModel):
+    """Character response schema."""
+    id: str
+    name: str
+    description: str
+    reference_images: List[str]
+    attributes: Dict[str, Any]
+    consistency_prompt: str
+    projects_used: List[str]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+def generate_consistency_prompt(name: str, attributes: CharacterAttributes) -> str:
+    """Generate AI consistency prompt from character attributes."""
+    features = ", ".join(attributes.distinctive_features) if attributes.distinctive_features else "none"
+
+    prompt = f"""Character: {name}
+Physical Attributes:
+- Age: {attributes.age}
+- Gender: {attributes.gender}
+- Ethnicity: {attributes.ethnicity}
+- Hair: {attributes.hair_color}, {attributes.hair_style}
+- Eyes: {attributes.eye_color}
+- Height: {attributes.height}
+- Build: {attributes.build}
+- Clothing Style: {attributes.clothing_style}
+- Distinctive Features: {features}
+
+Maintain consistent appearance across all generated images."""
+
+    return prompt
+
+
+@router.post("/characters", response_model=CharacterResponse)
+async def create_character(
+    character: CharacterCreate,
+    db: Session = Depends(get_db)
+):
+    """Create a new character."""
+    # Check if character with same name exists
+    existing = db.query(Character).filter(Character.name == character.name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Character with name '{character.name}' already exists")
+
+    # Generate consistency prompt
+    consistency_prompt = generate_consistency_prompt(character.name, character.attributes)
+
+    # Create new character
+    new_character = Character(
+        id=str(uuid.uuid4()),
+        name=character.name,
+        description=character.description,
+        reference_images=character.reference_images,
+        attributes=character.attributes.dict(),
+        consistency_prompt=consistency_prompt,
+        projects_used=character.projects_used,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+
+    db.add(new_character)
+    db.commit()
+    db.refresh(new_character)
+
+    return new_character
+
+
+@router.get("/characters", response_model=Dict[str, List[CharacterResponse]])
+async def list_characters(
+    search: Optional[str] = None,
+    project_id: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """List all characters with optional filtering."""
+    query = db.query(Character)
+
+    if search:
+        query = query.filter(
+            (Character.name.ilike(f"%{search}%")) |
+            (Character.description.ilike(f"%{search}%"))
+        )
+
+    if project_id:
+        # Filter by project_id in projects_used JSON array
+        query = query.filter(Character.projects_used.contains([project_id]))
+
+    characters = query.order_by(Character.created_at.desc()).all()
+
+    return {"characters": characters}
+
+
+@router.get("/characters/{character_id}", response_model=CharacterResponse)
+async def get_character(
+    character_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get a specific character by ID."""
+    character = db.query(Character).filter(Character.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+
+    return character
+
+
+@router.put("/characters/{character_id}", response_model=CharacterResponse)
+async def update_character(
+    character_id: str,
+    updates: CharacterUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update a character."""
+    character = db.query(Character).filter(Character.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+
+    # Update fields if provided
+    if updates.name is not None:
+        # Check for name conflicts
+        existing = db.query(Character).filter(
+            Character.name == updates.name,
+            Character.id != character_id
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail=f"Character with name '{updates.name}' already exists")
+        character.name = updates.name
+
+    if updates.description is not None:
+        character.description = updates.description
+
+    if updates.reference_images is not None:
+        character.reference_images = updates.reference_images
+
+    if updates.attributes is not None:
+        character.attributes = updates.attributes.dict()
+        # Regenerate consistency prompt
+        character.consistency_prompt = generate_consistency_prompt(
+            character.name,
+            updates.attributes
+        )
+
+    if updates.projects_used is not None:
+        character.projects_used = updates.projects_used
+
+    character.updated_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(character)
+
+    return character
+
+
+@router.delete("/characters/{character_id}")
+async def delete_character(
+    character_id: str,
+    db: Session = Depends(get_db)
+):
+    """Delete a character."""
+    character = db.query(Character).filter(Character.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+
+    db.delete(character)
+    db.commit()
+
+    return {"message": "Character deleted successfully", "id": character_id}
+
+
+@router.post("/characters/{character_id}/add-project")
+async def add_character_to_project(
+    character_id: str,
+    project_id: str,
+    db: Session = Depends(get_db)
+):
+    """Add a character to a project."""
+    character = db.query(Character).filter(Character.id == character_id).first()
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+
+    if character.projects_used is None:
+        character.projects_used = []
+
+    if project_id not in character.projects_used:
+        character.projects_used.append(project_id)
+        character.updated_at = datetime.utcnow()
+        db.commit()
+
+    return {"message": "Character added to project", "character_id": character_id, "project_id": project_id}

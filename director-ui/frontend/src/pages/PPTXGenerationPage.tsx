@@ -6,6 +6,7 @@ import TemplateSelector from '../components/pptx/TemplateSelector';
 import OutlinePreview from '../components/pptx/OutlinePreview';
 import CostEstimator from '../components/pptx/CostEstimator';
 import GenerationProgress from '../components/pptx/GenerationProgress';
+import { apiUrl } from '../config/api';
 
 type ContentSource = 'ai' | 'youtube' | 'web' | 'file';
 type ToneType = 'professional' | 'casual' | 'motivational' | 'educational' | 'sales' | 'technical';
@@ -78,7 +79,7 @@ const PPTXGenerationPage: React.FC = () => {
 
   const handleEstimateCost = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/pptx/estimate-cost', {
+      const response = await fetch(apiUrl('/api/pptx/estimate-cost'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -97,7 +98,7 @@ const PPTXGenerationPage: React.FC = () => {
 
   const handleGenerateOutline = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/pptx/generate-outline', {
+      const response = await fetch(apiUrl('/api/pptx/generate-outline'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -151,7 +152,7 @@ const PPTXGenerationPage: React.FC = () => {
         formData.append('file', config.uploadedFile);
       }
 
-      const response = await fetch('http://localhost:8000/api/pptx/generate', {
+      const response = await fetch(apiUrl('/api/pptx/generate'), {
         method: 'POST',
         body: formData
       });
@@ -332,7 +333,7 @@ const PPTXGenerationPage: React.FC = () => {
                   </p>
 
                   <a
-                    href={`http://localhost:8000/api/pptx/download/${config.presentationId}`}
+                    href={apiUrl(`/api/pptx/download/${config.presentationId}`)}
                     download
                     className="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-500 rounded-lg transition"
                   >

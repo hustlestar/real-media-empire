@@ -15,6 +15,10 @@ from .content import (
     JobProcessingType,
     JobStatus,
 )
+from .characters import characters_table
+from .assets import assets_table
+from .film_projects import film_projects_table
+from .presentations import presentations_table
 
 __all__ = [
     "metadata",
@@ -25,4 +29,8 @@ __all__ = [
     "ProcessingStatus",
     "JobProcessingType",
     "JobStatus",
+    "characters_table",
+    "assets_table",
+    "film_projects_table",
+    "presentations_table",
 ]

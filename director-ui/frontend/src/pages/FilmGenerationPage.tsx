@@ -7,6 +7,7 @@ import EmotionSelector from '../components/film/EmotionSelector';
 import PromptBuilder from '../components/film/PromptBuilder';
 import SceneSequencer from '../components/film/SceneSequencer';
 import PromptPreview from '../components/film/PromptPreview';
+import { apiUrl } from '../config/api';
 
 interface PromptConfig {
   subject: string;
@@ -44,7 +45,7 @@ const FilmGenerationPage: React.FC = () => {
   const handleGenerateSingleShot = async () => {
     try {
       setIsGenerating(true);
-      const response = await fetch('http://localhost:8000/api/film/generate-shot', {
+      const response = await fetch(apiUrl('/api/film/generate-shot'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,7 +65,7 @@ const FilmGenerationPage: React.FC = () => {
   const handleGenerateScene = async () => {
     try {
       setIsGenerating(true);
-      const response = await fetch('http://localhost:8000/api/film/generate-scene', {
+      const response = await fetch(apiUrl('/api/film/generate-scene'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
