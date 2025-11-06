@@ -108,4 +108,10 @@ async def get_current_user_id() -> int:
     """
     # Return your Telegram user ID so UI shows content from bot
     # TODO: Implement proper API key authentication
-    return 66395090  # Your Telegram user ID
+    user_id = 66395090  # Your Telegram user ID
+
+    # Ensure user exists in database
+    db = await get_database()
+    await db.ensure_user(user_id, username="api_user")
+
+    return user_id
