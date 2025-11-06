@@ -1,0 +1,27 @@
+{
+  "asset_id": "6600806b8de18a3ea89191bb2571aca59aa5023ee6fd65d92a6967356c7141c1",
+  "asset_type": "video",
+  "content_hash": "6600806b8de18a3ea89191bb2571aca59aa5023ee6fd65d92a6967356c7141c1",
+  "file_path": "film_gallery\\cache\\videos\\6600806b8de18a3ea89191bb2571aca59aa5023ee6fd65d92a6967356c7141c1.mp4",
+  "characters": [],
+  "landscapes": [],
+  "styles": [],
+  "mood": null,
+  "time_of_day": null,
+  "shot_type": null,
+  "prompt": "8K cinematic wide comedy shot, orange tabby cat running away at full speed in panic with arched back and puffed tail, crow proudly strutting in foreground looking satisfied, cat disappearing into distance, motion blur on running cat, crow casually walking like a boss, photorealistic animals, comedy payoff, bright suburban backyard, perfect comedic timing",
+  "negative_prompt": null,
+  "provider": "Minimax",
+  "model": "minimax-video-01",
+  "config": {
+    "duration": 5,
+    "fps": 24,
+    "mode": "standard",
+    "model": null
+  },
+  "cost_usd": "0.05",
+  "generation_time_seconds": 252,
+  "created_at": "2025-11-06 12:03:53.145269",
+  "used_in_projects": [],
+  "reuse_count": 0
+}

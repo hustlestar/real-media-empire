@@ -26,20 +26,15 @@ import click
 import logging
 from pathlib import Path
 
-# Try to import ZenML, but provide fallback
-try:
-    from zenml.pipelines import pipeline
+# ZenML is disabled - use standalone mode
+# (ZenML initialization issues on Windows, not needed for this project)
+ZENML_AVAILABLE = False
 
-    ZENML_AVAILABLE = True
-except ImportError:
-    ZENML_AVAILABLE = False
-
-    # Fallback: pipeline is a no-op decorator
-    def pipeline(**kwargs):
-        def decorator(func):
-            return func
-
-        return decorator
+def pipeline(**kwargs):
+    """No-op decorator for pipeline (ZenML disabled)"""
+    def decorator(func):
+        return func
+    return decorator
 
 
 from config import CONFIG
@@ -63,62 +58,49 @@ logger = logging.getLogger(__name__)
 # Pipeline Definition
 # ============================================================================
 
-if ZENML_AVAILABLE:
+def film_generation_pipeline(params: FilmPipelineParams) -> str:
+    """
+    Film generation pipeline - runs steps sequentially.
 
-    @pipeline(enable_cache=True)
-    def film_generation_pipeline(
-        load_shot_definitions_step,
-        configure_shots_step,
-        estimate_costs_step,
-        generate_shots_step,
-        save_shots_metadata_step,
-        record_costs_step,
-        compose_final_film_step,
-    ):
-        """
-        ZenML film generation pipeline.
+    Generates film from shot definitions including:
+    - Image generation
+    - Video animation
+    - Audio synthesis
+    - Cost tracking
+    """
+    logger.info("Running film pipeline...")
 
-        Chains all steps together with caching support.
-        """
-        # Load and configure
-        shot_definitions = load_shot_definitions_step()
-        shot_configs = configure_shots_step(shot_definitions)
+    # Log full configuration
+    logger.info("=" * 60)
+    logger.info("PIPELINE CONFIGURATION:")
+    logger.info(f"  Film ID: {params.film_id}")
+    logger.info(f"  Shots JSON: {params.shots_json_path}")
+    logger.info(f"  Budget Limit: ${params.budget_limit_usd if params.budget_limit_usd else 'unlimited'}")
+    logger.info(f"  Output Directory: {params.output_dir}")
+    logger.info(f"  Use Cache: {params.use_cache}")
+    logger.info("")
+    logger.info("PROVIDERS:")
+    logger.info(f"  Image: {params.default_image_provider}")
+    logger.info(f"  Video: {params.default_video_provider}")
+    logger.info(f"  Audio: {params.default_audio_provider}")
+    logger.info("")
+    logger.info("API KEYS:")
+    logger.info(f"  FAL: {'[SET]' if params.fal_api_key else '[NOT SET]'}")
+    logger.info(f"  Replicate: {'[SET]' if params.replicate_api_key else '[NOT SET]'}")
+    logger.info(f"  OpenAI: {'[SET]' if params.openai_api_key else '[NOT SET]'}")
+    logger.info(f"  ElevenLabs: {'[SET]' if params.elevenlabs_api_key else '[NOT SET]'}")
+    logger.info("=" * 60)
 
-        # Estimate costs
-        cost_estimate = estimate_costs_step(shot_configs)
+    # Execute steps
+    shot_definitions = load_shot_definitions(params)
+    shot_configs = configure_shots(shot_definitions, params)
+    cost_estimate = estimate_costs(shot_configs, params)
+    completed_shots = generate_shots(shot_configs, params)
+    metadata_path = save_shots_metadata(completed_shots, params)
+    cost_report = record_costs(completed_shots, cost_estimate, params)
+    final_film_path = compose_final_film(completed_shots, params)
 
-        # Generate all assets
-        completed_shots = generate_shots_step(shot_configs)
-
-        # Save results
-        metadata_path = save_shots_metadata_step(completed_shots)
-        cost_report = record_costs_step(completed_shots, cost_estimate)
-
-        # Compose final film (future)
-        final_film_path = compose_final_film_step(completed_shots)
-
-        return final_film_path
-
-else:
-    # Fallback for when ZenML is not available
-    def film_generation_pipeline(params: FilmPipelineParams) -> str:
-        """
-        Simple pipeline execution without ZenML.
-
-        Runs steps sequentially.
-        """
-        logger.info("Running film pipeline without ZenML...")
-
-        # Execute steps
-        shot_definitions = load_shot_definitions(params)
-        shot_configs = configure_shots(shot_definitions, params)
-        cost_estimate = estimate_costs(shot_configs, params)
-        completed_shots = generate_shots(shot_configs, params)
-        metadata_path = save_shots_metadata(completed_shots, params)
-        cost_report = record_costs(completed_shots, cost_estimate, params)
-        final_film_path = compose_final_film(completed_shots, params)
-
-        return final_film_path
+    return final_film_path
 
 
 # ============================================================================
@@ -194,34 +176,21 @@ def main(
         missing_keys.append("ELEVENLABS_API_KEY")
 
     if missing_keys:
-        logger.error(f"❌ Missing required API keys in .env: {', '.join(missing_keys)}")
+        logger.error(f"[ERROR] Missing required API keys in .env: {', '.join(missing_keys)}")
         logger.error("Please add them to your .env file")
         return
 
     try:
-        if ZENML_AVAILABLE:
-            # Run with ZenML
-            pipeline_instance = film_generation_pipeline(
-                load_shot_definitions_step=load_shot_definitions(params),
-                configure_shots_step=configure_shots,
-                estimate_costs_step=estimate_costs(params=params),
-                generate_shots_step=generate_shots(params=params),
-                save_shots_metadata_step=save_shots_metadata(params=params),
-                record_costs_step=record_costs(params=params),
-                compose_final_film_step=compose_final_film(params=params),
-            )
-            final_film_path = pipeline_instance.run()
-        else:
-            # Run without ZenML
-            final_film_path = film_generation_pipeline(params)
+        # Run pipeline
+        final_film_path = film_generation_pipeline(params)
 
         logger.info("=" * 60)
-        logger.info("✓ PIPELINE COMPLETE")
+        logger.info("[SUCCESS] PIPELINE COMPLETE")
         logger.info(f"Final film: {final_film_path}")
         logger.info("=" * 60)
 
     except Exception as e:
-        logger.error(f"❌ Pipeline failed: {e}", exc_info=True)
+        logger.error(f"[ERROR] Pipeline failed: {e}", exc_info=True)
         raise
 
 

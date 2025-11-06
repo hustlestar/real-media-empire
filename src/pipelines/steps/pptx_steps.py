@@ -8,23 +8,18 @@ import logging
 from decimal import Decimal
 from typing import Tuple, Optional
 
-# Try to import ZenML, but provide fallback
-try:
-    from zenml import step
+# ZenML is disabled - steps are plain functions
+ZENML_AVAILABLE = False
 
-    ZENML_AVAILABLE = True
-except ImportError:
-    ZENML_AVAILABLE = False
+def step(*args, **kwargs):
+    """No-op decorator for step (ZenML disabled)"""
+    if len(args) == 1 and callable(args[0]):
+        return args[0]
 
-    # Fallback decorator that does nothing
-    def step(*args, **kwargs):
-        if len(args) == 1 and callable(args[0]):
-            return args[0]
+    def decorator(func):
+        return func
 
-        def decorator(func):
-            return func
-
-        return decorator
+    return decorator
 
 
 from pptx_gen.models import (

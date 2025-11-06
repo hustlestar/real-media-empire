@@ -3,23 +3,19 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-# Try to import ZenML, but provide fallback
-try:
-    from zenml import pipeline
+# ZenML is disabled - use standalone mode
+# (ZenML initialization issues on Windows, not needed for this project)
+ZENML_AVAILABLE = False
 
-    ZENML_AVAILABLE = True
-except ImportError:
-    ZENML_AVAILABLE = False
+def pipeline(*args, **kwargs):
+    """No-op decorator for pipeline (ZenML disabled)"""
+    if len(args) == 1 and callable(args[0]):
+        return args[0]
 
-    # Fallback decorator
-    def pipeline(*args, **kwargs):
-        if len(args) == 1 and callable(args[0]):
-            return args[0]
+    def decorator(func):
+        return func
 
-        def decorator(func):
-            return func
-
-        return decorator
+    return decorator
 
 
 from pipelines.steps.pptx_steps import (
@@ -142,6 +138,27 @@ def run_pptx_generation_standalone(
     from pptx_gen.text_parser import parse_presentation_from_file
 
     logger.info("Running PPTX generation in standalone mode (no ZenML)")
+
+    # Log full configuration
+    logger.info("=" * 60)
+    logger.info("PIPELINE CONFIGURATION:")
+    logger.info(f"  Presentation ID: {presentation_id}")
+    logger.info(f"  Topic: {topic}")
+    logger.info(f"  Brief: {brief[:50] + '...' if brief and len(brief) > 50 else brief}")
+    logger.info(f"  Number of Slides: {num_slides}")
+    logger.info(f"  Tone: {tone}")
+    logger.info(f"  Model: {model}")
+    logger.info(f"  Budget Limit: ${budget_limit if budget_limit else 'unlimited'}")
+    logger.info(f"  Output Directory: {output_dir}")
+    logger.info("")
+    logger.info("INPUT SOURCES:")
+    logger.info(f"  Content File: {content_file if content_file else '[Not using file]'}")
+    logger.info(f"  Reference File: {reference_file if reference_file else '[None]'}")
+    logger.info(f"  Additional Instructions: {additional_instructions[:50] + '...' if additional_instructions and len(additional_instructions) > 50 else additional_instructions or '[None]'}")
+    logger.info("")
+    logger.info("TEMPLATE:")
+    logger.info(f"  Template Path: {template_path if template_path else '[Using default]'}")
+    logger.info("=" * 60)
 
     # Create config
     config = PresentationConfig(template_path=template_path)

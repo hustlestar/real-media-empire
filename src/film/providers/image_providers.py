@@ -40,8 +40,9 @@ class FalImageProvider(BaseImageProvider):
 
     BASE_URL = "https://queue.fal.run"
     DEFAULT_MODEL = "fal-ai/flux/dev"
-    MAX_POLL_ATTEMPTS = 60  # 3 minutes with 3s intervals
-    POLL_INTERVAL = 3  # seconds
+    MAX_POLL_ATTEMPTS = 120  # 10 minutes with 5s intervals
+    POLL_INTERVAL = 5  # seconds
+    MAX_RETRIES = 3  # Retry failed requests
 
     def __init__(self, api_key: str):
         super().__init__(api_key=api_key, name="FAL.ai")
@@ -56,50 +57,83 @@ class FalImageProvider(BaseImageProvider):
         Generate image using FAL.ai FLUX model.
 
         Process:
-        1. Submit generation request
+        1. Submit generation request (with retries)
         2. Poll status until complete
-        3. Download result
+        3. Extract result
+
+        Includes retry logic for transient failures.
         """
         start_time = time.time()
+        last_error = None
 
-        try:
-            # Submit request
-            logger.info(f"[{self.name}] Submitting image generation request")
-            status_url, request_id = await self._submit_request(prompt, negative_prompt, config)
+        for retry in range(self.MAX_RETRIES):
+            try:
+                # Submit request
+                if retry > 0:
+                    logger.info(f"[{self.name}] Retry attempt {retry + 1}/{self.MAX_RETRIES}")
+                    await asyncio.sleep(5)  # Wait before retry
 
-            # Poll for completion
-            logger.info(f"[{self.name}] Polling for completion: {request_id}")
-            result_data = await self.poll_status(status_url)
+                logger.info(f"[{self.name}] Submitting image generation request")
+                logger.info(f"[{self.name}] Prompt: {prompt[:100]}...")
+                status_url, request_id = await self._submit_request(prompt, negative_prompt, config)
 
-            # Extract image URL
-            image_url = self._extract_image_url(result_data)
-            width = result_data.get("images", [{}])[0].get("width", config.width)
-            height = result_data.get("images", [{}])[0].get("height", config.height)
+                # Poll for completion
+                logger.info(f"[{self.name}] Request submitted. ID: {request_id}")
+                logger.info(f"[{self.name}] Polling for completion (max {self.MAX_POLL_ATTEMPTS * self.POLL_INTERVAL}s)...")
+                result_data = await self.poll_status(status_url)
 
-            generation_time = int(time.time() - start_time)
+                # Extract image URL
+                image_url = self._extract_image_url(result_data)
+                width = result_data.get("images", [{}])[0].get("width", config.width)
+                height = result_data.get("images", [{}])[0].get("height", config.height)
 
-            logger.info(f"[{self.name}] Image generated successfully in {generation_time}s: {image_url}")
+                generation_time = int(time.time() - start_time)
 
-            return ImageResult(
-                success=True,
-                provider=self.name,
-                model=config.model or self.DEFAULT_MODEL,
-                cost_usd=self.estimate_cost(config),
-                generation_time_seconds=generation_time,
-                request_id=request_id,
-                image_url=image_url,
-                width=width,
-                height=height,
-            )
+                logger.info(f"[{self.name}] SUCCESS: Image generated in {generation_time}s")
+                logger.info(f"[{self.name}] Image URL: {image_url[:80]}...")
 
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 401:
-                raise ProviderAuthError(f"Authentication failed: {e}")
-            raise ProviderError(f"HTTP error: {e}")
+                return ImageResult(
+                    success=True,
+                    provider=self.name,
+                    model=config.model or self.DEFAULT_MODEL,
+                    cost_usd=self.estimate_cost(config),
+                    generation_time_seconds=generation_time,
+                    request_id=request_id,
+                    image_url=image_url,
+                    width=width,
+                    height=height,
+                )
 
-        except Exception as e:
-            logger.error(f"[{self.name}] Generation failed: {e}")
-            raise ProviderError(f"Image generation failed: {e}")
+            except ProviderTimeoutError as e:
+                # Don't retry on timeout - it's a long wait issue, not transient
+                logger.error(f"[{self.name}] Timeout error (not retrying): {e}")
+                raise
+
+            except ProviderAuthError as e:
+                # Don't retry on auth errors
+                logger.error(f"[{self.name}] Authentication error (not retrying): {e}")
+                raise
+
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 401:
+                    raise ProviderAuthError(f"Authentication failed: {e}")
+
+                last_error = e
+                logger.warning(f"[{self.name}] HTTP error (attempt {retry + 1}/{self.MAX_RETRIES}): {e}")
+
+                if retry == self.MAX_RETRIES - 1:
+                    raise ProviderError(f"HTTP error after {self.MAX_RETRIES} retries: {e}")
+
+            except Exception as e:
+                last_error = e
+                logger.warning(f"[{self.name}] Error (attempt {retry + 1}/{self.MAX_RETRIES}): {e}")
+
+                if retry == self.MAX_RETRIES - 1:
+                    logger.error(f"[{self.name}] All retries exhausted")
+                    raise ProviderError(f"Image generation failed after {self.MAX_RETRIES} retries: {e}")
+
+        # Shouldn't reach here, but just in case
+        raise ProviderError(f"Image generation failed: {last_error}")
 
     async def _submit_request(
         self,
@@ -130,18 +164,33 @@ class FalImageProvider(BaseImageProvider):
             "Content-Type": "application/json",
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(url, json=payload, headers=headers)
-            response.raise_for_status()
-            data = response.json()
+        logger.debug(f"[{self.name}] Submitting to {url}")
+        logger.debug(f"[{self.name}] Image size: {config.width}x{config.height}")
+        logger.debug(f"[{self.name}] Inference steps: {config.inference_steps}, Guidance: {config.guidance_scale}")
 
-        status_url = data.get("status_url")
-        request_id = data.get("request_id")
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                response.raise_for_status()
+                data = response.json()
 
-        if not status_url:
-            raise ProviderError(f"No status_url in response: {data}")
+            status_url = data.get("status_url")
+            request_id = data.get("request_id")
 
-        return status_url, request_id
+            if not status_url:
+                logger.error(f"[{self.name}] Invalid response: {data}")
+                raise ProviderError(f"No status_url in response: {data}")
+
+            logger.debug(f"[{self.name}] Status URL: {status_url}")
+            return status_url, request_id
+
+        except httpx.HTTPStatusError as e:
+            logger.error(f"[{self.name}] HTTP {e.response.status_code}: {e.response.text}")
+            raise
+
+        except httpx.RequestError as e:
+            logger.error(f"[{self.name}] Request error: {e}")
+            raise ProviderError(f"Failed to submit request: {e}")
 
     async def poll_status(self, status_url: str) -> dict:
         """Poll status URL until generation completes"""
@@ -150,30 +199,58 @@ class FalImageProvider(BaseImageProvider):
         }
 
         async with httpx.AsyncClient(timeout=30.0) as client:
+            last_logged_time = 0
+            log_interval = 30  # Log every 30 seconds
+
             for attempt in range(self.MAX_POLL_ATTEMPTS):
-                response = await client.get(status_url, headers=headers)
-                response.raise_for_status()
-                status_data = response.json()
+                elapsed = attempt * self.POLL_INTERVAL
 
-                status = status_data.get("status")
+                # Log progress periodically
+                if elapsed - last_logged_time >= log_interval:
+                    logger.info(f"[{self.name}] Still generating... ({elapsed}s elapsed, attempt {attempt + 1}/{self.MAX_POLL_ATTEMPTS})")
+                    last_logged_time = elapsed
 
-                if status == "COMPLETED":
-                    # Get the actual data from response_url
-                    response_url = status_data.get("response_url")
-                    if response_url:
-                        data_response = await client.get(response_url, headers=headers)
-                        data_response.raise_for_status()
-                        return data_response.json()
-                    return status_data
+                try:
+                    response = await client.get(status_url, headers=headers)
+                    response.raise_for_status()
+                    status_data = response.json()
 
-                if status == "FAILED":
-                    error = status_data.get("error", "Unknown error")
-                    raise ProviderError(f"Generation failed: {error}")
+                    status = status_data.get("status")
 
-                # Still processing, wait and retry
-                await asyncio.sleep(self.POLL_INTERVAL)
+                    logger.debug(f"[{self.name}] Status: {status} (attempt {attempt + 1})")
 
-        raise ProviderTimeoutError(f"Polling timeout after {self.MAX_POLL_ATTEMPTS * self.POLL_INTERVAL}s")
+                    if status == "COMPLETED":
+                        logger.info(f"[{self.name}] Generation completed after {elapsed}s")
+                        # Get the actual data from response_url
+                        response_url = status_data.get("response_url")
+                        if response_url:
+                            data_response = await client.get(response_url, headers=headers)
+                            data_response.raise_for_status()
+                            return data_response.json()
+                        return status_data
+
+                    if status == "FAILED":
+                        error = status_data.get("error", "Unknown error")
+                        logger.error(f"[{self.name}] Generation failed: {error}")
+                        raise ProviderError(f"Generation failed: {error}")
+
+                    # Still processing, wait and retry
+                    await asyncio.sleep(self.POLL_INTERVAL)
+
+                except httpx.HTTPError as e:
+                    logger.warning(f"[{self.name}] HTTP error during polling (attempt {attempt + 1}): {e}")
+                    if attempt < self.MAX_POLL_ATTEMPTS - 1:
+                        await asyncio.sleep(self.POLL_INTERVAL)
+                        continue
+                    raise
+
+        total_time = self.MAX_POLL_ATTEMPTS * self.POLL_INTERVAL
+        logger.error(f"[{self.name}] Timeout after {total_time}s ({self.MAX_POLL_ATTEMPTS} attempts)")
+        raise ProviderTimeoutError(
+            f"Polling timeout after {total_time}s. "
+            f"The FAL API is taking longer than expected. "
+            f"This might be due to high load or complex image generation."
+        )
 
     def _extract_image_url(self, result_data: dict) -> str:
         """Extract image URL from various possible locations in response"""
@@ -212,8 +289,9 @@ class ReplicateImageProvider(BaseImageProvider):
     """
 
     BASE_URL = "https://api.replicate.com/v1"
-    MAX_POLL_ATTEMPTS = 60
-    POLL_INTERVAL = 3
+    MAX_POLL_ATTEMPTS = 120  # 10 minutes with 5s intervals
+    POLL_INTERVAL = 5  # seconds
+    MAX_RETRIES = 3  # Retry failed requests
 
     def __init__(self, api_key: str):
         super().__init__(api_key=api_key, name="Replicate")

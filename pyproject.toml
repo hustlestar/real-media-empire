@@ -57,6 +57,14 @@ dependencies = [
     "accelerate>=0.24.0",
     "safetensors>=0.4.0",
     "python-pptx>=1.0.2",
+    "sqlalchemy-utils>=0.42.0",
+    "sqlmodel>=0.0.27",
+    "passlib>=1.7.4",
+    "pycryptodome>=3.23.0",
+    "alembic>=1.16.5",
+    "bcrypt>=5.0.0",
+    "pydantic-settings>=2.11.0",
+    "pymysql>=1.1.2",
 ]
 
 [project.optional-dependencies]
@@ -74,6 +82,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
 
 [tool.ruff]
 target-version = "py311"

@@ -131,12 +131,14 @@ class AssetCache:
             (ImageResult, was_cached)
         """
         # Compute content hash
+        # Remove model from config_dict if present to avoid duplicate kwarg
+        config_without_model = {k: v for k, v in config_dict.items() if k != 'model'}
         content_hash = self._compute_content_hash(
             prompt=prompt,
             negative_prompt=negative_prompt or "",
             provider=provider,
             model=model,
-            **config_dict,
+            **config_without_model,
         )
 
         # Check cache
@@ -245,12 +247,14 @@ class AssetCache:
         generate_func,
     ) -> tuple[VideoResult, bool]:
         """Get cached video or generate new one"""
+        # Remove model from config_dict if present to avoid duplicate kwarg
+        config_without_model = {k: v for k, v in config_dict.items() if k != 'model'}
         content_hash = self._compute_content_hash(
             image_url=image_url,
             prompt=prompt,
             provider=provider,
             model=model,
-            **config_dict,
+            **config_without_model,
         )
 
         cached_result = self._lookup_video_cache(content_hash)
@@ -343,12 +347,14 @@ class AssetCache:
         generate_func,
     ) -> tuple[AudioResult, bool]:
         """Get cached audio or generate new one"""
+        # Remove model from config_dict if present to avoid duplicate kwarg
+        config_without_model = {k: v for k, v in config_dict.items() if k != 'model'}
         content_hash = self._compute_content_hash(
             text=text,
             provider=provider,
             model=model,
             voice=voice,
-            **config_dict,
+            **config_without_model,
         )
 
         cached_result = self._lookup_audio_cache(content_hash)

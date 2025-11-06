@@ -11,14 +11,10 @@ import logging
 from pathlib import Path
 from typing import List, Tuple
 
-# Note: zenml.steps API may vary by version
-# If BaseStep doesn't exist, these can be plain functions
-try:
-    from zenml.steps import step
-except ImportError:
-    # Fallback: make 'step' a no-op decorator
-    def step(func):
-        return func
+# ZenML is disabled - steps are plain functions
+def step(func):
+    """No-op decorator for step (ZenML disabled)"""
+    return func
 
 
 from config import CONFIG
