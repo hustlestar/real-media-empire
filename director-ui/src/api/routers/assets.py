@@ -66,7 +66,7 @@ class AssetListResponse(BaseModel):
     page_size: int
 
 
-@router.post("/assets", response_model=AssetResponse)
+@router.post("", response_model=AssetResponse)
 async def create_asset(
     asset: AssetCreate,
     db: Session = Depends(get_db)
@@ -95,7 +95,7 @@ async def create_asset(
     return new_asset
 
 
-@router.post("/assets/upload", response_model=AssetResponse)
+@router.post("/upload", response_model=AssetResponse)
 async def upload_asset(
     file: UploadFile = File(...),
     tags: Optional[str] = Query(None),  # Comma-separated tags
@@ -164,7 +164,7 @@ async def upload_asset(
     return new_asset
 
 
-@router.get("/assets", response_model=AssetListResponse)
+@router.get("", response_model=AssetListResponse)
 async def list_assets(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -219,7 +219,7 @@ async def list_assets(
     }
 
 
-@router.get("/assets/{asset_id}", response_model=AssetResponse)
+@router.get("/{asset_id}", response_model=AssetResponse)
 async def get_asset(
     asset_id: str,
     db: Session = Depends(get_db)
@@ -232,7 +232,7 @@ async def get_asset(
     return asset
 
 
-@router.put("/assets/{asset_id}", response_model=AssetResponse)
+@router.put("/{asset_id}", response_model=AssetResponse)
 async def update_asset(
     asset_id: str,
     updates: AssetUpdate,
@@ -265,7 +265,7 @@ async def update_asset(
     return asset
 
 
-@router.delete("/assets/{asset_id}")
+@router.delete("/{asset_id}")
 async def delete_asset(
     asset_id: str,
     delete_file: bool = False,
@@ -291,7 +291,7 @@ async def delete_asset(
     return {"message": "Asset deleted successfully", "id": asset_id}
 
 
-@router.post("/assets/bulk-delete")
+@router.post("/bulk-delete")
 async def bulk_delete_assets(
     asset_ids: List[str],
     delete_files: bool = False,
@@ -329,7 +329,7 @@ async def bulk_delete_assets(
     }
 
 
-@router.post("/assets/{asset_id}/toggle-favorite", response_model=AssetResponse)
+@router.post("/{asset_id}/toggle-favorite", response_model=AssetResponse)
 async def toggle_favorite(
     asset_id: str,
     db: Session = Depends(get_db)
@@ -348,7 +348,7 @@ async def toggle_favorite(
     return asset
 
 
-@router.get("/assets/stats/summary")
+@router.get("/stats/summary")
 async def get_assets_stats(
     db: Session = Depends(get_db)
 ):
