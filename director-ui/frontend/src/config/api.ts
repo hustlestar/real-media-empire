@@ -5,8 +5,8 @@
  * the backend URL for different environments.
  */
 
-// Get API base URL from environment variable or use default
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// Get API base URL from environment variable or use empty string for relative URLs (proxy)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export { API_BASE_URL };
 
