@@ -83,11 +83,11 @@ app.include_router(processing.router, prefix="/api/v1", tags=["processing"])
 app.include_router(bundles.router, prefix="/api/v1", tags=["bundles"])
 app.include_router(tags.router, prefix="/api/v1", tags=["tags"])
 app.include_router(prompts.router, prefix="/api/v1", tags=["prompts"])
-app.include_router(film.router, prefix="/api", tags=["film"])
-app.include_router(pptx.router, prefix="/api", tags=["pptx"])
-app.include_router(publishing.router, prefix="/api", tags=["publishing"])
-app.include_router(characters.router, prefix="/api", tags=["characters"])
-app.include_router(assets.router, prefix="/api", tags=["assets"])
+app.include_router(film.router, prefix="/api/film", tags=["film"])
+app.include_router(pptx.router, prefix="/api/pptx", tags=["pptx"])
+app.include_router(publishing.router, prefix="/api/publishing", tags=["publishing"])
+app.include_router(characters.router, prefix="/api/characters", tags=["characters"])
+app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
 
 # Mount WebSocket app
 from src.websocket.manager import socket_app

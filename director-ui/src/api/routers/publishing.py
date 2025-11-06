@@ -17,7 +17,7 @@ from features.publishing.platforms.base import PublishConfig, PublishResult, Pub
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/publishing", tags=["publishing"])
+router = APIRouter()
 
 # Global instances (should be dependency-injected in production)
 _manager: Optional[PublishingManager] = None

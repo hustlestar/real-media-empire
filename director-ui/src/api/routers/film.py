@@ -17,7 +17,7 @@ from features.film.prompts.emotions import get_emotion, find_emotions_by_energy,
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/film", tags=["film"])
+router = APIRouter()
 
 
 # ============================================================================
