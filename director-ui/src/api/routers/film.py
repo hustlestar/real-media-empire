@@ -8,20 +8,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-# Import film prompt system
-import sys
-from pathlib import Path
-
-parent_src = Path(__file__).parent.parent.parent.parent.parent / "src"
-docker_mounted_src = Path("/media-empire/src")
-
-if docker_mounted_src.exists():
-    sys.path.insert(0, str(docker_mounted_src))
-elif parent_src.exists():
-    sys.path.insert(0, str(parent_src))
-else:
-    raise ImportError(f"Could not find media-empire src directory. Checked: {parent_src}, {docker_mounted_src}")
-
+# Import film prompt system from shared library
 from features.film.prompts.builder import CinematicPromptBuilder
 from features.film.prompts.styles import list_all_styles, get_style, search_styles
 from features.film.prompts.shot_types import get_shot_type, get_shot_by_purpose, get_recommended_shot_sequence

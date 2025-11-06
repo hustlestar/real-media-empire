@@ -17,8 +17,6 @@ from .base import (
 )
 
 # Import existing YouTube uploader
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 from social.you_tube import YouTubeUploader
 
 logger = logging.getLogger(__name__)

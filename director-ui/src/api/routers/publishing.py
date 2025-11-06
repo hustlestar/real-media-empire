@@ -10,20 +10,7 @@ from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-# Import publishing system
-import sys
-from pathlib import Path
-
-parent_src = Path(__file__).parent.parent.parent.parent.parent / "src"
-docker_mounted_src = Path("/media-empire/src")
-
-if docker_mounted_src.exists():
-    sys.path.insert(0, str(docker_mounted_src))
-elif parent_src.exists():
-    sys.path.insert(0, str(parent_src))
-else:
-    raise ImportError(f"Could not find media-empire src directory. Checked: {parent_src}, {docker_mounted_src}")
-
+# Import publishing system from shared library
 from features.publishing.manager import PublishingManager
 from features.publishing.queue import PublishingQueue, QueuedPublishConfig, QueueStatus
 from features.publishing.platforms.base import PublishConfig, PublishResult, PublishStatus
