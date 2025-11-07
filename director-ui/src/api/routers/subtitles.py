@@ -38,6 +38,108 @@ class SubtitleResponse(BaseModel):
     message: str
     output_path: Optional[str] = None
     download_url: Optional[str] = None
+    cost_saved: Optional[float] = None  # USD saved by using text-based method
+
+
+@router.post("/add-from-text", response_model=SubtitleResponse)
+async def add_subtitles_from_text(
+    video: UploadFile = File(...),
+    text: str = Form(...),
+    style: str = Form("tiktok"),
+    highlight_keywords: bool = Form(True),
+    max_words_per_line: int = Form(5)
+):
+    """
+    Add subtitles to video using pre-existing text (FREE - no API cost!).
+
+    Use this for AI-generated videos where you already have the script.
+    This method is FREE and doesn't require OpenAI API key!
+
+    Args:
+        video: Video file to process
+        text: The script text (what's spoken in the video)
+        style: Caption style (tiktok, instagram, mr_beast, minimal, professional)
+        highlight_keywords: Whether to highlight important words
+        max_words_per_line: Maximum words per subtitle line
+
+    Returns:
+        SubtitleResponse with download link
+
+    Example:
+        ```bash
+        curl -X POST "http://localhost:8000/api/subtitles/add-from-text" \\
+          -F "video=@generated_video.mp4" \\
+          -F "text=Welcome to my channel! This is amazing content." \\
+          -F "style=tiktok"
+        ```
+
+    Cost: FREE (no API calls)
+    """
+    if SubtitleGenerator is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Subtitle generation not available. Install: uv add moviepy"
+        )
+
+    # Validate file type
+    if not video.filename.endswith(('.mp4', '.mov', '.avi', '.mkv')):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Supported: .mp4, .mov, .avi, .mkv"
+        )
+
+    # Validate style
+    valid_styles = ["tiktok", "instagram", "mr_beast", "minimal", "professional"]
+    if style not in valid_styles:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid style. Must be one of: {', '.join(valid_styles)}"
+        )
+
+    try:
+        # Create temp directory
+        temp_dir = Path(tempfile.gettempdir()) / "media_empire_subtitles"
+        temp_dir.mkdir(exist_ok=True)
+
+        # Save uploaded video
+        input_path = temp_dir / f"input_{video.filename}"
+        with open(input_path, "wb") as f:
+            content = await video.read()
+            f.write(content)
+
+        # Calculate cost savings (vs Whisper transcription)
+        from moviepy.editor import VideoFileClip
+        vid = VideoFileClip(str(input_path))
+        duration_minutes = vid.duration / 60
+        vid.close()
+        cost_saved = duration_minutes * 0.006  # Whisper costs $0.006/min
+
+        # Generate output path
+        output_filename = f"subtitled_text_{style}_{video.filename}"
+        output_path = temp_dir / output_filename
+
+        # Generate subtitles from text (NO API COST!)
+        generator = SubtitleGenerator()  # No API key needed!
+
+        result_path = generator.add_subtitles_from_text(
+            video_path=str(input_path),
+            text=text,
+            output_path=str(output_path),
+            style=style,
+            highlight_keywords=highlight_keywords,
+            max_words_per_line=max_words_per_line
+        )
+
+        return SubtitleResponse(
+            success=True,
+            message=f"Subtitles added successfully (saved ${cost_saved:.3f})",
+            output_path=str(result_path),
+            download_url=f"/api/subtitles/download/{output_filename}",
+            cost_saved=cost_saved
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
 
 
 @router.post("/add", response_model=SubtitleResponse)

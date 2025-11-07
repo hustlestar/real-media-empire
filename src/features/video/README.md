@@ -17,16 +17,31 @@ Add viral-style captions to videos automatically using OpenAI Whisper.
 
 ### Quick Start
 
+**For AI-Generated Videos (FREE - Recommended):**
+
+```python
+from features.video.subtitles import add_subtitles_from_text
+
+# You already have the script from your AI video generation!
+output = add_subtitles_from_text(
+    video_path="generated_video.mp4",
+    text="Welcome to my channel! This is amazing content.",
+    output_path="output.mp4",
+    style="tiktok"
+)
+```
+
+**For External Videos (Costs $0.006/min):**
+
 ```python
 from features.video.subtitles import SubtitleGenerator
 
-generator = SubtitleGenerator()
+generator = SubtitleGenerator(api_key="your-openai-key")
 
 output = generator.add_subtitles(
-    video_path="input.mp4",
+    video_path="external_video.mp4",
     output_path="output.mp4",
-    style="tiktok",
-    highlight_keywords=True
+    style="tiktok"
 )
 ```
 
@@ -46,12 +61,19 @@ uv add openai moviepy
 
 ### API Usage
 
-**Add Subtitles:**
+**Add Subtitles from Text (FREE - Recommended):**
+```bash
+curl -X POST "http://localhost:8000/api/subtitles/add-from-text" \
+  -F "video=@generated_video.mp4" \
+  -F "text=Welcome to my channel! This is amazing content." \
+  -F "style=tiktok"
+```
+
+**Add Subtitles with Whisper (Costs Money):**
 ```bash
 curl -X POST "http://localhost:8000/api/subtitles/add" \
-  -F "video=@input.mp4" \
-  -F "style=tiktok" \
-  -F "highlight_keywords=true"
+  -F "video=@external_video.mp4" \
+  -F "style=tiktok"
 ```
 
 **Export Transcript:**
@@ -84,9 +106,18 @@ export OPENAI_API_KEY="your-api-key-here"
 
 ### Cost Estimation
 
-- Transcription: ~$0.006 per minute of audio (Whisper API)
+**Text-Based Method (Recommended):**
+- Cost: **FREE** (no API calls!)
+- 60-second video: $0.00
+- 10-minute video: $0.00
+- Performance: Same as Whisper method
+
+**Whisper Transcription Method (Fallback):**
+- Transcription: ~$0.006 per minute of audio
 - 60-second video: ~$0.006
 - 10-minute video: ~$0.06
+
+💡 **Tip:** For AI-generated videos, always use the text-based method to save costs!
 
 ### Performance
 

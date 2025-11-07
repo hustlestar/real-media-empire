@@ -1,8 +1,12 @@
 """
 Automated subtitle/caption generation system with viral styles.
 
-This module provides automatic subtitle generation using OpenAI Whisper,
-with support for multiple viral caption styles (TikTok, Instagram, Mr Beast, etc.).
+This module provides subtitle generation for AI-generated videos where you
+already have the script/text. Supports multiple viral caption styles
+(TikTok, Instagram, Mr Beast, etc.).
+
+Primary use case: Add subtitles when you have the text (AI-generated videos)
+Fallback: Use Whisper transcription for videos without text
 """
 
 import os
@@ -150,20 +154,81 @@ class SubtitleGenerator:
         Initialize subtitle generator.
 
         Args:
-            api_key: OpenAI API key (optional, uses OPENAI_API_KEY env var)
+            api_key: OpenAI API key (optional, only needed for Whisper transcription)
         """
-        if OpenAI is None:
-            raise ImportError("openai package required. Install: uv add openai")
-
         if VideoFileClip is None:
             raise ImportError("moviepy package required. Install: uv add moviepy")
 
+        # OpenAI client is optional - only needed for Whisper transcription
         api_key = api_key or os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OpenAI API key required. Set OPENAI_API_KEY environment variable.")
+        if api_key and OpenAI is not None:
+            self.client = OpenAI(api_key=api_key)
+            self.model = "whisper-1"
+        else:
+            self.client = None
+            self.model = None
 
-        self.client = OpenAI(api_key=api_key)
-        self.model = "whisper-1"
+    def create_timing_from_text(
+        self,
+        text: str,
+        audio_duration: float
+    ) -> List[Word]:
+        """
+        Create word timing from text and audio duration (no transcription needed).
+
+        Use this when you already have the script text and know the audio duration.
+        Perfect for AI-generated videos where you have the original text.
+
+        Args:
+            text: The script text
+            audio_duration: Duration of audio in seconds
+
+        Returns:
+            List of Word objects with estimated timing
+
+        Example:
+            >>> generator = SubtitleGenerator()
+            >>> words = generator.create_timing_from_text(
+            ...     text="Hello world, this is amazing content!",
+            ...     audio_duration=5.0
+            ... )
+        """
+        # Split text into words
+        words_list = text.split()
+        word_count = len(words_list)
+
+        if word_count == 0:
+            return []
+
+        # Calculate time per word
+        time_per_word = audio_duration / word_count
+
+        # Create Word objects with evenly distributed timing
+        words = []
+        current_time = 0.0
+
+        for word_text in words_list:
+            # Adjust duration based on word length (longer words get more time)
+            word_duration = time_per_word * (len(word_text) / 5.0)  # Assume 5 chars is average
+            word_duration = max(0.2, min(word_duration, 2.0))  # Clamp between 0.2-2.0 seconds
+
+            words.append(Word(
+                text=word_text,
+                start=current_time,
+                end=current_time + word_duration
+            ))
+
+            current_time += word_duration
+
+        # Normalize to fit exact duration
+        if current_time != audio_duration and words:
+            scale_factor = audio_duration / current_time
+            for word in words:
+                word.start *= scale_factor
+                word.end *= scale_factor
+
+        logger.info(f"Created timing for {len(words)} words over {audio_duration:.2f}s")
+        return words
 
     def transcribe_video(
         self,
@@ -173,6 +238,9 @@ class SubtitleGenerator:
         """
         Transcribe video using Whisper with word-level timestamps.
 
+        NOTE: Only use this if you don't have the original text.
+        If you generated the video and have the script, use create_timing_from_text() instead.
+
         Args:
             video_path: Path to video file
             language: Language code (e.g., 'en', 'es', 'fr')
@@ -180,7 +248,14 @@ class SubtitleGenerator:
         Returns:
             List of Word objects with text and timing
         """
-        logger.info(f"Transcribing video: {video_path}")
+        if self.client is None:
+            raise ValueError(
+                "Whisper transcription requires OpenAI API key. "
+                "Set OPENAI_API_KEY environment variable, or use create_timing_from_text() "
+                "if you already have the script text."
+            )
+
+        logger.info(f"Transcribing video with Whisper: {video_path}")
 
         # Extract audio from video
         video = VideoFileClip(video_path)
@@ -364,6 +439,102 @@ class SubtitleGenerator:
 
         return txt_clip
 
+    def add_subtitles_from_text(
+        self,
+        video_path: str,
+        text: str,
+        output_path: str,
+        style: SubtitleStyle = "tiktok",
+        highlight_keywords: bool = True,
+        max_words_per_line: int = 5
+    ) -> str:
+        """
+        Add burned-in subtitles to video using pre-existing text (NO API COST).
+
+        Use this method when you already have the script text (AI-generated videos).
+        This is FREE - no Whisper API calls needed!
+
+        Args:
+            video_path: Input video path
+            text: The script text (what's spoken in the video)
+            output_path: Output video path
+            style: Caption style (tiktok, instagram, mr_beast, minimal, professional)
+            highlight_keywords: Whether to highlight important words
+            max_words_per_line: Maximum words per subtitle line
+
+        Returns:
+            Path to output video
+
+        Example:
+            >>> generator = SubtitleGenerator()
+            >>> output = generator.add_subtitles_from_text(
+            ...     video_path="generated_video.mp4",
+            ...     text="Welcome to my channel! This is amazing content.",
+            ...     output_path="output.mp4",
+            ...     style="tiktok"
+            ... )
+
+        Cost: FREE (no API calls)
+        Performance: 2-3 minutes for 10-minute video
+        """
+        logger.info(f"Adding subtitles from text: {video_path} -> {output_path}")
+        logger.info(f"Style: {style}, Text length: {len(text)} chars")
+
+        # Load video
+        video = VideoFileClip(video_path)
+        video_size = video.size
+
+        # Get audio duration
+        audio_duration = video.audio.duration if video.audio else video.duration
+
+        # Create timing from text
+        words = self.create_timing_from_text(text, audio_duration)
+
+        if not words:
+            logger.warning("No words in text, returning original video")
+            video.write_videofile(output_path)
+            return output_path
+
+        # Group into segments
+        segments = self.group_words_into_segments(words, max_words_per_line)
+
+        logger.info(f"Created {len(segments)} subtitle segments")
+
+        # Create subtitle clips
+        subtitle_clips = []
+        for segment in segments:
+            try:
+                clip = self.create_subtitle_clip(
+                    segment=segment,
+                    style=style,
+                    video_size=video_size,
+                    highlight=highlight_keywords
+                )
+                subtitle_clips.append(clip)
+            except Exception as e:
+                logger.error(f"Error creating subtitle clip: {e}")
+                continue
+
+        # Composite video with subtitles
+        final = CompositeVideoClip([video] + subtitle_clips)
+
+        # Write output
+        final.write_videofile(
+            output_path,
+            codec='libx264',
+            audio_codec='aac',
+            fps=video.fps,
+            logger=None
+        )
+
+        logger.info(f"Subtitles added successfully: {output_path}")
+
+        # Cleanup
+        video.close()
+        final.close()
+
+        return output_path
+
     def add_subtitles(
         self,
         video_path: str,
@@ -374,7 +545,12 @@ class SubtitleGenerator:
         language: str = "en"
     ) -> str:
         """
-        Add burned-in subtitles to video.
+        Add burned-in subtitles to video using Whisper transcription (COSTS MONEY).
+
+        NOTE: Only use this if you don't have the original text.
+        If you generated the video and have the script, use add_subtitles_from_text() instead!
+
+        This method transcribes the video using Whisper API which costs $0.006/minute.
 
         Args:
             video_path: Input video path
@@ -546,7 +722,51 @@ class SubtitleGenerator:
         return f"{hours:02d}:{minutes:02d}:{secs:02d}.{millis:03d}"
 
 
-# Convenience function
+# Convenience functions
+
+def add_subtitles_from_text(
+    video_path: str,
+    text: str,
+    output_path: str,
+    style: SubtitleStyle = "tiktok",
+    highlight_keywords: bool = True
+) -> str:
+    """
+    Convenience function to add subtitles when you have the text (FREE - no API cost).
+
+    Use this for AI-generated videos where you already have the script!
+
+    Args:
+        video_path: Input video path
+        text: The script text
+        output_path: Output video path
+        style: Caption style
+        highlight_keywords: Whether to highlight important words
+
+    Returns:
+        Path to output video
+
+    Example:
+        >>> from features.video.subtitles import add_subtitles_from_text
+        >>> output = add_subtitles_from_text(
+        ...     video_path="generated_video.mp4",
+        ...     text="Welcome to my amazing content!",
+        ...     output_path="output.mp4",
+        ...     style="tiktok"
+        ... )
+
+    Cost: FREE (no API calls)
+    """
+    generator = SubtitleGenerator()  # No API key needed!
+    return generator.add_subtitles_from_text(
+        video_path=video_path,
+        text=text,
+        output_path=output_path,
+        style=style,
+        highlight_keywords=highlight_keywords
+    )
+
+
 def add_subtitles_to_video(
     video_path: str,
     output_path: str,
@@ -555,14 +775,17 @@ def add_subtitles_to_video(
     api_key: Optional[str] = None
 ) -> str:
     """
-    Convenience function to add subtitles to video.
+    Convenience function to add subtitles using Whisper transcription (COSTS MONEY).
+
+    Only use this if you don't have the original text!
+    For AI-generated videos, use add_subtitles_from_text() instead (FREE).
 
     Args:
         video_path: Input video path
         output_path: Output video path
         style: Caption style
         highlight_keywords: Whether to highlight important words
-        api_key: OpenAI API key (optional)
+        api_key: OpenAI API key (required)
 
     Returns:
         Path to output video
@@ -574,6 +797,8 @@ def add_subtitles_to_video(
         ...     "output.mp4",
         ...     style="tiktok"
         ... )
+
+    Cost: $0.006 per minute
     """
     generator = SubtitleGenerator(api_key=api_key)
     return generator.add_subtitles(
