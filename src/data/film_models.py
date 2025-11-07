@@ -295,6 +295,82 @@ def get_most_reused_assets(db_session, limit: int = 10):
     return db_session.query(FilmAsset).order_by(FilmAsset.reuse_count.desc()).limit(limit).all()
 
 
+# ============================================================================
+# Shot Model (Individual shots within a film)
+# ============================================================================
+
+
+class FilmShot(Base):
+    """
+    An individual shot within a film project.
+
+    Tracks shot-level assets, status, and review feedback.
+    """
+
+    __tablename__ = "film_shots"
+
+    id = Column(String, primary_key=True)  # UUID
+    shot_id = Column(String, nullable=False)  # shot_001, shot_002, etc.
+    film_project_id = Column(String, ForeignKey("film_projects.id", ondelete="CASCADE"), nullable=False)
+
+    # Assets
+    image_url = Column(String, nullable=True)
+    video_url = Column(String, nullable=False)
+    thumbnail_url = Column(String, nullable=True)
+    audio_url = Column(String, nullable=True)
+
+    # Shot metadata
+    prompt = Column(Text, nullable=False)
+    duration = Column(Numeric(8, 2), default=5.0)  # Duration in seconds
+    sequence_order = Column(Integer, nullable=True)  # Order within film
+
+    # Status
+    status = Column(String, default="completed")  # 'pending', 'generating', 'completed', 'approved', 'rejected', 'needs_revision'
+
+    # Timing
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    # Relationships
+    film_project = relationship("FilmProject", backref="shots")
+    review = relationship("ShotReview", back_populates="shot", uselist=False)
+
+    def __repr__(self):
+        return f"<FilmShot(shot_id='{self.shot_id}', film_project_id='{self.film_project_id}', status='{self.status}')>"
+
+
+# ============================================================================
+# Shot Review Model (Director's feedback and approval)
+# ============================================================================
+
+
+class ShotReview(Base):
+    """
+    Review and feedback for a film shot.
+
+    Tracks director's approval, rejection, or revision requests.
+    """
+
+    __tablename__ = "shot_reviews"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    shot_id = Column(String, ForeignKey("film_shots.id", ondelete="CASCADE"), nullable=False, unique=True)
+
+    # Review decision
+    status = Column(String, nullable=False)  # 'approved', 'rejected', 'needs_revision'
+    notes = Column(Text, nullable=True)  # Director's feedback
+
+    # Reviewer
+    reviewer = Column(String, nullable=True)  # Username or email
+    reviewed_at = Column(DateTime, default=datetime.now)
+
+    # Relationship
+    shot = relationship("FilmShot", back_populates="review")
+
+    def __repr__(self):
+        return f"<ShotReview(shot_id='{self.shot_id}', status='{self.status}', reviewer='{self.reviewer}')>"
+
+
 def get_project_cost_summary(db_session, project_id: str) -> dict:
     """
     Get cost summary for a project.
