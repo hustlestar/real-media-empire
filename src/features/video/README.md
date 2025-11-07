@@ -2,7 +2,94 @@
 
 Automated video processing features for social media content creation.
 
-## Automated Subtitles
+---
+
+## 📱 Platform Video Formatter
+
+Automatically format videos for different social media platforms with correct aspect ratios and specifications.
+
+### Features
+
+- ✅ Support for 9 major platforms (TikTok, Instagram, YouTube, LinkedIn, etc.)
+- ✅ Smart cropping with face/subject detection
+- ✅ Automatic aspect ratio conversion
+- ✅ Platform-specific optimization
+- ✅ Batch processing for multiple platforms
+- ✅ Validation against platform requirements
+- ✅ Padding options (letterbox/pillarbox with blur)
+
+### Supported Platforms
+
+| Platform | Resolution | Aspect Ratio | Max Duration |
+|----------|------------|--------------|--------------|
+| TikTok | 1080x1920 | 9:16 | 10 min |
+| Instagram Reels | 1080x1920 | 9:16 | 90 sec |
+| Instagram Feed | 1080x1350 | 4:5 | 60 sec |
+| Instagram Story | 1080x1920 | 9:16 | 60 sec |
+| YouTube | 1920x1080 | 16:9 | 12 hours |
+| YouTube Shorts | 1080x1920 | 9:16 | 60 sec |
+| LinkedIn | 1200x1200 | 1:1 | 10 min |
+| Facebook | 1920x1080 | 16:9 | 2 hours |
+| Twitter | 1280x720 | 16:9 | 140 sec |
+
+### Quick Start
+
+```python
+from features.video.formatter import format_video_for_platforms
+
+# One video → All platform versions
+versions = format_video_for_platforms(
+    source_video="input.mp4",
+    platforms=["tiktok", "youtube", "linkedin"],
+    smart_crop=True  # Detects faces/subjects automatically
+)
+
+# Returns:
+# {
+#   'tiktok': 'input_tiktok.mp4',
+#   'youtube': 'input_youtube.mp4',
+#   'linkedin': 'input_linkedin.mp4'
+# }
+```
+
+### API Usage
+
+**Format for Multiple Platforms:**
+```bash
+curl -X POST "http://localhost:8000/api/format/platforms" \
+  -F "video=@input.mp4" \
+  -F "platforms=tiktok,youtube,linkedin" \
+  -F "smart_crop=true"
+```
+
+**Validate Video:**
+```bash
+curl -X POST "http://localhost:8000/api/format/validate" \
+  -F "video=@input.mp4" \
+  -F "platforms=tiktok,instagram_reels,youtube"
+```
+
+**List Platforms:**
+```bash
+curl "http://localhost:8000/api/format/platforms"
+```
+
+### Installation
+
+```bash
+uv add moviepy opencv-python
+```
+
+### Impact
+
+- ✅ Publish-ready videos for all platforms
+- ✅ Algorithm-friendly aspect ratios
+- ✅ No manual resizing needed
+- ✅ Smart cropping keeps subjects in frame
+
+---
+
+## 🎬 Automated Subtitles
 
 Add viral-style captions to videos automatically using OpenAI Whisper.
 
