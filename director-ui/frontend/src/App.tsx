@@ -10,6 +10,7 @@ import { BundleDetailPage } from './pages/BundleDetailPage'
 import FilmGenerationPage from './pages/FilmGenerationPage'
 import PPTXGenerationPage from './pages/PPTXGenerationPage'
 import HeyGenStudioPage from './pages/HeyGenStudioPage'
+import PostizPublishingPage from './pages/PostizPublishingPage'
 import AssetGalleryPage from './pages/AssetGalleryPage'
 import PublishingDashboardPage from './pages/PublishingDashboardPage'
 import CharacterLibraryPage from './pages/CharacterLibraryPage'
@@ -54,6 +55,7 @@ function App() {
 
                 {/* Publishing */}
                 <Route path="/publishing" element={<PublishingDashboardPage />} />
+                <Route path="/publishing/postiz" element={<PostizPublishingPage />} />
               </Routes>
             </Layout>
             <BundlerPanel />

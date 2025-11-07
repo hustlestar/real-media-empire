@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { FileText, Briefcase, Plus, Package, Film, Presentation, Image, Users, Upload, Video } from 'lucide-react'
+import { FileText, Briefcase, Plus, Package, Film, Presentation, Image, Users, Upload, Video, Send } from 'lucide-react'
 import AddContentModal from './AddContentModal'
 
 export default function Sidebar() {
@@ -29,6 +29,7 @@ export default function Sidebar() {
       title: 'PUBLISHING',
       links: [
         { to: '/publishing', label: 'Publishing', icon: Upload },
+        { to: '/publishing/postiz', label: 'Social Publishing', icon: Send },
         { to: '/jobs', label: 'Processing Jobs', icon: Briefcase },
       ]
     },

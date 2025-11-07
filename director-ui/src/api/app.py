@@ -82,6 +82,10 @@ app = FastAPI(
             "name": "heygen",
             "description": "HeyGen AI avatar video generation with custom voices and backgrounds"
         },
+        {
+            "name": "postiz",
+            "description": "Multi-platform social media publishing via Postiz with content optimization"
+        },
     ]
 )
 
@@ -95,7 +99,7 @@ app.add_middleware(
 )
 
 # Import and include routers
-from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, film_shots, audio_generation, editing, style, heygen
+from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, film_shots, audio_generation, editing, style, heygen, postiz
 
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(content.router, prefix="/api/v1", tags=["content"])
@@ -114,6 +118,7 @@ app.include_router(audio_generation.router, prefix="/api/audio", tags=["audio"])
 app.include_router(editing.router, prefix="/api/editing", tags=["editing"])
 app.include_router(style.router, prefix="/api/style", tags=["style"])
 app.include_router(heygen.router, prefix="/api/heygen", tags=["heygen"])
+app.include_router(postiz.router, prefix="/api/postiz", tags=["postiz"])
 
 # Mount WebSocket app
 from websocket.manager import socket_app
