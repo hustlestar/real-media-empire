@@ -70,6 +70,10 @@ app = FastAPI(
             "name": "audio",
             "description": "Audio generation with TTS provider-specific optimization, pronunciation control, and multi-take comparison"
         },
+        {
+            "name": "editing",
+            "description": "Video editing operations: trim, split, merge, transitions, and export"
+        },
     ]
 )
 
@@ -83,7 +87,7 @@ app.add_middleware(
 )
 
 # Import and include routers
-from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, film_shots, audio_generation
+from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, film_shots, audio_generation, editing
 
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(content.router, prefix="/api/v1", tags=["content"])
@@ -99,6 +103,7 @@ app.include_router(publishing.router, prefix="/api/publishing", tags=["publishin
 app.include_router(characters.router, prefix="/api/characters", tags=["characters"])
 app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
 app.include_router(audio_generation.router, prefix="/api/audio", tags=["audio"])
+app.include_router(editing.router, prefix="/api/editing", tags=["editing"])
 
 # Mount WebSocket app
 from websocket.manager import socket_app
