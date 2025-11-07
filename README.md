@@ -35,7 +35,15 @@ Professional video editing powered by [MoviePy](https://github.com/Zulko/moviepy
 ### 🎨 Video Production Features (NEW!)
 Professional video production automation for social media:
 
-**Hook Optimizer** (`src/features/video/hook_optimizer.py`) - **JUST ADDED!**
+**Thumbnail Generator** (`src/features/video/thumbnail_generator.py`) - **JUST ADDED!**
+- Auto-generate thumbnails from video frames (smart frame selection)
+- 6 viral styles (viral, professional, minimal, energetic, mystery, educational)
+- Platform-specific sizing (YouTube, TikTok, Instagram, etc.)
+- A/B testing with quality scoring
+- Face/emotion detection (surprised faces = +41% CTR)
+- **Impact**: Thumbnails determine 90% of clicks, 10x more views possible
+
+**Hook Optimizer** (`src/features/video/hook_optimizer.py`)
 - First 3 seconds analysis (65% of viewers decide in first 2 seconds!)
 - Visual, text, and audio hook scoring (0-100 with grades)
 - Platform-specific optimization (TikTok, YouTube, Instagram, etc.)

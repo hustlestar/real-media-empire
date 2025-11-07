@@ -21,6 +21,12 @@ from .hook_optimizer import (
     compare_hooks
 )
 
+from .thumbnail_generator import (
+    ThumbnailGenerator,
+    ThumbnailScore,
+    create_thumbnail
+)
+
 __all__ = [
     # Subtitles
     'SubtitleGenerator',
@@ -38,5 +44,10 @@ __all__ = [
     'HookOptimizer',
     'HookScore',
     'analyze_hook',
-    'compare_hooks'
+    'compare_hooks',
+
+    # Thumbnail generator
+    'ThumbnailGenerator',
+    'ThumbnailScore',
+    'create_thumbnail'
 ]

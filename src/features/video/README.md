@@ -92,6 +92,164 @@ Different platforms have different hook requirements:
 
 ---
 
+## 🎨 Thumbnail Generator (NEW!)
+
+Create eye-catching thumbnails optimized for maximum click-through rate. **Thumbnails determine 90% of clicks** - make them count!
+
+### Features
+
+- ✅ Auto-generate thumbnails from video frames
+- ✅ Smart frame selection (face detection + emotion + contrast)
+- ✅ 6 viral styles (viral, professional, minimal, energetic, mystery, educational)
+- ✅ Platform-specific sizing (YouTube, TikTok, Instagram, etc.)
+- ✅ Text overlay with customizable styling
+- ✅ Visual effects (contrast boost, saturation, sharpening, vignette)
+- ✅ Thumbnail quality analysis and scoring
+- ✅ A/B testing variation generation
+
+### Quick Start
+
+```python
+from features.video.thumbnail_generator import create_thumbnail
+
+# Create thumbnail with auto-selected best frame
+thumbnail = create_thumbnail(
+    video_path="video.mp4",
+    output_path="thumb.jpg",
+    text="SHOCKING!",
+    style="viral",
+    platform="youtube"
+)
+```
+
+### Key Stats
+
+| Metric | Impact |
+|--------|--------|
+| **Click decision** | 90% determined by thumbnail |
+| **View multiplier** | Good thumbnail = 10x more views |
+| **Face impact** | Faces in thumbnails = +38% CTR |
+| **Emotion impact** | Surprised/shocked faces = +41% CTR |
+| **A/B testing** | Can double your CTR |
+
+### Thumbnail Styles
+
+| Style | Description | Best For |
+|-------|-------------|----------|
+| **Viral** | Yellow text, high contrast, bold | TikTok, YouTube Shorts, trending content |
+| **Professional** | Clean, subtle, business-appropriate | LinkedIn, corporate, business content |
+| **Minimal** | Simple, elegant, less is more | Artistic, photography, design |
+| **Energetic** | Bright red text, exciting | Gaming, sports, high-energy |
+| **Mystery** | Blue tones, intriguing | Story-telling, mystery, drama |
+| **Educational** | Blue/white, trustworthy | Tutorials, how-to, explanations |
+
+### Platform Specifications
+
+| Platform | Size | Aspect Ratio | Max Size |
+|----------|------|--------------|----------|
+| YouTube | 1280x720 | 16:9 | 2 MB |
+| TikTok | 1080x1920 | 9:16 | 5 MB |
+| Instagram | 1080x1080 | 1:1 | 8 MB |
+| Facebook | 1200x630 | 1.91:1 | 8 MB |
+| Twitter | 1200x675 | 16:9 | 5 MB |
+| LinkedIn | 1200x627 | 1.91:1 | 5 MB |
+
+### A/B Testing
+
+```python
+from features.video.thumbnail_generator import ThumbnailGenerator
+
+gen = ThumbnailGenerator()
+
+# Create multiple variations to test
+thumbnails = gen.create_ab_test_variations(
+    video_path="video.mp4",
+    output_dir="test_thumbs/",
+    text_variations=[
+        "SHOCKING!",
+        "You Won't Believe This",
+        "This Changed Everything"
+    ],
+    style="viral",
+    platform="youtube"
+)
+
+# Analyze each variation
+for thumb in thumbnails:
+    score = gen.analyze_thumbnail(thumb)
+    print(f"Score: {score.overall_score}/100")
+```
+
+### Best Practices
+
+**Text Guidelines:**
+- ✅ Keep under 4 words
+- ✅ Large, readable font
+- ✅ High contrast (yellow on dark)
+- ❌ Full sentences or paragraphs
+- ❌ Too much text
+
+**Face Guidelines:**
+- ✅ Show expressive emotions (surprised, shocked, excited)
+- ✅ Face fills 40-60% of thumbnail
+- ✅ Close-up shots
+- ❌ Tiny faces or distant shots
+- ❌ Neutral expressions
+
+**Composition:**
+- ✅ Single clear focal point
+- ✅ High contrast colors
+- ✅ Simple, uncluttered
+- ❌ Too busy or complex
+- ❌ Low contrast
+
+### API Usage
+
+**Create Thumbnail:**
+```bash
+curl -X POST "http://localhost:8000/api/thumbnail/create" \
+  -F "video=@myvideo.mp4" \
+  -F "text=SHOCKING!" \
+  -F "style=viral" \
+  -F "platform=youtube"
+```
+
+**A/B Test Thumbnails:**
+```bash
+curl -X POST "http://localhost:8000/api/thumbnail/ab-test" \
+  -F "video=@myvideo.mp4" \
+  -F "text_variations=SHOCKING,UNBELIEVABLE,MUST SEE" \
+  -F "style=viral" \
+  -F "analyze=true"
+```
+
+**Analyze Thumbnail:**
+```bash
+curl -X POST "http://localhost:8000/api/thumbnail/analyze" \
+  -F "thumbnail=@mythumb.jpg"
+```
+
+**Get Best Practices:**
+```bash
+curl "http://localhost:8000/api/thumbnail/best-practices?platform=youtube"
+```
+
+### Installation
+
+```bash
+uv add moviepy pillow opencv-python
+```
+
+### Impact
+
+- **90% of clicks** determined by thumbnail
+- **10x more views** with optimized thumbnails
+- **+38% CTR** with faces in thumbnails
+- **+41% CTR** with surprised/shocked expressions
+- **2x CTR improvement** possible with A/B testing
+
+---
+
 ## 📱 Platform Video Formatter
 
 Automatically format videos for different social media platforms with correct aspect ratios and specifications.
