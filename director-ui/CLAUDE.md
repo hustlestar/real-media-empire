@@ -7,7 +7,10 @@ Development guidelines for AI assistants working on the Director UI platform.
 Director UI is an AI-powered platform for video content creation and multi-platform publishing. It combines:
 - Film generation (Minimax, Kling, Runway providers)
 - HeyGen avatar video generation
+- VEED.io talking avatar generation (via FAL.ai)
 - Postiz multi-platform social media publishing
+- Perplexity AI trend research and hashtag optimization
+- POV prompt engineering for cinematic AI generation
 - Director-level creative controls (Dailies Room, Voice Direction, Timeline Editor, etc.)
 
 ## Tech Stack
@@ -204,6 +207,32 @@ Always create migration after model changes.
 
 ## Integration Patterns
 
+### VEED.io Talking Avatar Generation
+
+**Talking avatar from photo + audio:**
+```python
+# src/film/providers/veed.py
+class VEEDProvider(VideoProvider):
+    async def generate_talking_avatar(
+        self,
+        image_url: str,
+        audio_url: str,
+        resolution: Literal["480p", "720p", "1080p"] = "720p"
+    ) -> VideoGenerationResult:
+        # Submit to FAL.ai VEED endpoint
+        # Poll for completion with lip-sync
+        # Return talking avatar video
+```
+
+**Use cases:**
+- Faceless content creation (UGC-style)
+- Educational content with avatar presenter
+- Product demonstrations
+- Social media shorts with personality
+- Alternative to HeyGen (price competition)
+
+**Cost:** ~$0.10 per video
+
 ### HeyGen Avatar Video Generation
 
 **Wait-and-poll pattern:**
@@ -270,6 +299,175 @@ async def multi_platform_publish(
         results.append(result)
     return results
 ```
+
+### Perplexity Trend Research
+
+**Real-time trend discovery:**
+```python
+# src/content/trend_research.py
+class TrendResearcher:
+    async def research_trends(
+        self,
+        topic: str,
+        platform: Literal["tiktok", "youtube", "instagram", "twitter", "linkedin"],
+        num_trends: int = 3
+    ) -> TrendResearchResult:
+        """Research current viral trends using Perplexity AI."""
+        # Build prompt for trend research
+        prompt = f"""Research trending content about "{topic}" on {platform}.
+        Find {num_trends} current viral trends with hashtags and content styles."""
+
+        # Query Perplexity with web search
+        response = await self.client.post(self.base_url, json={
+            "model": "llama-3.1-sonar-large-128k-online",
+            "messages": [{"role": "user", "content": prompt}]
+        })
+
+        # Parse and return trends
+        return TrendResearchResult(topic=topic, platform=platform, trends=trends)
+```
+
+**Hashtag optimization:**
+```python
+async def optimize_hashtags(
+    self,
+    content_description: str,
+    platform: str,
+    max_hashtags: int = 10
+) -> List[str]:
+    """Generate optimized hashtags with platform limits."""
+    platform_limits = {
+        "tiktok": 30,
+        "instagram": 30,
+        "youtube": 15,
+        "twitter": 10,
+        "linkedin": 30
+    }
+
+    # Generate mix of popular and niche hashtags
+    hashtags = await self._generate_hashtags(content_description, platform)
+
+    # Limit to platform maximum
+    max_allowed = min(max_hashtags, platform_limits.get(platform, 10))
+    return hashtags[:max_allowed]
+```
+
+**Use cases:**
+- Discover trending topics before creating content
+- Optimize hashtags for maximum reach
+- Generate data-driven content strategies
+- Find viral content styles and formats
+- Real-time competitive analysis
+
+**API endpoint:**
+```python
+@router.post("/api/trends/research")
+async def research_trends(request: ResearchTrendsRequest):
+    """
+    POST /api/trends/research
+    {
+      "topic": "cold showers",
+      "platform": "tiktok",
+      "num_trends": 3
+    }
+    """
+```
+
+### POV Prompt Engineering
+
+**Style presets for cinematic prompts:**
+```python
+# src/text/pov_prompts.py
+POV_STYLES = {
+    "gopro_action": POVPromptStyle(
+        name="GoPro Action",
+        camera_angle="First person view POV GoPro shot",
+        perspective="Viewer sees their own hands, limbs, feet in frame",
+        motion_style="Fast-paced, handheld, lots of movement",
+        lighting_preference="Natural outdoor lighting, high contrast"
+    ),
+    "casual_phone": POVPromptStyle(
+        name="Casual Phone",
+        camera_angle="POV selfie-style phone camera angle",
+        perspective="Personal, intimate, slightly lower angle",
+        motion_style="Handheld, slight shake, casual movement"
+    ),
+    "tiktok_trending": POVPromptStyle(
+        name="TikTok POV",
+        camera_angle="POV shot from phone camera perspective",
+        perspective="Eye-level, direct engagement",
+        motion_style="Snappy transitions, trending effects"
+    ),
+    # ... 5 more styles: desktop_work, cinematic_pov, car_driving, workout_training, cooking_food
+}
+```
+
+**Generate POV prompts:**
+```python
+class POVPromptGenerator:
+    def generate_pov_prompt(
+        self,
+        scene_description: str,
+        style: str = "gopro_action",
+        environment: Optional[str] = None,
+        add_sensory_details: bool = True
+    ) -> str:
+        """Generate cinematic POV prompt for AI video/image generation."""
+        style_config = POV_STYLES[style]
+
+        # Build foreground (what viewer sees)
+        foreground = f"{style_config.camera_angle} of {scene_description}"
+
+        # Add visible body parts if not mentioned
+        if not any(word in scene_description for word in ["hand", "arm", "leg", "feet"]):
+            foreground += ", hands visible in frame"
+
+        # Build background
+        background = f"in the background, {environment or 'detailed environment'}"
+
+        # Add sensory details
+        sensory = self._generate_sensory_details(scene_description, style)
+
+        return "; ".join([foreground, background, sensory])
+
+    def optimize_for_ai_model(
+        self,
+        prompt: str,
+        model: Literal["flux", "kling", "minimax", "runway"]
+    ) -> str:
+        """Optimize prompt for specific AI model."""
+        if model == "flux":
+            prompt += " Photorealistic, high detail, DSLR quality."
+        elif model == "kling":
+            prompt += " Smooth camera movement, cinematic motion blur."
+        elif model == "minimax":
+            prompt += " Dynamic camera zoom, professional cinematography."
+        elif model == "runway":
+            prompt += " Cinematic color grading, artistic composition."
+
+        return prompt
+```
+
+**Platform-specific recommendations:**
+```python
+def get_style_recommendations(self, platform: str) -> List[str]:
+    """Get recommended POV styles for platform."""
+    recommendations = {
+        "tiktok": ["tiktok_trending", "casual_phone", "gopro_action"],
+        "youtube": ["cinematic_pov", "gopro_action", "car_driving"],
+        "instagram": ["casual_phone", "tiktok_trending", "cooking_food"],
+        "linkedin": ["desktop_work", "cinematic_pov"],
+        "twitter": ["casual_phone", "desktop_work"]
+    }
+    return recommendations.get(platform, ["gopro_action"])
+```
+
+**Use cases:**
+- Transform basic scene descriptions into cinematic prompts
+- Ensure POV consistency across video shots
+- Platform-specific prompt optimization
+- AI model-specific enhancements
+- Add sensory details for realism (smell, sound, temperature)
 
 ## Testing Guidelines
 
@@ -344,6 +542,9 @@ tests/
 ├── test_heygen_router.py     # HeyGen API endpoints
 ├── test_postiz_publisher.py  # Postiz publisher mocks
 ├── test_postiz_router.py     # Postiz API endpoints
+├── test_veed_provider.py     # VEED.io talking avatar provider mocks
+├── test_trend_research.py    # Perplexity trend research mocks
+├── test_pov_prompts.py       # POV prompt generation tests
 └── test_models.py            # Database model tests
 ```
 
@@ -441,10 +642,12 @@ DATABASE_URL=postgresql://botuser:botpass@localhost:5432/pdf_link_youtube_to_any
 # AI & Video
 OPENROUTER_API_KEY=your_key
 HEYGEN_API_KEY=your_key
+FAL_API_KEY=your_key  # For VEED.io talking avatars
 
-# Social Publishing
+# Social Publishing & Trends
 POSTIZ_API_KEY=your_key
 POSTIZ_BASE_URL=https://api.postiz.com
+PERPLEXITY_API_KEY=your_key  # For trend research
 
 # Optional
 TELEGRAM_BOT_TOKEN=your_token
