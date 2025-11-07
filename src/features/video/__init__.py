@@ -14,6 +14,13 @@ from .formatter import (
     format_video_for_platforms
 )
 
+from .hook_optimizer import (
+    HookOptimizer,
+    HookScore,
+    analyze_hook,
+    compare_hooks
+)
+
 __all__ = [
     # Subtitles
     'SubtitleGenerator',
@@ -25,5 +32,11 @@ __all__ = [
     'PlatformVideoFormatter',
     'PlatformSpecs',
     'Platform',
-    'format_video_for_platforms'
+    'format_video_for_platforms',
+
+    # Hook optimizer
+    'HookOptimizer',
+    'HookScore',
+    'analyze_hook',
+    'compare_hooks'
 ]

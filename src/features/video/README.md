@@ -4,6 +4,94 @@ Automated video processing features for social media content creation.
 
 ---
 
+## 🎣 Hook Optimizer (NEW!)
+
+Analyze and optimize the first 3 seconds of your videos for maximum retention. **65% of viewers decide in the first 2 seconds** - make them count!
+
+### Features
+
+- ✅ Visual hook analysis (motion, colors, faces)
+- ✅ Text hook analysis (power words, curiosity gaps)
+- ✅ Audio hook analysis (voice energy, sound presence)
+- ✅ Platform-specific optimization (TikTok, YouTube, Instagram)
+- ✅ Hook scoring (0-100 with letter grades)
+- ✅ A/B testing support
+- ✅ Actionable recommendations
+- ✅ Pattern interrupt detection
+- ✅ Hook variation generation
+
+### Quick Start
+
+```python
+from features.video.hook_optimizer import analyze_hook
+
+# Analyze your hook
+score = analyze_hook(
+    video_path="video.mp4",
+    text="Did you know this iPhone trick?",
+    platform="tiktok"
+)
+
+print(f"Hook Score: {score.overall_score}/100 ({score._get_grade()})")
+print(f"Recommendations: {score.recommendations}")
+```
+
+### Hook Scoring
+
+| Grade | Score | Retention | Action |
+|-------|-------|-----------|--------|
+| A+ | 90-100 | Excellent | Ship it! |
+| A/B+ | 80-89 | Good | Minor tweaks |
+| B/C+ | 70-79 | Decent | Room for improvement |
+| C/D | 60-69 | Weak | Needs work |
+| F | <60 | Poor | Reshoot recommended |
+
+### Key Stats
+
+- **65%** of viewers decide in first 2 seconds
+- **80%** decision made by 3 seconds
+- Strong hooks = **2-5x higher retention**
+- Hook optimization can boost watch time by **200%+**
+
+### A/B Testing
+
+```python
+from features.video.hook_optimizer import compare_hooks
+
+# Test multiple variations
+scores = compare_hooks(
+    video_paths=["hook_a.mp4", "hook_b.mp4", "hook_c.mp4"],
+    texts=["Did you know...", "Watch this...", "Secret trick..."],
+    platform="tiktok"
+)
+
+print(f"Winner: {scores[0].variant_id} with {scores[0].overall_score:.1f}")
+```
+
+### Power Words
+
+Hook optimizer detects power words in 7 categories:
+- **Curiosity**: secret, hidden, trick, hack, reveal
+- **Urgency**: now, today, immediately, breaking
+- **Exclusivity**: exclusive, only, limited, rare
+- **Authority**: proven, expert, professional
+- **Emotional**: amazing, incredible, stunning
+- **Negative**: mistake, wrong, avoid, stop
+- **Question**: how, why, what, did you know
+
+### Platform Optimization
+
+Different platforms have different hook requirements:
+
+| Platform | Duration | Style |
+|----------|----------|-------|
+| TikTok | 2-3 sec | Fast, question-based, energetic |
+| YouTube Shorts | 3 sec | Clear value, curiosity gap |
+| Instagram Reels | 2-2.5 sec | Visual hook, FOMO |
+| YouTube | 5-8 sec | Tease outcome, promise value |
+
+---
+
 ## 📱 Platform Video Formatter
 
 Automatically format videos for different social media platforms with correct aspect ratios and specifications.
