@@ -27,6 +27,11 @@ from .thumbnail_generator import (
     create_thumbnail
 )
 
+from .smart_cropping import (
+    SmartCropper,
+    smart_crop_video
+)
+
 __all__ = [
     # Subtitles
     'SubtitleGenerator',
@@ -49,5 +54,9 @@ __all__ = [
     # Thumbnail generator
     'ThumbnailGenerator',
     'ThumbnailScore',
-    'create_thumbnail'
+    'create_thumbnail',
+
+    # Smart cropping
+    'SmartCropper',
+    'smart_crop_video'
 ]
