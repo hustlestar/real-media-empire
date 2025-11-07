@@ -62,6 +62,10 @@ app = FastAPI(
             "name": "assets",
             "description": "Media asset management and tracking"
         },
+        {
+            "name": "workspaces",
+            "description": "Workspace and project management for multi-tenant organization"
+        },
     ]
 )
 
@@ -75,7 +79,7 @@ app.add_middleware(
 )
 
 # Import and include routers
-from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets
+from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces
 
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(content.router, prefix="/api/v1", tags=["content"])
@@ -83,6 +87,7 @@ app.include_router(processing.router, prefix="/api/v1", tags=["processing"])
 app.include_router(bundles.router, prefix="/api/v1", tags=["bundles"])
 app.include_router(tags.router, prefix="/api/v1", tags=["tags"])
 app.include_router(prompts.router, prefix="/api/v1", tags=["prompts"])
+app.include_router(workspaces.router, prefix="/api/workspaces", tags=["workspaces"])
 app.include_router(film.router, prefix="/api/film", tags=["film"])
 app.include_router(pptx.router, prefix="/api/pptx", tags=["pptx"])
 app.include_router(publishing.router, prefix="/api/publishing", tags=["publishing"])

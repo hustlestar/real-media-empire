@@ -15,6 +15,11 @@ from features.publishing.manager import PublishingManager
 from features.publishing.queue import PublishingQueue, QueuedPublishConfig, QueueStatus
 from features.publishing.platforms.base import PublishConfig, PublishResult, PublishStatus
 
+# Import data models for tracking
+from data.models import PublishHistory, FilmProject, FilmVariant
+from data.dao import get_db
+import uuid as uuid_lib
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -22,6 +27,68 @@ router = APIRouter()
 # Global instances (should be dependency-injected in production)
 _manager: Optional[PublishingManager] = None
 _queue: Optional[PublishingQueue] = None
+
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+async def create_publish_history_record(
+    db: Session,
+    film_project_id: Optional[str],
+    film_variant_id: Optional[str],
+    account_id: str,
+    platform: str,
+    title: str,
+    description: Optional[str],
+    result: PublishResult,
+) -> Optional[PublishHistory]:
+    """Create a PublishHistory record to track publication."""
+    if not film_project_id:
+        # If no film project linked, don't create history
+        return None
+
+    try:
+        history = PublishHistory(
+            id=str(uuid_lib.uuid4()),
+            film_project_id=film_project_id,
+            film_variant_id=film_variant_id,
+            account_id=account_id,
+            platform=platform,
+            platform_post_id=result.post_id if hasattr(result, 'post_id') else None,
+            post_url=result.post_url if hasattr(result, 'post_url') else None,
+            title=title,
+            description=description,
+            published_at=datetime.utcnow(),
+            status="published" if result.success else "failed",
+            metrics={},
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+
+        db.add(history)
+
+        # Update film project published fields
+        if film_project_id:
+            film_project = db.query(FilmProject).filter(FilmProject.id == film_project_id).first()
+            if film_project:
+                if not film_project.published_at:
+                    film_project.published_at = datetime.utcnow()
+
+                # Add platform to published_platforms if not already there
+                if not film_project.published_platforms:
+                    film_project.published_platforms = []
+                if platform not in film_project.published_platforms:
+                    film_project.published_platforms = list(film_project.published_platforms) + [platform]
+
+        db.commit()
+        db.refresh(history)
+        return history
+
+    except Exception as e:
+        logger.error(f"Error creating publish history: {e}", exc_info=True)
+        db.rollback()
+        return None
 
 
 def get_manager() -> PublishingManager:
@@ -62,6 +129,10 @@ class PublishRequest(BaseModel):
     tags: Optional[List[str]] = Field(None, description="Video tags")
     thumbnail_path: Optional[str] = Field(None, description="Path to thumbnail")
     platform_specific: Optional[dict] = Field(None, description="Platform-specific options")
+
+    # Film integration fields (optional)
+    film_project_id: Optional[str] = Field(None, description="Associated film project ID")
+    film_variant_id: Optional[str] = Field(None, description="Associated film variant ID")
 
 
 class ScheduledPublishRequest(PublishRequest):
@@ -174,13 +245,16 @@ async def get_account_platforms(account_id: str, manager: PublishingManager = De
 @router.post("/publish/immediate", response_model=PublishResponse)
 async def publish_immediate(
     request: PublishRequest,
-    manager: PublishingManager = Depends(get_manager)
+    manager: PublishingManager = Depends(get_manager),
+    db: Session = Depends(get_db)
 ):
     """
     Publish video immediately to specified platforms.
 
     This is a synchronous operation that will wait for all platforms to complete.
     For scheduled or background publishing, use /publish/scheduled endpoint.
+
+    If film_project_id is provided, creates PublishHistory records for tracking.
     """
     try:
         # Create publish config
@@ -199,6 +273,20 @@ async def publish_immediate(
             video_path=request.video_path,
             config=config
         )
+
+        # Create publish history records if film project linked
+        if request.film_project_id:
+            for platform, result in results.items():
+                await create_publish_history_record(
+                    db=db,
+                    film_project_id=request.film_project_id,
+                    film_variant_id=request.film_variant_id,
+                    account_id=request.account_id,
+                    platform=platform,
+                    title=request.title,
+                    description=request.description,
+                    result=result
+                )
 
         # Convert results to dict
         results_dict = {p: r.dict() for p, r in results.items()}
