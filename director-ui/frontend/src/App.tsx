@@ -14,6 +14,8 @@ import PostizPublishingPage from './pages/PostizPublishingPage'
 import AssetGalleryPage from './pages/AssetGalleryPage'
 import PublishingDashboardPage from './pages/PublishingDashboardPage'
 import CharacterLibraryPage from './pages/CharacterLibraryPage'
+import TrendResearchPage from './pages/TrendResearchPage'
+import POVPromptPage from './pages/POVPromptPage'
 import { BundlerProvider } from './context/BundlerContext'
 import { BundlerPanel } from './components/BundlerPanel'
 import { WorkspaceProvider } from './contexts/WorkspaceContext'
@@ -48,6 +50,8 @@ function App() {
                 <Route path="/film-generation" element={<FilmGenerationPage />} />
                 <Route path="/pptx-generation" element={<PPTXGenerationPage />} />
                 <Route path="/heygen-studio" element={<HeyGenStudioPage />} />
+                <Route path="/trends" element={<TrendResearchPage />} />
+                <Route path="/pov-prompts" element={<POVPromptPage />} />
 
                 {/* Library */}
                 <Route path="/assets" element={<AssetGalleryPage />} />
