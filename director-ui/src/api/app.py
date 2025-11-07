@@ -74,6 +74,10 @@ app = FastAPI(
             "name": "editing",
             "description": "Video editing operations: trim, split, merge, transitions, and export"
         },
+        {
+            "name": "style",
+            "description": "Visual style management: style mixing, color palettes, camera settings, and presets"
+        },
     ]
 )
 
@@ -87,7 +91,7 @@ app.add_middleware(
 )
 
 # Import and include routers
-from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, film_shots, audio_generation, editing
+from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, film_shots, audio_generation, editing, style
 
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(content.router, prefix="/api/v1", tags=["content"])
@@ -104,6 +108,7 @@ app.include_router(characters.router, prefix="/api/characters", tags=["character
 app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
 app.include_router(audio_generation.router, prefix="/api/audio", tags=["audio"])
 app.include_router(editing.router, prefix="/api/editing", tags=["editing"])
+app.include_router(style.router, prefix="/api/style", tags=["style"])
 
 # Mount WebSocket app
 from websocket.manager import socket_app
