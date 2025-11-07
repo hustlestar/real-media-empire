@@ -1,4 +1,5 @@
 """FastAPI dependencies."""
+import os
 
 from config.settings import BotConfig
 from core.database import DatabaseManager
@@ -115,3 +116,29 @@ async def get_current_user_id() -> int:
     await db.ensure_user(user_id, username="api_user")
 
     return user_id
+
+# Film generation providers
+from film.providers import HeyGenProvider, HeyGenConfig
+
+_heygen_provider: HeyGenProvider = None
+
+
+async def get_heygen_provider() -> HeyGenProvider:
+    """Get HeyGen provider instance."""
+    global _heygen_provider
+    if _heygen_provider is None:
+        # Get HeyGen API key from environment
+        heygen_api_key = os.getenv("HEYGEN_API_KEY")
+        if not heygen_api_key:
+            raise ValueError("HEYGEN_API_KEY environment variable not set")
+        
+        heygen_config = HeyGenConfig(
+            api_key=heygen_api_key,
+            base_url="https://api.heygen.com",
+            max_retries=3,
+            poll_interval=10,
+            max_wait_time=300
+        )
+        _heygen_provider = HeyGenProvider(heygen_config)
+    
+    return _heygen_provider

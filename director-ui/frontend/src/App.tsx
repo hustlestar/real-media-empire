@@ -9,6 +9,7 @@ import { BundlesPage } from './pages/BundlesPage'
 import { BundleDetailPage } from './pages/BundleDetailPage'
 import FilmGenerationPage from './pages/FilmGenerationPage'
 import PPTXGenerationPage from './pages/PPTXGenerationPage'
+import HeyGenStudioPage from './pages/HeyGenStudioPage'
 import AssetGalleryPage from './pages/AssetGalleryPage'
 import PublishingDashboardPage from './pages/PublishingDashboardPage'
 import CharacterLibraryPage from './pages/CharacterLibraryPage'
@@ -45,6 +46,7 @@ function App() {
                 {/* Creation Tools */}
                 <Route path="/film-generation" element={<FilmGenerationPage />} />
                 <Route path="/pptx-generation" element={<PPTXGenerationPage />} />
+                <Route path="/heygen-studio" element={<HeyGenStudioPage />} />
 
                 {/* Library */}
                 <Route path="/assets" element={<AssetGalleryPage />} />
