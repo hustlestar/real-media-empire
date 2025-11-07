@@ -14,6 +14,7 @@ import PublishingDashboardPage from './pages/PublishingDashboardPage'
 import CharacterLibraryPage from './pages/CharacterLibraryPage'
 import { BundlerProvider } from './context/BundlerContext'
 import { BundlerPanel } from './components/BundlerPanel'
+import { WorkspaceProvider } from './contexts/WorkspaceContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,33 +29,35 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BundlerProvider>
-        <BrowserRouter>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Navigate to="/content" replace />} />
-              <Route path="/content" element={<ContentPage />} />
-              <Route path="/content/:id" element={<ContentDetailPage />} />
-              <Route path="/jobs" element={<JobsPage />} />
-              <Route path="/jobs/:id" element={<JobDetailPage />} />
-              <Route path="/bundles" element={<BundlesPage />} />
-              <Route path="/bundles/:bundleId" element={<BundleDetailPage />} />
+      <WorkspaceProvider>
+        <BundlerProvider>
+          <BrowserRouter>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Navigate to="/content" replace />} />
+                <Route path="/content" element={<ContentPage />} />
+                <Route path="/content/:id" element={<ContentDetailPage />} />
+                <Route path="/jobs" element={<JobsPage />} />
+                <Route path="/jobs/:id" element={<JobDetailPage />} />
+                <Route path="/bundles" element={<BundlesPage />} />
+                <Route path="/bundles/:bundleId" element={<BundleDetailPage />} />
 
-              {/* Creation Tools */}
-              <Route path="/film-generation" element={<FilmGenerationPage />} />
-              <Route path="/pptx-generation" element={<PPTXGenerationPage />} />
+                {/* Creation Tools */}
+                <Route path="/film-generation" element={<FilmGenerationPage />} />
+                <Route path="/pptx-generation" element={<PPTXGenerationPage />} />
 
-              {/* Library */}
-              <Route path="/assets" element={<AssetGalleryPage />} />
-              <Route path="/characters" element={<CharacterLibraryPage />} />
+                {/* Library */}
+                <Route path="/assets" element={<AssetGalleryPage />} />
+                <Route path="/characters" element={<CharacterLibraryPage />} />
 
-              {/* Publishing */}
-              <Route path="/publishing" element={<PublishingDashboardPage />} />
-            </Routes>
-          </Layout>
-          <BundlerPanel />
-        </BrowserRouter>
-      </BundlerProvider>
+                {/* Publishing */}
+                <Route path="/publishing" element={<PublishingDashboardPage />} />
+              </Routes>
+            </Layout>
+            <BundlerPanel />
+          </BrowserRouter>
+        </BundlerProvider>
+      </WorkspaceProvider>
     </QueryClientProvider>
   )
 }
