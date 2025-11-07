@@ -29,11 +29,12 @@ class CharacterAttributes(BaseModel):
 
 class CharacterCreate(BaseModel):
     """Character creation schema."""
+    workspace_id: str
     name: str
     description: str
     reference_images: List[str] = []
     attributes: CharacterAttributes
-    projects_used: List[str] = []
+    projects_used: List[str] = []  # Deprecated: Use shot_characters table instead
 
 
 class CharacterUpdate(BaseModel):
@@ -48,12 +49,13 @@ class CharacterUpdate(BaseModel):
 class CharacterResponse(BaseModel):
     """Character response schema."""
     id: str
+    workspace_id: str
     name: str
     description: str
     reference_images: List[str]
     attributes: Dict[str, Any]
     consistency_prompt: str
-    projects_used: List[str]
+    projects_used: List[str]  # Deprecated: Use shot_characters table instead
     created_at: datetime
     updated_at: datetime
 
@@ -87,11 +89,23 @@ async def create_character(
     character: CharacterCreate,
     db: Session = Depends(get_db)
 ):
-    """Create a new character."""
-    # Check if character with same name exists
-    existing = db.query(Character).filter(Character.name == character.name).first()
+    """Create a new character within a workspace."""
+    # Verify workspace exists
+    from data.models import Workspace
+    workspace = db.query(Workspace).filter(Workspace.id == character.workspace_id).first()
+    if not workspace:
+        raise HTTPException(status_code=404, detail=f"Workspace '{character.workspace_id}' not found")
+
+    # Check if character with same name exists in this workspace
+    existing = db.query(Character).filter(
+        Character.workspace_id == character.workspace_id,
+        Character.name == character.name
+    ).first()
     if existing:
-        raise HTTPException(status_code=400, detail=f"Character with name '{character.name}' already exists")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Character with name '{character.name}' already exists in this workspace"
+        )
 
     # Generate consistency prompt
     consistency_prompt = generate_consistency_prompt(character.name, character.attributes)
@@ -99,6 +113,7 @@ async def create_character(
     # Create new character
     new_character = Character(
         id=str(uuid.uuid4()),
+        workspace_id=character.workspace_id,
         name=character.name,
         description=character.description,
         reference_images=character.reference_images,
@@ -118,12 +133,23 @@ async def create_character(
 
 @router.get("/characters", response_model=Dict[str, List[CharacterResponse]])
 async def list_characters(
+    workspace_id: Optional[str] = None,
     search: Optional[str] = None,
     project_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    """List all characters with optional filtering."""
+    """List all characters with optional filtering.
+
+    Args:
+        workspace_id: Filter by workspace (recommended for multi-tenant isolation)
+        search: Search in character name or description
+        project_id: Filter by project_id in projects_used array (deprecated)
+    """
     query = db.query(Character)
+
+    # Filter by workspace (recommended)
+    if workspace_id:
+        query = query.filter(Character.workspace_id == workspace_id)
 
     if search:
         query = query.filter(
@@ -132,7 +158,8 @@ async def list_characters(
         )
 
     if project_id:
-        # Filter by project_id in projects_used JSON array
+        # Filter by project_id in projects_used JSON array (deprecated)
+        # TODO: Use shot_characters table instead
         query = query.filter(Character.projects_used.contains([project_id]))
 
     characters = query.order_by(Character.created_at.desc()).all()
