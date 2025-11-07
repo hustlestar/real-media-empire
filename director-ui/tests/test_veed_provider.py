@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 import asyncio
 
-from src.film.providers.veed import VEEDProvider, VEEDConfig, VideoGenerationResult
+from film.providers.veed import VEEDProvider, VEEDConfig, VideoGenerationResult
 
 
 @pytest.fixture
