@@ -18,6 +18,7 @@ router = APIRouter()
 
 class AssetCreate(BaseModel):
     """Asset creation schema."""
+    workspace_id: str
     name: str
     type: str  # image, video, audio
     url: str
@@ -28,6 +29,9 @@ class AssetCreate(BaseModel):
     tags: List[str] = []
     metadata: Optional[Dict[str, Any]] = {}
     is_favorite: bool = False
+    source_asset_id: Optional[str] = None  # For lineage tracking
+    generation_params: Optional[Dict[str, Any]] = None
+    cache_key: Optional[str] = None
 
 
 class AssetUpdate(BaseModel):
@@ -41,6 +45,7 @@ class AssetUpdate(BaseModel):
 class AssetResponse(BaseModel):
     """Asset response schema."""
     id: str
+    workspace_id: str
     name: str
     type: str
     url: str
@@ -51,6 +56,12 @@ class AssetResponse(BaseModel):
     tags: List[str]
     metadata: Dict[str, Any]
     is_favorite: bool
+    source_asset_id: Optional[str]
+    generation_params: Optional[Dict[str, Any]]
+    cache_key: Optional[str]
+    expires_at: Optional[datetime]
+    access_count: int
+    last_accessed_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
 
@@ -71,9 +82,16 @@ async def create_asset(
     asset: AssetCreate,
     db: Session = Depends(get_db)
 ):
-    """Create a new asset record."""
+    """Create a new asset record within a workspace."""
+    # Verify workspace exists
+    from data.models import Workspace
+    workspace = db.query(Workspace).filter(Workspace.id == asset.workspace_id).first()
+    if not workspace:
+        raise HTTPException(status_code=404, detail=f"Workspace '{asset.workspace_id}' not found")
+
     new_asset = Asset(
         id=str(uuid.uuid4()),
+        workspace_id=asset.workspace_id,
         name=asset.name,
         type=asset.type,
         url=asset.url,
@@ -84,6 +102,10 @@ async def create_asset(
         tags=asset.tags,
         metadata=asset.metadata or {},
         is_favorite=asset.is_favorite,
+        source_asset_id=asset.source_asset_id,
+        generation_params=asset.generation_params,
+        cache_key=asset.cache_key,
+        access_count=0,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
     )
@@ -97,12 +119,18 @@ async def create_asset(
 
 @router.post("/upload", response_model=AssetResponse)
 async def upload_asset(
+    workspace_id: str = Query(..., description="Workspace ID"),
     file: UploadFile = File(...),
     tags: Optional[str] = Query(None),  # Comma-separated tags
     is_favorite: bool = False,
     db: Session = Depends(get_db)
 ):
-    """Upload a new asset file."""
+    """Upload a new asset file to a workspace."""
+    # Verify workspace exists
+    from data.models import Workspace
+    workspace = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+    if not workspace:
+        raise HTTPException(status_code=404, detail=f"Workspace '{workspace_id}' not found")
     # Create upload directory
     upload_dir = Path("uploads/assets")
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -142,6 +170,7 @@ async def upload_asset(
     # Create asset record
     new_asset = Asset(
         id=str(uuid.uuid4()),
+        workspace_id=workspace_id,
         name=file.filename,
         type=asset_type,
         url=f"/uploads/assets/{unique_filename}",
@@ -153,6 +182,7 @@ async def upload_asset(
             "content_type": file.content_type
         },
         is_favorite=is_favorite,
+        access_count=0,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
     )
@@ -166,6 +196,7 @@ async def upload_asset(
 
 @router.get("", response_model=AssetListResponse)
 async def list_assets(
+    workspace_id: Optional[str] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     type: Optional[str] = None,
@@ -176,8 +207,16 @@ async def list_assets(
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
     db: Session = Depends(get_db)
 ):
-    """List assets with filtering, search, and pagination."""
+    """List assets with filtering, search, and pagination.
+
+    Args:
+        workspace_id: Filter by workspace (recommended for multi-tenant isolation)
+    """
     query = db.query(Asset)
+
+    # Filter by workspace (recommended)
+    if workspace_id:
+        query = query.filter(Asset.workspace_id == workspace_id)
 
     # Apply filters
     if type:
