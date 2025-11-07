@@ -12,9 +12,11 @@ dist
 dist-ssr
 *.local
 
-# Generated API client
-src/api/
+# Cached OpenAPI spec (regenerated as needed)
 openapi.json
+
+# NOTE: src/api/generated/ is committed to git
+# Pre-commit hook auto-regenerates when backend changes
 
 # Editor directories and files
 .vscode/*

@@ -16,18 +16,44 @@ Instead of duplicating types between backend (Python/Pydantic) and frontend (Typ
 ## Quick Start
 
 ```bash
-# 1. Start backend (must be running on port 10101)
-cd director-ui
+# 1. Install git hooks (one-time setup)
+cd director-ui/frontend
+bash scripts/install-hooks.sh
+
+# 2. Start backend (must be running on port 10101)
+cd ../
 uv run python -m api.app
 
-# 2. Generate TypeScript client
+# 3. Generate TypeScript client (or let pre-commit hook do it automatically)
 cd frontend
 npm run generate-api
 
-# 3. Use in components
+# 4. Use in components
 import { FilmService, type FilmShot } from '@/api/generated';
 const shots = await FilmService.listShots();
 ```
+
+## Pre-Commit Hook (Automatic Regeneration)
+
+A pre-commit hook **automatically regenerates** the TypeScript client when you commit backend changes:
+
+**Installation (one-time):**
+```bash
+cd director-ui/frontend
+bash scripts/install-hooks.sh
+```
+
+**How it works:**
+1. You modify backend API files (`director-ui/src/api/` or `director-ui/src/data/models.py`)
+2. You commit your changes: `git commit -m "add new endpoint"`
+3. Hook detects backend changes and auto-regenerates client
+4. Generated files are automatically staged and included in your commit
+
+**Benefits:**
+- ✅ Never forget to regenerate client after backend changes
+- ✅ Frontend types always in sync with backend
+- ✅ Committed generated files work without backend running
+- ✅ CI/CD can build frontend without backend dependency
 
 ## Usage Examples
 
@@ -69,19 +95,57 @@ frontend/src/api/generated/
 
 ## Regeneration Workflow
 
-**When to regenerate:**
-- After adding new API endpoints
-- After modifying Pydantic models
-- After changing request/response schemas
+### Automatic (Recommended) - Pre-Commit Hook
 
-**How to regenerate:**
+If you've installed the pre-commit hook, regeneration is **automatic**:
 
 ```bash
-cd director-ui/frontend
+# 1. Modify backend API
+vim director-ui/src/api/routers/film_shots.py
+
+# 2. Commit (hook auto-regenerates and stages client)
+git add director-ui/src/api/routers/film_shots.py
+git commit -m "feat: add new endpoint"
+
+# ✅ Generated client is automatically updated and included in commit!
+```
+
+### Manual - When Hook Not Installed
+
+If you haven't installed the hook or need to regenerate manually:
+
+```bash
+# 1. Start backend
+cd director-ui
+uv run python -m api.app
+
+# 2. Generate client
+cd frontend
 npm run generate-api
+
+# 3. Commit generated files
 git add src/api/generated/
 git commit -m "chore: regenerate API client"
 ```
+
+### When Backend Isn't Running
+
+The pre-commit hook gracefully handles this:
+```
+⚠️  Backend not running at http://localhost:10101
+   Generated API client may be out of sync!
+
+   To regenerate client:
+   1. Start backend: cd director-ui && uv run python -m api.app
+   2. Regenerate: cd director-ui/frontend && npm run generate-api
+   3. Commit generated files
+
+Continue commit without regenerating? (y/N):
+```
+
+You can:
+- Type `N` to abort and regenerate first (recommended)
+- Type `y` to commit anyway (not recommended, causes drift)
 
 ## Integration with React Query
 

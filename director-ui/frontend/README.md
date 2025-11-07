@@ -8,12 +8,31 @@ React + TypeScript frontend for the Media Empire Director's Platform.
 # Install dependencies
 npm install
 
+# Install git hooks (auto-regenerates API client on commits)
+bash scripts/install-hooks.sh
+
 # Generate API client from backend (backend must be running)
 npm run generate-api
 
 # Start dev server
 npm run dev
 ```
+
+## Git Hooks
+
+**Pre-commit hook** automatically regenerates the TypeScript API client when you commit backend changes.
+
+**Installation (one-time):**
+```bash
+bash scripts/install-hooks.sh
+```
+
+After installation, when you commit backend changes, the hook will:
+1. Detect changes to `director-ui/src/api/` or `director-ui/src/data/models.py`
+2. Auto-regenerate TypeScript client
+3. Stage generated files for commit
+
+No more forgetting to regenerate! 🎉
 
 ## API Client Generation
 
