@@ -13,6 +13,12 @@ from .dynamic_editor import (
     TimelineClip,
     quick_edit
 )
+from .post_production import (
+    PostProductionPipeline,
+    ColorGrade,
+    AudioMix,
+    quick_post_production
+)
 
 __all__ = [
     'BRollInserter',
@@ -23,5 +29,9 @@ __all__ = [
     'DynamicEditor',
     'Timeline',
     'TimelineClip',
-    'quick_edit'
+    'quick_edit',
+    'PostProductionPipeline',
+    'ColorGrade',
+    'AudioMix',
+    'quick_post_production'
 ]
