@@ -1,17 +1,6 @@
 # OpenAPI Client Generation
 
-This document explains how to generate and use the TypeScript API client from the backend OpenAPI specification.
-
-## Overview
-
-Instead of duplicating types between backend (Python/Pydantic) and frontend (TypeScript), we automatically generate TypeScript types and API client functions from the backend's OpenAPI/Swagger specification.
-
-**Benefits:**
-- ✅ No code duplication between backend and frontend
-- ✅ Type safety across the full stack
-- ✅ Automatic updates when backend changes
-- ✅ Auto-completion and IntelliSense in IDE
-- ✅ Consistent API client with proper error handling
+Auto-generate TypeScript client from backend OpenAPI specification to eliminate code duplication.
 
 ## Quick Start
 
@@ -20,194 +9,166 @@ Instead of duplicating types between backend (Python/Pydantic) and frontend (Typ
 cd director-ui/frontend
 bash scripts/install-hooks.sh
 
-# 2. Start backend (must be running on port 10101)
+# 2. Start backend (must be running on port 8000)
 cd ../
-uv run python -m api.app
+uv run uvicorn src.api.app:app --reload --host 0.0.0.0 --port 8000
 
-# 3. Generate TypeScript client (or let pre-commit hook do it automatically)
+# 3. Generate TypeScript client
 cd frontend
 npm run generate-api
 
 # 4. Use in components
-import { FilmService, type FilmShot } from '@/api/generated';
-const shots = await FilmService.listShots();
+import { getFilmShotsApiFilmShotsGet, type FilmShot } from '@/api/sdk.gen';
+const response = await getFilmShotsApiFilmShotsGet();
 ```
 
-## Pre-Commit Hook (Automatic Regeneration)
+## Benefits
 
-A pre-commit hook **automatically regenerates** the TypeScript client when you commit backend changes:
+- ✅ No code duplication between backend and frontend
+- ✅ Type safety across the full stack
+- ✅ Automatic updates when backend changes
+- ✅ Auto-completion and IntelliSense in IDE
+- ✅ Consistent API client with proper error handling
 
-**Installation (one-time):**
+## Pre-Commit Hook (Automatic)
+
+A pre-commit hook **automatically regenerates** the TypeScript client when you commit backend changes.
+
+**Installation:**
 ```bash
 cd director-ui/frontend
 bash scripts/install-hooks.sh
 ```
 
 **How it works:**
-1. You modify backend API files (`director-ui/src/api/` or `director-ui/src/data/models.py`)
-2. You commit your changes: `git commit -m "add new endpoint"`
+1. Modify backend API files (`src/api/` or `src/data/models.py`)
+2. Commit your changes: `git commit -m "add new endpoint"`
 3. Hook detects backend changes and auto-regenerates client
-4. Generated files are automatically staged and included in your commit
+4. Generated files are automatically staged and included in commit
 
-**Benefits:**
-- ✅ Never forget to regenerate client after backend changes
-- ✅ Frontend types always in sync with backend
-- ✅ Committed generated files work without backend running
-- ✅ CI/CD can build frontend without backend dependency
+**When backend isn't running:**
+```
+⚠️  Backend not running at http://localhost:8000
+   Generated API client may be out of sync!
+
+   Continue commit anyway? Use --no-verify to skip this check.
+```
+
+## Manual Generation
+
+```bash
+cd director-ui/frontend
+
+# Method 1: Using npm script (recommended)
+npm run generate-api
+
+# Method 2: Direct command
+curl -s http://localhost:8000/openapi.json -o openapi.json
+npx @hey-api/openapi-ts --input openapi.json --output src/api
+```
+
+## Generated Files
+
+Located in `frontend/src/api/`:
+
+- **`sdk.gen.ts`** - Main SDK with all API functions
+- **`types.gen.ts`** - TypeScript type definitions for all models
+- **`client.gen.ts`** - HTTP client configuration
+- **`index.ts`** - Entry point for exports
+- **`client/`** - Client utilities
+- **`core/`** - Core HTTP handling
 
 ## Usage Examples
 
-### Before (Manual Types - Duplicated)
+### Basic API Call
 
 ```typescript
-// ❌ Manually duplicated types
-export interface FilmShot {
-  id: string;
-  prompt: string;
-  // ...
-}
+import { getFilmShotsApiFilmShotsGet } from '@/api/sdk.gen';
+import type { FilmShot } from '@/api/types.gen';
 
-const response = await fetch('/api/film/shots');
-const shots: FilmShot[] = await response.json();
+// Fetch film shots
+const response = await getFilmShotsApiFilmShotsGet({
+  query: { film_id: 'abc123' }
+});
+const shots: FilmShot[] = response.data;
 ```
 
-### After (Generated Types - Single Source of Truth)
-
-```typescript
-// ✅ Import from generated client
-import { FilmService, type FilmShot } from '@/api/generated';
-
-const shots: FilmShot[] = await FilmService.listShots();
-```
-
-## Generated Client Structure
-
-```
-frontend/src/api/generated/
-├── index.ts              # Main exports
-├── types.ts              # TypeScript types (FilmShot, ShotReview, etc.)
-├── services/             # API service functions
-│   ├── FilmService.ts
-│   ├── AudioService.ts
-│   └── StyleService.ts
-└── core/                 # HTTP client config
-```
-
-## Regeneration Workflow
-
-### Automatic (Recommended) - Pre-Commit Hook
-
-If you've installed the pre-commit hook, regeneration is **automatic**:
-
-```bash
-# 1. Modify backend API
-vim director-ui/src/api/routers/film_shots.py
-
-# 2. Commit (hook auto-regenerates and stages client)
-git add director-ui/src/api/routers/film_shots.py
-git commit -m "feat: add new endpoint"
-
-# ✅ Generated client is automatically updated and included in commit!
-```
-
-### Manual - When Hook Not Installed
-
-If you haven't installed the hook or need to regenerate manually:
-
-```bash
-# 1. Start backend
-cd director-ui
-uv run python -m api.app
-
-# 2. Generate client
-cd frontend
-npm run generate-api
-
-# 3. Commit generated files
-git add src/api/generated/
-git commit -m "chore: regenerate API client"
-```
-
-### When Backend Isn't Running
-
-The pre-commit hook gracefully handles this:
-```
-⚠️  Backend not running at http://localhost:10101
-   Generated API client may be out of sync!
-
-   To regenerate client:
-   1. Start backend: cd director-ui && uv run python -m api.app
-   2. Regenerate: cd director-ui/frontend && npm run generate-api
-   3. Commit generated files
-
-Continue commit without regenerating? (y/N):
-```
-
-You can:
-- Type `N` to abort and regenerate first (recommended)
-- Type `y` to commit anyway (not recommended, causes drift)
-
-## Integration with React Query
+### With React Query
 
 ```typescript
 import { useQuery } from '@tanstack/react-query';
-import { FilmService } from '@/api/generated';
+import { getFilmShotsApiFilmShotsGet } from '@/api/sdk.gen';
 
-function useShots(filmProjectId: string) {
+export const useFilmShots = (filmId: string) => {
   return useQuery({
-    queryKey: ['shots', filmProjectId],
-    queryFn: () => FilmService.listFilmShots({ filmProjectId })
+    queryKey: ['film-shots', filmId],
+    queryFn: async () => {
+      const response = await getFilmShotsApiFilmShotsGet({
+        query: { film_id: filmId }
+      });
+      return response.data;
+    }
   });
-}
+};
 ```
 
-## Best Practices
+## When to Regenerate
 
-1. **Regenerate after backend changes** - `npm run generate-api`
-2. **Commit generated files** - Other developers need them
-3. **Never edit generated files** - Will be overwritten
-4. **Use React Query** - Better caching and state management
-5. **Use TypeScript strict mode** - Catch type errors early
+Regenerate the client when:
+
+1. Backend API changes (new endpoints, modified models)
+2. After pulling changes from git
+3. Before building for production
 
 ## Troubleshooting
 
-### Backend not reachable
-Make sure backend is running: `cd director-ui && uv run python -m api.app`
+### Backend not running
 
-### Types not found
-Regenerate client: `cd frontend && npm run generate-api`
-
-### Import errors
-Use correct import path: `import { type FilmShot } from '@/api/generated'`
-
-## Migration Guide
-
-**Step 1:** Find manual type definitions
+Start the backend:
 ```bash
-grep -r "export interface FilmShot" src/
+cd director-ui
+uv run uvicorn src.api.app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Step 2:** Replace with generated types
-```typescript
-// ❌ Before
-import { FilmShot } from '../types/film';
+### Import errors after generation
 
-// ✅ After
-import { type FilmShot } from '@/api/generated';
+1. Restart Vite dev server
+2. Clear browser cache
+3. Verify `@/api` path alias in `vite.config.ts`
+
+### Type mismatches
+
+1. Regenerate client: `npm run generate-api`
+2. Check backend and frontend are using same models
+3. Update frontend code to match new types
+
+## CI/CD Integration
+
+```bash
+# Start backend in background
+cd director-ui
+uv run uvicorn src.api.app:app --host 0.0.0.0 --port 8000 &
+BACKEND_PID=$!
+
+# Wait for backend
+sleep 5
+
+# Generate client
+cd frontend
+npm run generate-api
+
+# Build frontend
+npm run build
+
+# Cleanup
+kill $BACKEND_PID
 ```
 
-**Step 3:** Replace manual API calls
-```typescript
-// ❌ Before
-const response = await fetch('/api/film/shots');
+## Configuration
 
-// ✅ After
-import { FilmService } from '@/api/generated';
-const shots = await FilmService.listShots();
-```
+Backend port is configured in:
+- Backend command: `--port 8000`
+- Frontend script: `frontend/scripts/generate-api-client.sh`
+- OpenAPI endpoint: `http://localhost:8000/openapi.json`
 
-## References
-
-- [@hey-api/openapi-ts Documentation](https://heyapi.dev/)
-- [FastAPI OpenAPI](https://fastapi.tiangolo.com/tutorial/metadata/)
-- [TanStack Query](https://tanstack.com/query/latest)
+To change the port, update all three locations.

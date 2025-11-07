@@ -1,18 +1,49 @@
-# Database Migrations
+# Database Setup & Migrations
 
-This document explains how to manage database schema migrations for the director-ui project.
+This document explains how to set up PostgreSQL and manage database migrations for the director-ui project.
 
-## Overview
+## Database Setup
+
+The director-ui backend requires PostgreSQL. You have two setup options:
+
+### Option 1: Using Docker (Recommended)
+
+```bash
+cd director-ui
+docker compose up -d postgres
+```
+
+This starts PostgreSQL 15 on port 5432 with:
+- Database: `pdf_link_youtube_to_anything_tg_bot`
+- User: `botuser` / Password: `botpass`
+
+### Option 2: Using Local PostgreSQL
+
+```sql
+CREATE USER botuser WITH PASSWORD 'botpass';
+CREATE DATABASE pdf_link_youtube_to_anything_tg_bot OWNER botuser;
+```
+
+### Environment Configuration
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+cp .env.example .env
+```
+
+Required settings:
+```env
+DATABASE_URL=postgresql://botuser:botpass@localhost:5432/pdf_link_youtube_to_anything_tg_bot
+TELEGRAM_BOT_TOKEN=your_bot_token
+OPENROUTER_API_KEY=your_openrouter_key
+HEYGEN_API_KEY=your_heygen_key
+POSTIZ_API_KEY=your_postiz_key
+```
+
+## Migrations Overview
 
 The project uses [Alembic](https://alembic.sqlalchemy.org/) for database schema management. Migrations are stored in the `alembic/versions/` directory.
-
-## Prerequisites
-
-1. Ensure you have a PostgreSQL database running
-2. Set the `DATABASE_URL` environment variable in your `.env` file:
-   ```
-   DATABASE_URL=postgresql://user:password@localhost:5432/director_ui
-   ```
 
 ## Running Migrations
 
