@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlayCircle, Film, Sparkles, Save, Download, Zap, Users } from 'lucide-react';
+import { PlayCircle, Film, Sparkles, Save, Download, Zap, Users, Upload } from 'lucide-react';
 import StyleSelector from '../components/film/StyleSelector';
 import ShotTypeSelector from '../components/film/ShotTypeSelector';
 import LightingSelector from '../components/film/LightingSelector';
@@ -8,6 +8,8 @@ import PromptBuilder from '../components/film/PromptBuilder';
 import SceneSequencer from '../components/film/SceneSequencer';
 import PromptPreview from '../components/film/PromptPreview';
 import CharacterPickerModal from '../components/CharacterPickerModal';
+import WorkspaceSelector from '../components/WorkspaceSelector';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { apiUrl } from '../config/api';
 
 interface PromptConfig {
@@ -25,10 +27,13 @@ interface PromptConfig {
 }
 
 const FilmGenerationPage: React.FC = () => {
+  const { currentWorkspace } = useWorkspace();
   const [mode, setMode] = useState<'single' | 'scene'>('single');
   const [aiEnhance, setAiEnhance] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isPublishing, setIsPublishing] = useState<boolean>(false);
   const [showCharacterPicker, setShowCharacterPicker] = useState<boolean>(false);
+  const [currentFilmProjectId, setCurrentFilmProjectId] = useState<string | null>(null);
   const [promptConfig, setPromptConfig] = useState<PromptConfig>({
     subject: '',
     action: '',
@@ -91,24 +96,77 @@ const FilmGenerationPage: React.FC = () => {
     }
   };
 
+  const handlePublish = async () => {
+    if (!currentFilmProjectId) {
+      alert('Please generate a film first before publishing');
+      return;
+    }
+
+    if (!currentWorkspace) {
+      alert('Please select a workspace first');
+      return;
+    }
+
+    try {
+      setIsPublishing(true);
+
+      // For now, this is a placeholder - would need actual video path
+      // In production, this would be called after film generation completes
+      const response = await fetch(apiUrl('/api/publishing/publish/immediate'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          account_id: 'default', // Would come from account selector
+          platforms: ['tiktok', 'instagram'], // Would come from platform selector
+          video_path: '/path/to/generated/video.mp4', // Would be actual film output
+          title: promptConfig.subject,
+          description: promptConfig.action,
+          film_project_id: currentFilmProjectId,
+          film_variant_id: null // Could specify variant if platform-specific
+        })
+      });
+
+      if (response.ok) {
+        alert('Successfully published to selected platforms!');
+      } else {
+        throw new Error('Publishing failed');
+      }
+    } catch (error) {
+      console.error('Error publishing:', error);
+      alert('Failed to publish. Please try again.');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white">
       {/* Header */}
       <header className="bg-black bg-opacity-50 backdrop-blur-md border-b border-purple-500">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <Film className="w-8 h-8 text-purple-400" />
               <h1 className="text-2xl font-bold">Film Generation Studio</h1>
               <span className="px-3 py-1 bg-purple-500 bg-opacity-20 rounded-full text-sm">
                 Professional Cinematic Prompts
               </span>
+              <WorkspaceSelector />
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition flex items-center space-x-2">
                 <Save className="w-4 h-4" />
                 <span>Save Project</span>
+              </button>
+
+              <button
+                onClick={handlePublish}
+                disabled={!currentFilmProjectId || isPublishing}
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg transition flex items-center space-x-2"
+              >
+                <Upload className="w-4 h-4" />
+                <span>{isPublishing ? 'Publishing...' : 'Publish'}</span>
               </button>
 
               <button className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg transition flex items-center space-x-2">
