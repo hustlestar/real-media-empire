@@ -3,13 +3,10 @@ Example: Platform Video Formatter
 
 This example demonstrates how to automatically format videos for different
 social media platforms with correct aspect ratios and specifications.
+
+Run from project root with:
+    PYTHONPATH=src python examples/formatter_example.py
 """
-
-import sys
-from pathlib import Path
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from features.video.formatter import (
     PlatformVideoFormatter,

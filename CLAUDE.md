@@ -129,6 +129,49 @@ uv sync
 - Lock file: `uv.lock` (auto-generated, commit to git)
 - All Python commands should be prefixed with `uv run` when not in the virtual environment
 
+## Import Guidelines
+
+**CRITICAL: Never use `sys.path.insert()` or path manipulation in code!**
+
+### Proper Import Patterns
+
+**✅ DO:**
+```python
+# Direct imports (assumes proper package structure)
+from features.video.subtitles import SubtitleGenerator
+from features.video.formatter import PlatformVideoFormatter
+
+# For shared code that needs to be accessible from multiple places,
+# use the mediaempire-shared package structure
+```
+
+**❌ DON'T:**
+```python
+# NEVER do this!
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+```
+
+### Running Examples
+
+Examples should be run from the project root with proper Python path:
+
+```bash
+# From project root
+cd /home/user/real-media-empire
+
+# Run example
+PYTHONPATH=src uv run python examples/subtitles_example.py
+
+# Or activate venv first
+source .venv/bin/activate
+PYTHONPATH=src python examples/subtitles_example.py
+```
+
+### API Imports
+
+API routers should import from the proper package structure. If code needs to be shared between `src/` and `director-ui/src/`, use the `mediaempire-shared` library approach.
+
 ## Running Pipelines
 
 **IMPORTANT:** The project's ZenML pipelines were built with ZenML 0.40.x API which used `BaseParameters`. Modern ZenML (0.60+) has removed this class. The pipelines will need code updates before they can run. See "Known Issues" section below.

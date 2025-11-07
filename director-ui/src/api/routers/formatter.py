@@ -1,5 +1,9 @@
 """
 API endpoints for platform video formatting.
+
+Note: This router expects features.video module to be importable.
+If running from director-ui/, set PYTHONPATH to include src/:
+    PYTHONPATH=../src uvicorn src.api.app:app --reload
 """
 
 import os
@@ -11,10 +15,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-# Import from main src
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
-
+# Direct import - ensure PYTHONPATH includes src/
 try:
     from features.video.formatter import PlatformVideoFormatter, PlatformSpecs, Platform
 except ImportError:

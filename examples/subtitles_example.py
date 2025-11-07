@@ -3,13 +3,10 @@ Example: Adding Automated Subtitles to Videos
 
 This example demonstrates how to use the SubtitleGenerator to add
 viral-style captions to your videos.
+
+Run from project root with:
+    PYTHONPATH=src python examples/subtitles_example.py
 """
-
-import sys
-from pathlib import Path
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from features.video.subtitles import SubtitleGenerator, add_subtitles_to_video
 
