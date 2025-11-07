@@ -5,6 +5,8 @@ description = "Automated content creation system for generating and publishing Y
 readme = "README.md"
 requires-python = ">=3.9,<3.13"
 dependencies = [
+    # Shared library (features, social)
+    "mediaempire-shared",
     # Core video processing
     "moviepy>=1.0.3",
     # AI/ML
@@ -113,6 +115,9 @@ extend-exclude = '''
   | dist
 )/
 '''
+
+[tool.uv.sources]
+mediaempire-shared = { path = "mediaempire-shared", editable = true }
 
 [tool.isort]
 profile = "black"

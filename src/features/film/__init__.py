@@ -10,7 +10,7 @@ A comprehensive system for generating cinematic films using AI:
 - Rich metadata for asset discovery
 """
 
-from film.models import (
+from .models import (
     ShotDefinition,
     ShotConfig,
     ImageConfig,
