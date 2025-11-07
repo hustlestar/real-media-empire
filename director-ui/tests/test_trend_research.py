@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
 
-from content.trend_research import (
+from src.content.trend_research import (
     TrendResearcher,
     TrendInsight,
     TrendResearchResult

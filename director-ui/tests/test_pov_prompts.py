@@ -5,7 +5,7 @@ Tests prompt generation, style presets, and AI model optimization.
 """
 
 import pytest
-from text.pov_prompts import (
+from src.text.pov_prompts import (
     POVPromptGenerator,
     POVPromptStyle,
     POV_STYLES,

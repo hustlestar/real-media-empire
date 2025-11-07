@@ -89,12 +89,11 @@ class VEEDProvider(VideoProvider):
         video_url = await self._poll_status(request_id)
 
         return VideoGenerationResult(
-            video_id=request_id,
             video_url=video_url,
             provider="veed",
-            duration=None,  # Unknown until video is analyzed
             cost=0.10,  # Approximate cost per generation
             metadata={
+                "request_id": request_id,
                 "image_url": image_url,
                 "audio_url": audio_url,
                 "resolution": resolution,

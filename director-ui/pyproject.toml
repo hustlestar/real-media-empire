@@ -161,3 +161,9 @@ exclude_lines = [
 
 [tool.uv.sources]
 mediaempire-shared = { path = "../mediaempire-shared", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-asyncio>=0.23.0",
+]

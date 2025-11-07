@@ -181,7 +181,7 @@ Format each trend clearly. Be specific and actionable. Only return {num_trends} 
             if not lines:
                 continue
 
-            title = lines[0].lstrip('0123456789.#* ').rstrip(':')
+            title = lines[0].lstrip('0123456789.#* ').rstrip(':*').strip()
 
             # Extract hashtags
             hashtags = []

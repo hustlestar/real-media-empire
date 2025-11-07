@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 import asyncio
 
-from film.providers.veed import VEEDProvider, VEEDConfig, VideoGenerationResult
+from src.film.providers.veed import VEEDProvider, VEEDConfig, VideoGenerationResult
 
 
 @pytest.fixture
@@ -97,7 +97,7 @@ class TestVEEDProvider:
 
         # Verify result
         assert isinstance(result, VideoGenerationResult)
-        assert result.video_id == "veed-123"
+        assert result.metadata["request_id"] == "veed-123"
         assert result.video_url == "https://example.com/veed-video.mp4"
         assert result.provider == "veed"
         assert result.cost == 0.10
