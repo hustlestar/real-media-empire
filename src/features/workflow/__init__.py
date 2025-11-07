@@ -12,6 +12,12 @@ from .brand_guidelines import (
     LogoPlacement,
     apply_brand_to_video
 )
+from .content_calendar import (
+    ContentCalendar,
+    ContentItem,
+    OptimalPostingTime,
+    schedule_content_optimal
+)
 
 __all__ = [
     'ContentRepurposer',
@@ -21,5 +27,9 @@ __all__ = [
     'ColorPalette',
     'FontGuidelines',
     'LogoPlacement',
-    'apply_brand_to_video'
+    'apply_brand_to_video',
+    'ContentCalendar',
+    'ContentItem',
+    'OptimalPostingTime',
+    'schedule_content_optimal'
 ]
