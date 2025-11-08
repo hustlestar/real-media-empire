@@ -135,15 +135,36 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
     """
     request_id = request.headers.get("X-Request-ID")
 
-    logger.warning(
-        f"HTTP Exception: {exc.status_code} - {exc.detail}",
-        extra={
-            "status_code": exc.status_code,
-            "detail": exc.detail,
-            "request_id": request_id,
-            "path": request.url.path
-        }
-    )
+    # For 500 errors, log full traceback
+    if exc.status_code >= 500:
+        logger.error(
+            f"HTTP Exception: {exc.status_code} - {exc.detail}",
+            extra={
+                "status_code": exc.status_code,
+                "detail": exc.detail,
+                "request_id": request_id,
+                "path": request.url.path,
+                "traceback": traceback.format_exc()
+            },
+            exc_info=True
+        )
+        # Also print to console for immediate visibility
+        print(f"\n{'='*80}")
+        print(f"HTTP {exc.status_code} ERROR at {request.url.path}")
+        print(f"Detail: {exc.detail}")
+        print(f"{'='*80}")
+        traceback.print_exc()
+        print(f"{'='*80}\n")
+    else:
+        logger.warning(
+            f"HTTP Exception: {exc.status_code} - {exc.detail}",
+            extra={
+                "status_code": exc.status_code,
+                "detail": exc.detail,
+                "request_id": request_id,
+                "path": request.url.path
+            }
+        )
 
     error_codes = {
         404: "NOT_FOUND",
@@ -185,6 +206,15 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
         },
         exc_info=True
     )
+
+    # Also print to console for immediate visibility
+    print(f"\n{'='*80}")
+    print(f"UNHANDLED EXCEPTION at {request.url.path}")
+    print(f"Type: {type(exc).__name__}")
+    print(f"Message: {str(exc)}")
+    print(f"{'='*80}")
+    traceback.print_exc()
+    print(f"{'='*80}\n")
 
     # Don't expose internal error details to clients
     return create_error_response(

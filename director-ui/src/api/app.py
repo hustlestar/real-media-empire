@@ -1,9 +1,23 @@
 """FastAPI application setup."""
 
 import logging
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config.settings import BotConfig
+
+# Configure logging to console with detailed format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+# Set specific loggers to DEBUG for more detailed output
+logging.getLogger("api").setLevel(logging.DEBUG)
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)  # Reduce SQL query spam
 
 logger = logging.getLogger(__name__)
 
