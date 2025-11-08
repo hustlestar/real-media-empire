@@ -6,6 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Media Empire is a Python-based automated content creation system for generating and publishing YouTube videos and shorts. It uses ZenML for pipeline orchestration, MoviePy for video editing, OpenAI/ChatGPT for content generation, and integrates with various TTS providers and YouTube API.
 
+The project now includes a comprehensive **Production Platform** with 21 professional features for automated video production, editing, and optimization. See `docs/PRODUCTION_PLATFORM_SUMMARY.md` for complete details.
+
+## Documentation
+
+All project documentation should be placed in the `docs/` directory:
+
+```
+docs/
+├── PRODUCTION_PLATFORM_SUMMARY.md  # Complete production platform overview
+└── [other documentation files]
+```
+
+**Documentation Guidelines:**
+- ✅ **DO** place all new documentation in `docs/` directory
+- ✅ **DO** use descriptive filenames (UPPER_SNAKE_CASE.md)
+- ✅ **DO** keep CLAUDE.md and README.md in project root
+- ❌ **DON'T** create documentation files in project root
+- ❌ **DON'T** create temporary analysis or status files
+
 ## Core Architecture
 
 ### Pipeline System (ZenML-based)
@@ -71,7 +90,6 @@ The system follows a "data lake" pattern:
    - Audio providers: OpenAI TTS, ElevenLabs
    - Asset caching and metadata indexing
    - Cost tracking and budget enforcement
-   - See `FILM_GENERATION.md` for details
 
 8. **PPTX Generation** (`src/pptx_gen/`)
    - AI-powered PowerPoint presentation creation
@@ -79,7 +97,14 @@ The system follows a "data lake" pattern:
    - Template support (custom or auto-generated)
    - Content caching and cost optimization
    - Multiple slide layouts and styling options
-   - See `PPTX_GENERATION.md` for details
+
+9. **Production Features** (`src/features/`)
+   - **Video Processing** (`features/video/`) - Subtitles, formatting, cropping, hooks, thumbnails
+   - **Workflow** (`features/workflow/`) - Repurposing, templates, branding, calendar
+   - **Editing** (`features/editing/`) - B-roll insertion, timeline editor, post-production
+   - **Platform** (`features/platform/`) - Platform optimization, virality, storytelling
+   - **Production** (`features/production/`) - VFX, film grain, color LUTs, Director AI
+   - See `docs/PRODUCTION_PLATFORM_SUMMARY.md` for complete feature list
 
 ## Environment Setup
 
@@ -129,6 +154,49 @@ uv sync
 - Lock file: `uv.lock` (auto-generated, commit to git)
 - All Python commands should be prefixed with `uv run` when not in the virtual environment
 
+## Import Guidelines
+
+**CRITICAL: Never use `sys.path.insert()` or path manipulation in code!**
+
+### Proper Import Patterns
+
+**✅ DO:**
+```python
+# Direct imports (assumes proper package structure)
+from features.video.subtitles import SubtitleGenerator
+from features.video.formatter import PlatformVideoFormatter
+
+# For shared code that needs to be accessible from multiple places,
+# use the mediaempire-shared package structure
+```
+
+**❌ DON'T:**
+```python
+# NEVER do this!
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+```
+
+### Running Examples
+
+Examples should be run from the project root with proper Python path:
+
+```bash
+# From project root
+cd /home/user/real-media-empire
+
+# Run example
+PYTHONPATH=src uv run python examples/subtitles_example.py
+
+# Or activate venv first
+source .venv/bin/activate
+PYTHONPATH=src python examples/subtitles_example.py
+```
+
+### API Imports
+
+API routers should import from the proper package structure. If code needs to be shared between `src/` and `director-ui/src/`, use the `mediaempire-shared` library approach.
+
 ## Running Pipelines
 
 **IMPORTANT:** The project's ZenML pipelines were built with ZenML 0.40.x API which used `BaseParameters`. Modern ZenML (0.60+) has removed this class. The pipelines will need code updates before they can run. See "Known Issues" section below.
@@ -170,8 +238,6 @@ uv run python -m pipelines.film_generation \
   --video-provider minimax
 ```
 
-See `FILM_GENERATION.md` for complete documentation.
-
 ### Generate PowerPoint Presentation (AI-Powered)
 ```bash
 cd src
@@ -183,8 +249,6 @@ uv run python -m pipelines.pptx_generation \
   --budget-limit 1.00 \
   --model gpt-4o-mini
 ```
-
-See `PPTX_GENERATION.md` for complete documentation.
 
 ### Recovery Mode
 All pipelines support `--recover` flag to resume failed runs:
