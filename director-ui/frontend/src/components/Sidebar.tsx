@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { FileText, Briefcase, Plus, Package, Film, Presentation, Image, Users, Upload, Video, Send } from 'lucide-react'
+import { FileText, Briefcase, Plus, Package, Film, Presentation, Image, Users, Upload, Video, Send, Sparkles } from 'lucide-react'
 import AddContentModal from './AddContentModal'
 
 export default function Sidebar() {
@@ -20,6 +20,7 @@ export default function Sidebar() {
     {
       title: 'CREATION',
       links: [
+        { to: '/script-writer', label: 'Script Writer', icon: Sparkles },
         { to: '/film-generation', label: 'Film Generator', icon: Film },
         { to: '/pptx-generation', label: 'PPTX Generator', icon: Presentation },
         { to: '/heygen-studio', label: 'HeyGen Studio', icon: Video },
