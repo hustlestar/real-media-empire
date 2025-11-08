@@ -16,9 +16,23 @@ from typing import List, Optional, Dict, Any, Literal
 import uuid
 import logging
 
-# Audio provider imports
-from audio.google_tts import GoogleTextToSpeech, synthesize_ssml
-from audio.xi_labs_tts import ElevenLabsTextToSpeech
+# Audio provider imports - optional dependencies
+try:
+    from audio.google_tts import GoogleTextToSpeech, synthesize_ssml
+    GOOGLE_TTS_AVAILABLE = True
+except ImportError:
+    GOOGLE_TTS_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("google-cloud-texttospeech not available. Google TTS provider will be disabled.")
+
+try:
+    from audio.xi_labs_tts import ElevenLabsTextToSpeech
+    ELEVENLABS_AVAILABLE = True
+except ImportError:
+    ELEVENLABS_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("ElevenLabs TTS not available. ElevenLabs provider will be disabled.")
+
 # OpenAI TTS would be imported here when available
 
 router = APIRouter()
@@ -250,6 +264,18 @@ async def generate_audio(request: AudioGenerationRequest):
     - Google: Full SSML with prosody
     - OpenAI: Punctuation-based pacing
     """
+    # Check provider availability
+    if request.provider == 'google' and not GOOGLE_TTS_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Google TTS provider is not available. Install google-cloud-texttospeech dependency."
+        )
+    if request.provider == 'elevenlabs' and not ELEVENLABS_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="ElevenLabs TTS provider is not available. Check ElevenLabs integration."
+        )
+
     try:
         # Generate provider-specific prompt if not provided
         if request.provider_prompt:
@@ -385,6 +411,7 @@ async def list_providers():
             {
                 "id": "elevenlabs",
                 "name": "ElevenLabs",
+                "available": ELEVENLABS_AVAILABLE,
                 "quality": "premium",
                 "supports": ["phonetic_pronunciation", "emphasis", "emotion", "voice_cloning"],
                 "cost": "high",
@@ -394,6 +421,7 @@ async def list_providers():
             {
                 "id": "google",
                 "name": "Google Cloud TTS",
+                "available": GOOGLE_TTS_AVAILABLE,
                 "quality": "high",
                 "supports": ["ssml", "prosody", "phonemes", "emphasis", "breaks"],
                 "cost": "medium",
@@ -403,6 +431,7 @@ async def list_providers():
             {
                 "id": "openai",
                 "name": "OpenAI TTS",
+                "available": False,  # Not yet implemented
                 "quality": "high",
                 "supports": ["speed_control", "voice_selection"],
                 "cost": "low",

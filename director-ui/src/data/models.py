@@ -287,3 +287,54 @@ class PublishingAnalytics(Base):
 
     # Relationship
     post = relationship("PublishingPost", backref="analytics")
+
+
+class FilmShot(Base):
+    """Individual shot within a film project."""
+    __tablename__ = "film_shots"
+
+    id = Column(String, primary_key=True)  # UUID
+    shot_id = Column(String, nullable=False)  # Shot identifier (e.g., "shot_001")
+    film_project_id = Column(String, ForeignKey("film_projects.id"), nullable=False)
+
+    # Generated content URLs
+    video_url = Column(String, nullable=False)
+    thumbnail_url = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)  # Source image for video generation
+    audio_url = Column(String, nullable=True)  # Audio track for the shot
+
+    # Shot configuration
+    prompt = Column(Text, nullable=False)
+    duration = Column(Float, nullable=False)  # Duration in seconds
+    sequence_order = Column(Integer, nullable=True)  # Order in the final film
+
+    # Status tracking
+    status = Column(String, default="completed")  # completed, approved, rejected, needs_revision, generating, pending
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    film_project = relationship("FilmProject", backref="shots")
+
+
+class ShotReview(Base):
+    """Review and feedback for a film shot."""
+    __tablename__ = "shot_reviews"
+
+    id = Column(String, primary_key=True)  # UUID
+    shot_id = Column(String, ForeignKey("film_shots.id"), nullable=False, unique=True)
+
+    # Review details
+    status = Column(String, nullable=False)  # approved, rejected, needs_revision
+    notes = Column(Text, nullable=True)  # Director's feedback and notes
+    reviewer = Column(String, nullable=True)  # Username or email of reviewer
+
+    # Timestamps
+    reviewed_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationship
+    shot = relationship("FilmShot", backref="review", uselist=False)

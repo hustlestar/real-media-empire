@@ -111,10 +111,7 @@ app.add_middleware(
 )
 
 # Import and include routers
-from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, style, heygen, postiz, veed, trends, stock_videos
-# from api.routers import film_shots  # TODO: Requires FilmShot and ShotReview models in data.models
-# from api.routers import audio_generation  # TODO: Requires google-cloud-texttospeech dependency
-# from api.routers import editing  # TODO: Requires FilmShot model and database.session module
+from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, style, heygen, postiz, veed, trends, stock_videos, film_shots, audio_generation, editing
 
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(content.router, prefix="/api/v1", tags=["content"])
@@ -124,13 +121,13 @@ app.include_router(tags.router, prefix="/api/v1", tags=["tags"])
 app.include_router(prompts.router, prefix="/api/v1", tags=["prompts"])
 app.include_router(workspaces.router, prefix="/api/workspaces", tags=["workspaces"])
 app.include_router(film.router, prefix="/api/film", tags=["film"])
-# app.include_router(film_shots.router, prefix="/api/film", tags=["film"])  # TODO: Requires FilmShot models
+app.include_router(film_shots.router, prefix="/api/film", tags=["film"])
 app.include_router(pptx.router, prefix="/api/pptx", tags=["pptx"])
 app.include_router(publishing.router, prefix="/api/publishing", tags=["publishing"])
 app.include_router(characters.router, prefix="/api/characters", tags=["characters"])
 app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
-# app.include_router(audio_generation.router, prefix="/api/audio", tags=["audio"])  # TODO: Requires google-cloud-texttospeech
-# app.include_router(editing.router, prefix="/api/editing", tags=["editing"])  # TODO: Requires FilmShot model
+app.include_router(audio_generation.router, prefix="/api/audio", tags=["audio"])
+app.include_router(editing.router, prefix="/api/editing", tags=["editing"])
 app.include_router(style.router, prefix="/api/style", tags=["style"])
 app.include_router(heygen.router, prefix="/api/heygen", tags=["heygen"])
 app.include_router(postiz.router, prefix="/api/postiz", tags=["postiz"])

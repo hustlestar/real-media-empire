@@ -15,7 +15,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from data.dao import get_db
-from data.film_models import FilmShot, ShotReview, FilmProject
+from data.models import FilmShot, ShotReview, FilmProject
 
 router = APIRouter()
 

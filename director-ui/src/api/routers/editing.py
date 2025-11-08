@@ -22,8 +22,8 @@ import subprocess
 import os
 
 # Database
-from database.session import get_db
-from data.film_models import FilmProject, FilmShot
+from data.dao import get_db
+from data.models import FilmProject, FilmShot
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
