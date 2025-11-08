@@ -12,49 +12,48 @@
 import React, { useState } from 'react';
 import { Sparkles, ChevronDown, X, Wand2 } from 'lucide-react';
 
-// Available AI models via OpenRouter
+// Available AI models via OpenRouter - Optimized for text/blog/post writing
 export const AI_MODELS = [
+  // Quality Tier - Best for polished, refined content
   {
-    id: 'anthropic/claude-3.5-sonnet',
-    name: 'Claude 3.5 Sonnet',
-    description: 'Best for creative writing and detailed content',
-    tier: 'premium'
+    id: 'google/gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
+    description: 'Best all-around for blog posts and scripts with built-in reasoning',
+    tier: 'quality'
   },
   {
-    id: 'anthropic/claude-3-opus',
-    name: 'Claude 3 Opus',
-    description: 'Most capable model for complex tasks',
-    tier: 'premium'
+    id: 'qwen/qwen3-235b-a22b-instruct',
+    name: 'Qwen 3 235B',
+    description: 'Excellent for technical content and detailed analysis',
+    tier: 'quality'
   },
   {
-    id: 'openai/gpt-4-turbo',
-    name: 'GPT-4 Turbo',
-    description: 'Latest GPT-4 with 128k context',
-    tier: 'premium'
+    id: 'meta-llama/llama-4-maverick',
+    name: 'Llama 4 Maverick',
+    description: 'Strong at diverse content types with multimodal capabilities',
+    tier: 'quality'
   },
+
+  // Mid-Range Tier - Best balance of quality and cost
   {
-    id: 'openai/gpt-4o',
-    name: 'GPT-4o',
-    description: 'Optimized for creative writing',
-    tier: 'premium'
-  },
-  {
-    id: 'google/gemini-pro-1.5',
-    name: 'Gemini Pro 1.5',
-    description: 'Google\'s most capable model',
+    id: 'mistralai/mistral-medium-3.1',
+    name: 'Mistral Medium 3.1',
+    description: 'Enterprise quality at budget pricing, great for creative writing',
     tier: 'standard'
   },
+
+  // Budget Tier - Ultra-cheap for high volume
   {
-    id: 'meta-llama/llama-3.1-70b-instruct',
-    name: 'Llama 3.1 70B',
-    description: 'Open-source, fast and capable',
+    id: 'deepseek/deepseek-chat-v3-0324',
+    name: 'DeepSeek Chat V3',
+    description: 'Best cheap option, strong reasoning and technical content',
     tier: 'budget'
   },
   {
-    id: 'mistralai/mistral-large',
-    name: 'Mistral Large',
-    description: 'European model, excellent quality',
-    tier: 'standard'
+    id: 'google/gemini-2.5-flash-lite',
+    name: 'Gemini 2.5 Flash Lite',
+    description: 'Ultra-low latency for batch processing and high-volume generation',
+    tier: 'budget'
   }
 ];
 
@@ -94,7 +93,7 @@ const AIEnhancer: React.FC<AIEnhancerProps> = ({
   context,
   buttonText = 'AI Assist',
   variant = 'compact',
-  defaultModel = 'anthropic/claude-3.5-sonnet'
+  defaultModel = 'google/gemini-2.5-flash'
 }) => {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -296,7 +295,7 @@ const AIEnhancer: React.FC<AIEnhancerProps> = ({
             <div className="mt-2 flex items-center justify-between text-xs">
               <span className="text-gray-400">{selectedModelInfo.description}</span>
               <span className={`px-2 py-0.5 rounded ${
-                selectedModelInfo.tier === 'premium'
+                selectedModelInfo.tier === 'quality'
                   ? 'bg-purple-500 bg-opacity-20 text-purple-300'
                   : selectedModelInfo.tier === 'standard'
                   ? 'bg-blue-500 bg-opacity-20 text-blue-300'

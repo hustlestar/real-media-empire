@@ -141,50 +141,56 @@ async def list_available_models():
     List available AI models for enhancement.
 
     Returns the same model list used in the frontend AIEnhancer component.
+    Optimized for text/blog/post writing with cost-effective options.
     """
     return {
         "models": [
+            # Quality Tier - Best for polished, refined content
             {
-                "id": "anthropic/claude-3.5-sonnet",
-                "name": "Claude 3.5 Sonnet",
-                "description": "Best for creative writing and detailed content",
-                "tier": "premium"
+                "id": "google/gemini-2.5-flash",
+                "name": "Gemini 2.5 Flash",
+                "description": "Best all-around for blog posts and scripts with built-in reasoning",
+                "tier": "quality",
+                "pricing": "~$0.70 input / $2.10 output per million tokens"
             },
             {
-                "id": "anthropic/claude-3-opus",
-                "name": "Claude 3 Opus",
-                "description": "Most capable model for complex tasks",
-                "tier": "premium"
+                "id": "qwen/qwen3-235b-a22b-instruct",
+                "name": "Qwen 3 235B",
+                "description": "Excellent for technical content and detailed analysis",
+                "tier": "quality",
+                "pricing": "~$0.40-0.80 per million tokens"
             },
             {
-                "id": "openai/gpt-4-turbo",
-                "name": "GPT-4 Turbo",
-                "description": "Latest GPT-4 with 128k context",
-                "tier": "premium"
+                "id": "meta-llama/llama-4-maverick",
+                "name": "Llama 4 Maverick",
+                "description": "Strong at diverse content types with multimodal capabilities",
+                "tier": "quality",
+                "pricing": "~$0.24 input / $0.97 output per million tokens"
+            },
+
+            # Mid-Range Tier - Best balance of quality and cost
+            {
+                "id": "mistralai/mistral-medium-3.1",
+                "name": "Mistral Medium 3.1",
+                "description": "Enterprise quality at budget pricing, great for creative writing",
+                "tier": "standard",
+                "pricing": "$0.10 input / $0.30 output per million tokens"
+            },
+
+            # Budget Tier - Ultra-cheap for high volume
+            {
+                "id": "deepseek/deepseek-chat-v3-0324",
+                "name": "DeepSeek Chat V3",
+                "description": "Best cheap option, strong reasoning and technical content",
+                "tier": "budget",
+                "pricing": "~$0.27 input / $1.10 output per million tokens"
             },
             {
-                "id": "openai/gpt-4o",
-                "name": "GPT-4o",
-                "description": "Optimized for creative writing",
-                "tier": "premium"
-            },
-            {
-                "id": "google/gemini-pro-1.5",
-                "name": "Gemini Pro 1.5",
-                "description": "Google's most capable model",
-                "tier": "standard"
-            },
-            {
-                "id": "meta-llama/llama-3.1-70b-instruct",
-                "name": "Llama 3.1 70B",
-                "description": "Open-source, fast and capable",
-                "tier": "budget"
-            },
-            {
-                "id": "mistralai/mistral-large",
-                "name": "Mistral Large",
-                "description": "European model, excellent quality",
-                "tier": "standard"
+                "id": "google/gemini-2.5-flash-lite",
+                "name": "Gemini 2.5 Flash Lite",
+                "description": "Ultra-low latency for batch processing and high-volume generation",
+                "tier": "budget",
+                "pricing": "$0.10 input / $0.40 output per million tokens"
             }
         ]
     }
