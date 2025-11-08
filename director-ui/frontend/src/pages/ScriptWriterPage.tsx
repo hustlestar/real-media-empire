@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Film, Sparkles, RefreshCw, Star, Heart, MessageSquare, Clock, ChevronRight, Check } from 'lucide-react';
-import { apiUrl } from '../config';
+import { apiUrl } from '../config/api';
 
 interface Generation {
   id: string;
