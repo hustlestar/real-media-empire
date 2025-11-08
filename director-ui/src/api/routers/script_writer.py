@@ -62,6 +62,61 @@ class RatingRequest(BaseModel):
     rating: int = Field(..., ge=1, le=5, description="Rating from 1 to 5 stars")
 
 
+class GenerateShotRequest(BaseModel):
+    """Request to generate a shot with AI."""
+    subject: Optional[str] = Field(None, description="Subject/character description")
+    action: Optional[str] = Field(None, description="What's happening in the shot")
+    location: Optional[str] = Field(None, description="Location/setting description")
+    camera_motion: Optional[str] = Field(None, description="Camera movement type")
+    shot_type: Optional[str] = Field(None, description="Shot type (close-up, wide, etc.)")
+    lighting: Optional[str] = Field(None, description="Lighting description")
+    emotion: Optional[str] = Field(None, description="Emotional tone")
+    style: Optional[str] = Field("cinematic", description="Visual style")
+    duration_seconds: Optional[float] = Field(3.0, description="Shot duration in seconds")
+    project_id: Optional[str] = Field(None, description="Project to associate with")
+    ai_feedback: Optional[str] = Field(None, description="Additional AI instructions for generation")
+
+
+class RefineShotRequest(BaseModel):
+    """Request to refine a shot with AI feedback."""
+    shot_id: str = Field(..., description="ID of shot to refine")
+    ai_feedback: str = Field(..., description="Refinement instructions (e.g., 'more dramatic', 'darker mood')")
+
+
+class ShotResponse(BaseModel):
+    """Response with shot generation data."""
+    id: str
+    version: int
+    parent_id: Optional[str]
+
+    # Shot configuration
+    prompt: Optional[str]
+    negative_prompt: Optional[str]
+    shot_type: Optional[str]
+    camera_motion: Optional[str]
+    lighting: Optional[str]
+    emotion: Optional[str]
+    duration_seconds: float
+
+    # Input data
+    input_subject: Optional[str]
+    input_action: Optional[str]
+    input_location: Optional[str]
+
+    # AI feedback
+    ai_feedback: Optional[str]
+
+    # Status
+    is_active: bool
+    is_favorite: bool
+    rating: Optional[int]
+
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class GenerationResponse(BaseModel):
     """Response with generation data."""
     id: str
@@ -105,7 +160,7 @@ class NoteRequest(BaseModel):
 # Script Generation Endpoints
 # ============================================================================
 
-@router.post("/script/generate-from-idea")
+@router.post("/generate-from-idea")
 async def generate_script_from_idea(
     request: GenerateScriptFromIdeaRequest,
     db: AsyncSession = Depends(get_async_db)
@@ -174,7 +229,7 @@ async def generate_script_from_idea(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/script/{generation_id}/refine")
+@router.post("/{generation_id}/refine")
 async def refine_script_generation(
     generation_id: str,
     request: RefineGenerationRequest,
@@ -274,7 +329,7 @@ async def refine_script_generation(
 # Version Management Endpoints
 # ============================================================================
 
-@router.get("/script/{project_id}/versions")
+@router.get("/{project_id}/versions")
 async def list_script_versions(
     project_id: str,
     generation_type: str = "script",
@@ -337,7 +392,7 @@ async def list_script_versions(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/script/generation/{generation_id}")
+@router.get("/generation/{generation_id}")
 async def get_generation(
     generation_id: str,
     db: AsyncSession = Depends(get_async_db)
@@ -383,7 +438,7 @@ async def get_generation(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/script/generation/{generation_id}/activate")
+@router.put("/generation/{generation_id}/activate")
 async def activate_generation(
     generation_id: str,
     db: AsyncSession = Depends(get_async_db)
@@ -437,7 +492,7 @@ async def activate_generation(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/script/generation/{generation_id}/favorite")
+@router.put("/generation/{generation_id}/favorite")
 async def toggle_favorite(
     generation_id: str,
     is_favorite: bool,
@@ -471,7 +526,7 @@ async def toggle_favorite(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/script/generation/{generation_id}/rating")
+@router.put("/generation/{generation_id}/rating")
 async def rate_generation(
     generation_id: str,
     request: RatingRequest,
@@ -509,7 +564,7 @@ async def rate_generation(
 # Notes/Collaboration Endpoints
 # ============================================================================
 
-@router.post("/script/generation/{generation_id}/notes")
+@router.post("/generation/{generation_id}/notes")
 async def add_note(
     generation_id: str,
     request: NoteRequest,
@@ -549,7 +604,7 @@ async def add_note(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/script/generation/{generation_id}/notes")
+@router.get("/generation/{generation_id}/notes")
 async def get_notes(
     generation_id: str,
     db: AsyncSession = Depends(get_async_db)
@@ -579,4 +634,360 @@ async def get_notes(
 
     except Exception as e:
         logger.error(f"Error getting notes: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Shot Studio Endpoints - Fast iterative shot generation with AI
+# ============================================================================
+
+@router.post("/shot/generate", response_model=ShotResponse)
+async def generate_shot(
+    request: GenerateShotRequest,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Generate a new shot with AI assistance.
+
+    This creates the first version of a shot that can be refined
+    iteratively with AI feedback.
+    """
+    try:
+        shot_id = str(uuid.uuid4())
+
+        # Build AI prompt from inputs
+        prompt_parts = []
+        if request.subject:
+            prompt_parts.append(f"Subject: {request.subject}")
+        if request.action:
+            prompt_parts.append(f"Action: {request.action}")
+        if request.location:
+            prompt_parts.append(f"Location: {request.location}")
+        if request.lighting:
+            prompt_parts.append(f"Lighting: {request.lighting}")
+        if request.emotion:
+            prompt_parts.append(f"Emotion: {request.emotion}")
+
+        base_prompt = ", ".join(prompt_parts) if prompt_parts else "Cinematic shot"
+
+        # Add style and shot type
+        if request.shot_type:
+            base_prompt = f"{request.shot_type} shot, {base_prompt}"
+        if request.style:
+            base_prompt = f"{request.style} style, {base_prompt}"
+        if request.ai_feedback:
+            base_prompt = f"{base_prompt}. {request.ai_feedback}"
+
+        # TODO: Call AI service to enhance prompt if needed
+
+        shot = ShotGeneration(
+            id=shot_id,
+            scene_id=None,  # Standalone shot (not part of scene)
+            shot_number=1,
+            version=1,
+            parent_id=None,
+            prompt=base_prompt,
+            negative_prompt="blurry, low quality, distorted",
+            shot_type=request.shot_type,
+            camera_motion=request.camera_motion,
+            lighting=request.lighting,
+            emotion=request.emotion,
+            shot_metadata={
+                "input_subject": request.subject,
+                "input_action": request.action,
+                "input_location": request.location,
+                "style": request.style,
+                "project_id": request.project_id
+            },
+            duration_seconds=request.duration_seconds or 3.0,
+            ai_feedback=request.ai_feedback,
+            is_active=True,
+            is_favorite=False,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+
+        db.add(shot)
+        await db.commit()
+        await db.refresh(shot)
+
+        return ShotResponse(
+            id=shot.id,
+            version=shot.version,
+            parent_id=shot.parent_id,
+            prompt=shot.prompt,
+            negative_prompt=shot.negative_prompt,
+            shot_type=shot.shot_type,
+            camera_motion=shot.camera_motion,
+            lighting=shot.lighting,
+            emotion=shot.emotion,
+            duration_seconds=shot.duration_seconds,
+            input_subject=request.subject,
+            input_action=request.action,
+            input_location=request.location,
+            ai_feedback=shot.ai_feedback,
+            is_active=shot.is_active,
+            is_favorite=shot.is_favorite,
+            rating=shot.rating,
+            created_at=shot.created_at
+        )
+
+    except Exception as e:
+        logger.error(f"Error generating shot: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/shot/{shot_id}/refine", response_model=ShotResponse)
+async def refine_shot(
+    shot_id: str,
+    request: RefineShotRequest,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Refine an existing shot with AI feedback.
+
+    Creates a new version based on the parent shot with refinements applied.
+    """
+    try:
+        # Get parent shot
+        result = await db.execute(
+            select(ShotGeneration).where(ShotGeneration.id == shot_id)
+        )
+        parent_shot = result.scalar_one_or_none()
+
+        if not parent_shot:
+            raise HTTPException(status_code=404, detail="Shot not found")
+
+        # Get next version number for this shot_number
+        version_result = await db.execute(
+            select(ShotGeneration.version)
+            .where(ShotGeneration.shot_number == parent_shot.shot_number)
+            .order_by(desc(ShotGeneration.version))
+            .limit(1)
+        )
+        latest_version = version_result.scalar() or 0
+        next_version = latest_version + 1
+
+        # Create refined prompt
+        refined_prompt = f"{parent_shot.prompt}. Refinement: {request.ai_feedback}"
+
+        # TODO: Call AI service to apply refinements intelligently
+
+        # Create new version
+        new_shot_id = str(uuid.uuid4())
+        new_shot = ShotGeneration(
+            id=new_shot_id,
+            scene_id=parent_shot.scene_id,
+            shot_number=parent_shot.shot_number,
+            version=next_version,
+            parent_id=parent_shot.id,
+            prompt=refined_prompt,
+            negative_prompt=parent_shot.negative_prompt,
+            shot_type=parent_shot.shot_type,
+            camera_motion=parent_shot.camera_motion,
+            lighting=parent_shot.lighting,
+            emotion=parent_shot.emotion,
+            shot_metadata=parent_shot.shot_metadata,
+            duration_seconds=parent_shot.duration_seconds,
+            ai_feedback=request.ai_feedback,
+            is_active=True,
+            is_favorite=False,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+
+        # Deactivate parent
+        parent_shot.is_active = False
+        parent_shot.updated_at = datetime.utcnow()
+
+        db.add(new_shot)
+        await db.commit()
+        await db.refresh(new_shot)
+
+        metadata = new_shot.shot_metadata or {}
+
+        return ShotResponse(
+            id=new_shot.id,
+            version=new_shot.version,
+            parent_id=new_shot.parent_id,
+            prompt=new_shot.prompt,
+            negative_prompt=new_shot.negative_prompt,
+            shot_type=new_shot.shot_type,
+            camera_motion=new_shot.camera_motion,
+            lighting=new_shot.lighting,
+            emotion=new_shot.emotion,
+            duration_seconds=new_shot.duration_seconds,
+            input_subject=metadata.get("input_subject"),
+            input_action=metadata.get("input_action"),
+            input_location=metadata.get("input_location"),
+            ai_feedback=new_shot.ai_feedback,
+            is_active=new_shot.is_active,
+            is_favorite=new_shot.is_favorite,
+            rating=new_shot.rating,
+            created_at=new_shot.created_at
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error refining shot: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/shot/versions")
+async def list_shot_versions(
+    shot_number: int = 1,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """List all versions of a shot."""
+    try:
+        result = await db.execute(
+            select(ShotGeneration)
+            .where(ShotGeneration.shot_number == shot_number)
+            .order_by(desc(ShotGeneration.created_at))
+        )
+        shots = result.scalars().all()
+
+        shot_responses = []
+        for shot in shots:
+            metadata = shot.shot_metadata or {}
+            shot_responses.append(ShotResponse(
+                id=shot.id,
+                version=shot.version,
+                parent_id=shot.parent_id,
+                prompt=shot.prompt,
+                negative_prompt=shot.negative_prompt,
+                shot_type=shot.shot_type,
+                camera_motion=shot.camera_motion,
+                lighting=shot.lighting,
+                emotion=shot.emotion,
+                duration_seconds=shot.duration_seconds,
+                input_subject=metadata.get("input_subject"),
+                input_action=metadata.get("input_action"),
+                input_location=metadata.get("input_location"),
+                ai_feedback=shot.ai_feedback,
+                is_active=shot.is_active,
+                is_favorite=shot.is_favorite,
+                rating=shot.rating,
+                created_at=shot.created_at
+            ))
+
+        active_shot = next((s for s in shots if s.is_active), None)
+
+        return {
+            "shots": shot_responses,
+            "total_count": len(shot_responses),
+            "active_version": active_shot.id if active_shot else None
+        }
+
+    except Exception as e:
+        logger.error(f"Error listing shot versions: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/shot/{shot_id}/activate")
+async def activate_shot(
+    shot_id: str,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Activate a specific shot version."""
+    try:
+        result = await db.execute(
+            select(ShotGeneration).where(ShotGeneration.id == shot_id)
+        )
+        target_shot = result.scalar_one_or_none()
+
+        if not target_shot:
+            raise HTTPException(status_code=404, detail="Shot not found")
+
+        # Deactivate all versions of this shot
+        all_result = await db.execute(
+            select(ShotGeneration)
+            .where(ShotGeneration.shot_number == target_shot.shot_number)
+        )
+        all_shots = all_result.scalars().all()
+
+        for shot in all_shots:
+            shot.is_active = False
+            shot.updated_at = datetime.utcnow()
+
+        # Activate target
+        target_shot.is_active = True
+        target_shot.updated_at = datetime.utcnow()
+
+        await db.commit()
+
+        return {"id": target_shot.id, "message": "Shot activated"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error activating shot: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/shot/{shot_id}/favorite")
+async def toggle_shot_favorite(
+    shot_id: str,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Toggle favorite status for a shot."""
+    try:
+        result = await db.execute(
+            select(ShotGeneration).where(ShotGeneration.id == shot_id)
+        )
+        shot = result.scalar_one_or_none()
+
+        if not shot:
+            raise HTTPException(status_code=404, detail="Shot not found")
+
+        shot.is_favorite = not shot.is_favorite
+        shot.updated_at = datetime.utcnow()
+
+        await db.commit()
+
+        return {
+            "id": shot.id,
+            "is_favorite": shot.is_favorite,
+            "message": "Favorite toggled"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error toggling favorite: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/shot/{shot_id}/rating")
+async def rate_shot(
+    shot_id: str,
+    request: RatingRequest,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Rate a shot (1-5 stars)."""
+    try:
+        result = await db.execute(
+            select(ShotGeneration).where(ShotGeneration.id == shot_id)
+        )
+        shot = result.scalar_one_or_none()
+
+        if not shot:
+            raise HTTPException(status_code=404, detail="Shot not found")
+
+        shot.rating = request.rating
+        shot.updated_at = datetime.utcnow()
+
+        await db.commit()
+
+        return {
+            "id": shot.id,
+            "rating": shot.rating,
+            "message": "Rating updated"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error rating shot: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
