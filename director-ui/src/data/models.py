@@ -338,3 +338,159 @@ class ShotReview(Base):
 
     # Relationship
     shot = relationship("FilmShot", backref="review", uselist=False)
+
+
+# ============================================================================
+# Generation History Models - Version Control for AI Creation
+# ============================================================================
+
+
+class ScriptGeneration(Base):
+    """Script/Scene/Shot generation with version control and AI refinement."""
+    __tablename__ = "script_generations"
+
+    id = Column(String, primary_key=True)  # UUID
+    workspace_id = Column(String, nullable=True)
+    project_id = Column(String, ForeignKey("projects.id"), nullable=True)
+    user_id = Column(Integer, nullable=True)
+
+    # Generation metadata
+    generation_type = Column(String(50), nullable=False)  # 'script', 'scene', 'shot'
+    version = Column(Integer, nullable=False, default=1)
+    parent_id = Column(String, ForeignKey("script_generations.id"), nullable=True)
+
+    # Input data (what user provided)
+    input_subject = Column(Text, nullable=True)
+    input_action = Column(Text, nullable=True)
+    input_location = Column(Text, nullable=True)
+    input_style = Column(String(100), nullable=True)
+    input_genre = Column(String(100), nullable=True)
+    input_idea = Column(Text, nullable=True)  # For script generation from idea
+    input_partial_data = Column(JSON, nullable=True)  # Any additional user inputs
+
+    # AI refinement feedback
+    ai_feedback = Column(Text, nullable=True)  # User's refinement instructions
+    ai_enhancement_enabled = Column(Boolean, default=False)
+
+    # Generated output
+    output_prompt = Column(Text, nullable=True)
+    output_negative_prompt = Column(Text, nullable=True)
+    output_metadata = Column(JSON, nullable=True)  # Style, shot type, etc.
+    output_full_data = Column(JSON, nullable=True)  # Complete generation result
+
+    # Status and user preferences
+    is_active = Column(Boolean, default=True)  # Current working version
+    is_favorite = Column(Boolean, default=False)
+    rating = Column(Integer, nullable=True)  # 1-5 stars
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    project = relationship("Project", backref="script_generations")
+    parent = relationship("ScriptGeneration", remote_side=[id], backref="children")
+    scenes = relationship("Scene", back_populates="script_generation", cascade="all, delete-orphan")
+
+
+class Scene(Base):
+    """Scene within a script generation."""
+    __tablename__ = "scenes"
+
+    id = Column(String, primary_key=True)  # UUID
+    script_generation_id = Column(String, ForeignKey("script_generations.id"), nullable=False)
+
+    # Scene details
+    scene_number = Column(Integer, nullable=False)
+    title = Column(String(200), nullable=True)
+    description = Column(Text, nullable=True)
+    location = Column(String(200), nullable=True)
+    time_of_day = Column(String(50), nullable=True)
+    mood = Column(String(100), nullable=True)
+    characters = Column(JSON, nullable=True)  # Array of character names/refs
+
+    # Scene metadata
+    duration_estimate = Column(Integer, nullable=True)  # in seconds
+    pacing = Column(String(50), nullable=True)  # slow, medium, fast, action
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    script_generation = relationship("ScriptGeneration", back_populates="scenes")
+    shot_generations = relationship("ShotGeneration", back_populates="scene", cascade="all, delete-orphan")
+
+
+class ShotGeneration(Base):
+    """Shot generation with version control and AI refinement."""
+    __tablename__ = "shot_generations"
+
+    id = Column(String, primary_key=True)  # UUID
+    scene_id = Column(String, ForeignKey("scenes.id"), nullable=False)
+
+    # Shot identification
+    shot_number = Column(Integer, nullable=False)
+    version = Column(Integer, nullable=False, default=1)
+    parent_id = Column(String, ForeignKey("shot_generations.id"), nullable=True)
+
+    # Shot configuration
+    prompt = Column(Text, nullable=False)
+    negative_prompt = Column(Text, nullable=True)
+    shot_type = Column(String(100), nullable=True)
+    camera_motion = Column(String(100), nullable=True)
+    lighting = Column(String(100), nullable=True)
+    emotion = Column(String(100), nullable=True)
+
+    # Shot metadata
+    metadata = Column(JSON, nullable=True)
+    duration_seconds = Column(Float, default=3.0)
+
+    # AI feedback for regeneration
+    ai_feedback = Column(Text, nullable=True)
+
+    # Status and user preferences
+    is_active = Column(Boolean, default=True)
+    is_favorite = Column(Boolean, default=False)
+    rating = Column(Integer, nullable=True)  # 1-5 stars
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    scene = relationship("Scene", back_populates="shot_generations")
+    parent = relationship("ShotGeneration", remote_side=[id], backref="children")
+
+
+class GenerationSession(Base):
+    """Session for grouping related generation work."""
+    __tablename__ = "generation_sessions"
+
+    id = Column(String, primary_key=True)  # UUID
+    workspace_id = Column(String, nullable=True)
+    name = Column(String(200), nullable=True)
+    description = Column(Text, nullable=True)
+
+    # Session metadata
+    total_generations = Column(Integer, default=0)
+    active_generation_id = Column(String, ForeignKey("script_generations.id"), nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class GenerationNote(Base):
+    """Comments and notes on generations for collaboration."""
+    __tablename__ = "generation_notes"
+
+    id = Column(String, primary_key=True)  # UUID
+    generation_id = Column(String, nullable=False)  # ID of script_generation or shot_generation
+    generation_table = Column(String(50), nullable=False)  # 'script_generations' or 'shot_generations'
+
+    user_id = Column(Integer, nullable=True)
+    note = Column(Text, nullable=False)
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
