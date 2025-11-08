@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 
-from api.database import get_db
+from data.dao import get_db
 from data.film_models import FilmShot, ShotReview, FilmProject
 
 router = APIRouter()
