@@ -125,7 +125,7 @@ app.add_middleware(
 )
 
 # Import and include routers
-from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, style, heygen, postiz, veed, trends, stock_videos, film_shots, audio_generation, editing
+from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, style, heygen, postiz, veed, trends, stock_videos, film_shots, audio_generation, editing, script_writer
 
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(content.router, prefix="/api/v1", tags=["content"])
@@ -136,6 +136,7 @@ app.include_router(prompts.router, prefix="/api/v1", tags=["prompts"])
 app.include_router(workspaces.router, prefix="/api/workspaces", tags=["workspaces"])
 app.include_router(film.router, prefix="/api/film", tags=["film"])
 app.include_router(film_shots.router, prefix="/api/film", tags=["film"])
+app.include_router(script_writer.router, prefix="/api/script", tags=["script-writer"])
 app.include_router(pptx.router, prefix="/api/pptx", tags=["pptx"])
 app.include_router(publishing.router, prefix="/api/publishing", tags=["publishing"])
 app.include_router(characters.router, prefix="/api/characters", tags=["characters"])
