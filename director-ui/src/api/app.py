@@ -163,6 +163,40 @@ app.mount("/ws", socket_app)
 from api.error_handlers import register_error_handlers
 register_error_handlers(app)
 
+def run_database_migrations():
+    """Run alembic database migrations on startup."""
+    try:
+        from alembic.config import Config
+        from alembic import command
+        import os
+        from pathlib import Path
+
+        # Get project root (director-ui/) from current file location
+        # This file is at: director-ui/src/api/app.py
+        current_file = Path(__file__).resolve()
+        project_root = current_file.parent.parent.parent  # Go up 3 levels: api/ -> src/ -> director-ui/
+        alembic_ini_path = project_root / "alembic.ini"
+
+        if not alembic_ini_path.exists():
+            logger.warning(f"⚠ alembic.ini not found at {alembic_ini_path}, skipping migrations")
+            return
+
+        # Get the alembic.ini config
+        alembic_cfg = Config(str(alembic_ini_path))
+
+        # Set the script location to the alembic directory
+        alembic_cfg.set_main_option('script_location', str(project_root / 'alembic'))
+
+        # Run migrations to head
+        logger.info("Running database migrations...")
+        command.upgrade(alembic_cfg, "head")
+        logger.info("✓ Database migrations completed successfully")
+
+    except Exception as e:
+        logger.error(f"Failed to run database migrations: {e}", exc_info=True)
+        logger.warning("⚠ Application will continue but database schema may be outdated")
+
+
 @app.on_event("startup")
 async def startup_event():
     """Startup event handler."""
@@ -185,6 +219,9 @@ async def startup_event():
         else:
             logger.info(f"  {key}: {value}")
     logger.info("=" * 50)
+
+    # Run database migrations
+    run_database_migrations()
 
     # Initialize publishing queue if Redis is configured
     try:
