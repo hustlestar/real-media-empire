@@ -16,7 +16,7 @@ from features.publishing.queue import PublishingQueue, QueuedPublishConfig, Queu
 from features.publishing.platforms.base import PublishConfig, PublishResult, PublishStatus
 
 # Import data models for tracking
-from data.models import PublishHistory, FilmProject, FilmVariant
+from data.models import PublishingPost, FilmProject
 from data.dao import get_db
 import uuid as uuid_lib
 
@@ -42,26 +42,26 @@ async def create_publish_history_record(
     title: str,
     description: Optional[str],
     result: PublishResult,
-) -> Optional[PublishHistory]:
-    """Create a PublishHistory record to track publication."""
+) -> Optional[PublishingPost]:
+    """Create a PublishingPost record to track publication."""
     if not film_project_id:
         # If no film project linked, don't create history
         return None
 
     try:
-        history = PublishHistory(
+        history = PublishingPost(
             id=str(uuid_lib.uuid4()),
-            film_project_id=film_project_id,
-            film_variant_id=film_variant_id,
-            account_id=account_id,
+            social_account_id=account_id,
+            content_type="video",  # Assuming video content
+            content_url=None,  # Will be set later if available
+            caption=description,
             platform=platform,
-            platform_post_id=result.post_id if hasattr(result, 'post_id') else None,
-            post_url=result.post_url if hasattr(result, 'post_url') else None,
-            title=title,
-            description=description,
-            published_at=datetime.utcnow(),
             status="published" if result.success else "failed",
-            metrics={},
+            published_at=datetime.utcnow() if result.success else None,
+            platform_post_id=result.post_id if hasattr(result, 'post_id') else None,
+            platform_url=result.post_url if hasattr(result, 'post_url') else None,
+            source_id=film_project_id,
+            source_type="film",
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -254,7 +254,7 @@ async def publish_immediate(
     This is a synchronous operation that will wait for all platforms to complete.
     For scheduled or background publishing, use /publish/scheduled endpoint.
 
-    If film_project_id is provided, creates PublishHistory records for tracking.
+    If film_project_id is provided, creates PublishingPost records for tracking.
     """
     try:
         # Create publish config
