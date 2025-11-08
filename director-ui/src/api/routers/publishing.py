@@ -101,13 +101,28 @@ def get_manager() -> PublishingManager:
     return _manager
 
 
-def get_queue() -> PublishingQueue:
-    """Get publishing queue instance."""
+def get_queue() -> Optional[PublishingQueue]:
+    """
+    Get publishing queue instance.
+
+    Returns None if queue is not initialized (requires sync SQLAlchemy session).
+    Endpoints should handle None gracefully by returning empty results.
+    """
     global _queue
-    if _queue is None:
-        # TODO: Initialize with proper DB session
-        raise HTTPException(status_code=500, detail="Queue not initialized")
     return _queue
+
+
+async def initialize_queue():
+    """
+    Initialize publishing queue.
+
+    Note: Currently disabled because PublishingQueue requires sync SQLAlchemy,
+    but we're using async SQLAlchemy. This needs architectural refactoring.
+    """
+    global _queue
+    logger.warning("Publishing queue initialization skipped - requires sync SQLAlchemy session")
+    logger.warning("Queue features will return empty results instead of errors")
+    _queue = None  # Explicitly set to None
 
 
 # ============================================================================
@@ -310,7 +325,7 @@ async def publish_immediate(
 @router.post("/publish/scheduled", status_code=202)
 async def publish_scheduled(
     request: ScheduledPublishRequest,
-    queue: PublishingQueue = Depends(get_queue)
+    queue: Optional[PublishingQueue] = Depends(get_queue)
 ):
     """
     Schedule video for publishing.
@@ -318,6 +333,9 @@ async def publish_scheduled(
     Returns job ID that can be used to check status.
     Video will be published at scheduled_time or immediately if time is in the past.
     """
+    if queue is None:
+        raise HTTPException(status_code=503, detail="Queue not available - scheduled publishing disabled")
+
     try:
         import uuid
 
@@ -363,9 +381,12 @@ async def publish_scheduled(
 @router.post("/publish/batch", status_code=202)
 async def publish_batch(
     request: BatchPublishRequest,
-    queue: PublishingQueue = Depends(get_queue)
+    queue: Optional[PublishingQueue] = Depends(get_queue)
 ):
     """Schedule multiple videos for publishing."""
+    if queue is None:
+        raise HTTPException(status_code=503, detail="Queue not available - batch publishing disabled")
+
     try:
         import uuid
 
@@ -412,8 +433,10 @@ async def publish_batch(
 # ============================================================================
 
 @router.get("/jobs/{job_id}", response_model=JobResponse)
-async def get_job_status(job_id: str, queue: PublishingQueue = Depends(get_queue)):
+async def get_job_status(job_id: str, queue: Optional[PublishingQueue] = Depends(get_queue)):
     """Get status of publishing job."""
+    if queue is None:
+        raise HTTPException(status_code=503, detail="Queue not available")
     job = queue.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
@@ -439,9 +462,18 @@ async def list_jobs(
     account_id: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
-    queue: PublishingQueue = Depends(get_queue)
+    queue: Optional[PublishingQueue] = Depends(get_queue)
 ):
     """List jobs with optional filtering."""
+    if queue is None:
+        return {
+            "jobs": [],
+            "count": 0,
+            "limit": limit,
+            "offset": offset,
+            "queue_available": False
+        }
+
     try:
         # Parse status
         status_filter = QueueStatus(status) if status else None
@@ -480,8 +512,10 @@ async def list_jobs(
 
 
 @router.delete("/jobs/{job_id}")
-async def cancel_job(job_id: str, queue: PublishingQueue = Depends(get_queue)):
+async def cancel_job(job_id: str, queue: Optional[PublishingQueue] = Depends(get_queue)):
     """Cancel pending or scheduled job."""
+    if queue is None:
+        raise HTTPException(status_code=503, detail="Queue not available - cannot cancel jobs")
     success = queue.cancel_job(job_id)
     if not success:
         raise HTTPException(status_code=400, detail="Job cannot be cancelled (not pending/scheduled or not found)")
@@ -489,8 +523,19 @@ async def cancel_job(job_id: str, queue: PublishingQueue = Depends(get_queue)):
 
 
 @router.get("/queue/stats")
-async def get_queue_stats(queue: PublishingQueue = Depends(get_queue)):
+async def get_queue_stats(queue: Optional[PublishingQueue] = Depends(get_queue)):
     """Get queue statistics."""
+    if queue is None:
+        return {
+            "stats": {
+                "total_jobs": 0,
+                "pending": 0,
+                "processing": 0,
+                "completed": 0,
+                "failed": 0,
+                "queue_available": False
+            }
+        }
     stats = queue.get_queue_stats()
     return {"stats": stats}
 

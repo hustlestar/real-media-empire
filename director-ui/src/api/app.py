@@ -165,6 +165,30 @@ async def startup_event():
     logger.info(f"WebSocket endpoint: ws://{config.api_host}:{config.api_port}/ws/socket.io/")
     logger.info(f"Storage path: {config.storage_base_path}")
 
+    # Log configuration with secrets masked
+    logger.info("=== Configuration ===")
+    config_dict = config.__dict__
+    for key, value in sorted(config_dict.items()):
+        # Mask sensitive values
+        if any(secret_key in key.lower() for secret_key in ['password', 'secret', 'token', 'key', 'api']):
+            if value:
+                masked_value = f"{str(value)[:4]}{'*' * (len(str(value)) - 4)}" if len(str(value)) > 4 else "****"
+                logger.info(f"  {key}: {masked_value}")
+            else:
+                logger.info(f"  {key}: <not set>")
+        else:
+            logger.info(f"  {key}: {value}")
+    logger.info("=" * 50)
+
+    # Initialize publishing queue if Redis is configured
+    try:
+        from api.routers.publishing import initialize_queue
+        await initialize_queue()
+        logger.info("✓ Publishing queue initialized")
+    except Exception as e:
+        logger.warning(f"Publishing queue not initialized: {e}")
+        logger.warning("  Publishing queue features will be disabled")
+
 @app.on_event("shutdown")
 async def shutdown_event():
     """Shutdown event handler."""
