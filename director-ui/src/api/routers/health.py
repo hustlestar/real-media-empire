@@ -1,9 +1,11 @@
 """Health check endpoints."""
 
-import asyncpg
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from config.settings import BotConfig
 from datetime import datetime
+from data.async_dao import get_async_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 import os
 
 router = APIRouter()
@@ -25,32 +27,24 @@ async def health_check():
 
 
 @router.get("/health/db")
-async def database_health():
+async def database_health(db: AsyncSession = Depends(get_async_db)):
     """
     Check database connectivity.
 
     Returns database status and connection information.
     """
     try:
-        # Convert database URL for asyncpg if needed
-        db_url = config.database_url
-        if "postgresql+asyncpg://" in db_url:
-            db_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
-
-        # Try to connect
-        conn = await asyncpg.connect(db_url)
-
         # Execute simple query
-        result = await conn.fetchval("SELECT 1")
+        result = await db.execute(text("SELECT 1"))
+        result.scalar()
 
         # Get database stats
-        tables_count = await conn.fetchval("""
+        result = await db.execute(text("""
             SELECT COUNT(*)
             FROM information_schema.tables
             WHERE table_schema = 'public'
-        """)
-
-        await conn.close()
+        """))
+        tables_count = result.scalar()
 
         return {
             "status": "healthy",

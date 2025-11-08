@@ -1,4 +1,26 @@
-"""FastAPI dependencies."""
+"""FastAPI dependencies.
+
+Database Access Approaches:
+===========================
+
+This module supports two database access patterns during the migration to unified async SQLAlchemy:
+
+1. **Legacy Approach (DatabaseManager)**:
+   - Services receive DatabaseManager instance
+   - Services use db._pool.acquire() (asyncpg-style, now wrapped)
+   - DEPRECATED but maintained for backward compatibility
+
+2. **Unified Async Approach (AsyncSession)**:
+   - Services receive AsyncSession directly via get_db() dependency
+   - Services use SQLAlchemy queries
+   - RECOMMENDED for new code
+
+Migration Path:
+- DatabaseManager now uses async SQLAlchemy internally with _pool compatibility wrapper
+- New routers should use get_db() -> AsyncSession from data.async_dao
+- Existing services work via backward-compatible _pool wrapper
+- Gradually migrate services to use db.session() instead of db._pool
+"""
 import os
 
 from config.settings import BotConfig
@@ -10,6 +32,10 @@ from services.processing_service import ProcessingService
 from services.tag_service import TagService
 from services.bundle_service import BundleService
 from processors.ai_processor import AIProcessor
+
+# Import unified async database access
+from data.async_dao import get_async_db
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Load configuration
 config = BotConfig.from_env()
@@ -25,12 +51,32 @@ _ai_processor: AIProcessor = None
 
 
 async def get_database() -> DatabaseManager:
-    """Get database manager instance."""
+    """Get database manager instance.
+
+    DEPRECATED: New code should use get_db() -> AsyncSession instead.
+    This is maintained for backward compatibility with existing services.
+    """
     global _db_manager
     if _db_manager is None:
         _db_manager = DatabaseManager(config.database_url, auto_migrate=False)
         await _db_manager.setup()
     return _db_manager
+
+
+# Re-export unified async database dependency for convenience
+async def get_db() -> AsyncSession:
+    """Get async database session (unified async approach).
+
+    RECOMMENDED for new code. Use this for direct SQLAlchemy async queries.
+
+    Usage in FastAPI routes:
+        @router.get("/example")
+        async def example(db: AsyncSession = Depends(get_db)):
+            result = await db.execute(select(Model))
+            return result.scalars().all()
+    """
+    async for session in get_async_db():
+        yield session
 
 
 async def get_file_storage() -> FileStorageService:
