@@ -10,8 +10,8 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
 
-from social.postiz_publisher import PostizPublisher, PostizConfig, PLATFORM_LIMITS
-from social.base_publisher import PostContent, PublishResult
+from publishers.postiz_publisher import PostizPublisher, PostizConfig, PLATFORM_LIMITS
+from publishers.base_publisher import PostContent, PublishResult
 
 router = APIRouter()
 
