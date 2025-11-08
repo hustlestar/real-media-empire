@@ -36,7 +36,7 @@ const AccountManager: React.FC<any> = ({ accounts, onUpdate }) => {
         </button>
       </div>
 
-      {accounts.length === 0 ? (
+      {!accounts || accounts.length === 0 ? (
         <div className="text-center py-8 text-gray-400">
           <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p>No accounts configured</p>

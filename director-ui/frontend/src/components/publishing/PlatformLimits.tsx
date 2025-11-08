@@ -115,7 +115,7 @@ export default function PlatformLimits() {
                 <div className="flex-1">
                   <div className="text-sm font-medium text-gray-700">Caption Length</div>
                   <div className="text-lg font-semibold text-gray-900">
-                    {limit.maxCaptionLength.toLocaleString()} characters
+                    {limit.maxCaptionLength?.toLocaleString() || 'N/A'} characters
                   </div>
                 </div>
               </div>
@@ -126,7 +126,7 @@ export default function PlatformLimits() {
                 <div className="flex-1">
                   <div className="text-sm font-medium text-gray-700">Hashtags</div>
                   <div className="text-lg font-semibold text-gray-900">
-                    {limit.maxHashtags} maximum
+                    {limit.maxHashtags || 'N/A'} maximum
                   </div>
                 </div>
               </div>
@@ -137,7 +137,7 @@ export default function PlatformLimits() {
                 <div className="flex-1">
                   <div className="text-sm font-medium text-gray-700">Video Size</div>
                   <div className="text-lg font-semibold text-gray-900">
-                    {formatFileSize(limit.maxVideoSizeMb)} max
+                    {limit.maxVideoSizeMb ? formatFileSize(limit.maxVideoSizeMb) : 'N/A'} max
                   </div>
                 </div>
               </div>
@@ -148,7 +148,7 @@ export default function PlatformLimits() {
                 <div className="flex-1">
                   <div className="text-sm font-medium text-gray-700">Image Size</div>
                   <div className="text-lg font-semibold text-gray-900">
-                    {formatFileSize(limit.maxImageSizeMb)} max
+                    {limit.maxImageSizeMb ? formatFileSize(limit.maxImageSizeMb) : 'N/A'} max
                   </div>
                 </div>
               </div>
@@ -157,14 +157,18 @@ export default function PlatformLimits() {
               <div>
                 <div className="text-sm font-medium text-gray-700 mb-2">Supported Formats</div>
                 <div className="flex flex-wrap gap-2">
-                  {limit.supportedFormats.map(format => (
-                    <span
-                      key={format}
-                      className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium uppercase"
-                    >
-                      {format}
-                    </span>
-                  ))}
+                  {limit.supportedFormats && limit.supportedFormats.length > 0 ? (
+                    limit.supportedFormats.map(format => (
+                      <span
+                        key={format}
+                        className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium uppercase"
+                      >
+                        {format}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-500">N/A</span>
+                  )}
                 </div>
               </div>
 
