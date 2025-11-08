@@ -35,7 +35,7 @@ def get_database_url():
     """Get database URL from project configuration."""
     try:
         bot_config = BotConfig.from_env()
-        return bot_config.database_url
+        database_url = bot_config.database_url
     except Exception as e:
         # Fallback to environment variable if config fails
         database_url = os.getenv("DATABASE_URL")
@@ -43,7 +43,28 @@ def get_database_url():
             raise ValueError(
                 f"Could not get database URL from configuration: {e}. " "Please ensure DATABASE_URL environment variable is set."
             )
-        return database_url
+
+    # Convert to async driver format for SQLAlchemy async engine
+    async_url = database_url
+
+    # Handle SQLite
+    if database_url.startswith("sqlite:///"):
+        async_url = database_url.replace("sqlite:///", "sqlite+aiosqlite:///")
+
+    # Handle PostgreSQL - use asyncpg driver
+    elif database_url.startswith("postgresql://") or database_url.startswith("postgres://"):
+        async_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        async_url = async_url.replace("postgres://", "postgresql+asyncpg://", 1)
+
+    # Already has async driver specified
+    elif "postgresql+asyncpg://" in database_url or "sqlite+aiosqlite://" in database_url:
+        async_url = database_url
+
+    # Strip sync drivers and replace with async
+    elif "postgresql+psycopg2://" in database_url:
+        async_url = database_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
+
+    return async_url
 
 
 def run_migrations_offline() -> None:
