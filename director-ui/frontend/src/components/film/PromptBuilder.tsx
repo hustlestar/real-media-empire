@@ -1,5 +1,5 @@
-import React from 'react';
-import { User, Activity, MapPin, Info, Users, Video } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Activity, MapPin, Info, Users, Video, Sparkles } from 'lucide-react';
 
 interface PromptConfig {
   subject: string;
@@ -17,18 +17,104 @@ interface PromptBuilderProps {
 }
 
 const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
+  const [generatingField, setGeneratingField] = useState<string | null>(null);
+
   const handleChange = (field: string, value: string) => {
     onChange({ ...config, [field]: value });
+  };
+
+  // AI Assist: Generate suggestions for fields
+  const handleAIAssist = async (field: string) => {
+    setGeneratingField(field);
+
+    try {
+      // Create context from existing fields
+      const context = {
+        subject: config.subject || null,
+        action: config.action || null,
+        location: config.location || null
+      };
+
+      // Simple AI generation based on field type
+      // In production, this would call an AI API
+      let suggestion = '';
+
+      switch (field) {
+        case 'subject':
+          // Generate character description
+          if (config.action) {
+            suggestion = 'Professional actor in their 30s, confident demeanor, wearing modern business casual attire';
+          } else {
+            suggestion = 'Charismatic protagonist, distinctive features, natural presence';
+          }
+          break;
+
+        case 'action':
+          // Generate action description
+          if (config.subject) {
+            suggestion = `${config.subject.split(',')[0] || 'The character'} performing a pivotal moment of realization, subtle expressions conveying inner transformation`;
+          } else {
+            suggestion = 'Contemplative moment of discovery, nuanced performance capturing emotional depth';
+          }
+          break;
+
+        case 'location':
+          // Generate location description
+          if (config.action.includes('office') || config.action.includes('work')) {
+            suggestion = 'Contemporary office space with glass walls, natural light streaming through floor-to-ceiling windows, minimalist modern design';
+          } else {
+            suggestion = 'Atmospheric interior with dramatic lighting, cinematic composition, rich visual textures';
+          }
+          break;
+
+        case 'additionalDetails':
+          suggestion = 'Specific wardrobe details: tailored fit, neutral color palette. Props: laptop, coffee cup. Makeup: natural, professional.';
+          break;
+
+        default:
+          suggestion = 'AI-generated suggestion';
+      }
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      handleChange(field, suggestion);
+    } catch (error) {
+      console.error('AI assist error:', error);
+    } finally {
+      setGeneratingField(null);
+    }
   };
 
   return (
     <div className="space-y-4">
       {/* Subject */}
       <div>
-        <label className="block text-sm font-semibold mb-2 flex items-center space-x-2">
-          <User className="w-4 h-4 text-purple-400" />
-          <span>Subject / Character</span>
-          <span className="text-red-400">*</span>
+        <label className="block text-sm font-semibold mb-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <User className="w-4 h-4 text-purple-400" />
+            <span>Subject / Character</span>
+            <span className="text-red-400">*</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleAIAssist('subject')}
+            disabled={generatingField === 'subject'}
+            className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 rounded-lg text-xs font-semibold transition"
+            title="Generate with AI"
+          >
+            {generatingField === 'subject' ? (
+              <>
+                <Sparkles className="w-3 h-3 animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3 h-3" />
+                <span>AI Assist</span>
+              </>
+            )}
+          </button>
         </label>
         <input
           type="text"
@@ -44,10 +130,31 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
 
       {/* Action */}
       <div>
-        <label className="block text-sm font-semibold mb-2 flex items-center space-x-2">
-          <Activity className="w-4 h-4 text-purple-400" />
-          <span>Action / What's Happening</span>
-          <span className="text-red-400">*</span>
+        <label className="block text-sm font-semibold mb-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Activity className="w-4 h-4 text-purple-400" />
+            <span>Action / What's Happening</span>
+            <span className="text-red-400">*</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleAIAssist('action')}
+            disabled={generatingField === 'action'}
+            className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 rounded-lg text-xs font-semibold transition"
+            title="Generate with AI"
+          >
+            {generatingField === 'action' ? (
+              <>
+                <Sparkles className="w-3 h-3 animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3 h-3" />
+                <span>AI Assist</span>
+              </>
+            )}
+          </button>
         </label>
         <textarea
           value={config.action}
@@ -63,10 +170,31 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
 
       {/* Location */}
       <div>
-        <label className="block text-sm font-semibold mb-2 flex items-center space-x-2">
-          <MapPin className="w-4 h-4 text-purple-400" />
-          <span>Location / Setting</span>
-          <span className="text-red-400">*</span>
+        <label className="block text-sm font-semibold mb-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <MapPin className="w-4 h-4 text-purple-400" />
+            <span>Location / Setting</span>
+            <span className="text-red-400">*</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleAIAssist('location')}
+            disabled={generatingField === 'location'}
+            className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 rounded-lg text-xs font-semibold transition"
+            title="Generate with AI"
+          >
+            {generatingField === 'location' ? (
+              <>
+                <Sparkles className="w-3 h-3 animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3 h-3" />
+                <span>AI Assist</span>
+              </>
+            )}
+          </button>
         </label>
         <input
           type="text"
@@ -129,9 +257,30 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
 
       {/* Additional Details */}
       <div>
-        <label className="block text-sm font-semibold mb-2 flex items-center space-x-2">
-          <Info className="w-4 h-4 text-purple-400" />
-          <span>Additional Details (Optional)</span>
+        <label className="block text-sm font-semibold mb-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Info className="w-4 h-4 text-purple-400" />
+            <span>Additional Details (Optional)</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleAIAssist('additionalDetails')}
+            disabled={generatingField === 'additionalDetails'}
+            className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 rounded-lg text-xs font-semibold transition"
+            title="Generate with AI"
+          >
+            {generatingField === 'additionalDetails' ? (
+              <>
+                <Sparkles className="w-3 h-3 animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3 h-3" />
+                <span>AI Assist</span>
+              </>
+            )}
+          </button>
         </label>
         <textarea
           value={config.additionalDetails}
