@@ -443,7 +443,7 @@ class ShotGeneration(Base):
     emotion = Column(String(100), nullable=True)
 
     # Shot metadata
-    metadata = Column(JSON, nullable=True)
+    shot_metadata = Column(JSON, nullable=True)
     duration_seconds = Column(Float, default=3.0)
 
     # AI feedback for regeneration

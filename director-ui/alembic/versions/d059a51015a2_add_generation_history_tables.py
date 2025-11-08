@@ -126,7 +126,7 @@ def upgrade() -> None:
         sa.Column('emotion', sa.String(100), nullable=True),
 
         # Shot metadata
-        sa.Column('metadata', sa.JSON(), nullable=True),
+        sa.Column('shot_metadata', sa.JSON(), nullable=True),
         sa.Column('duration_seconds', sa.Float(), nullable=True, server_default='3.0'),
 
         # AI feedback for regeneration
