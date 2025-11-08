@@ -836,14 +836,14 @@ async def refine_shot(
 
 @router.get("/shot/versions")
 async def list_shot_versions(
-    shot_number: int = 1,
+    project_id: str = "default",
     db: AsyncSession = Depends(get_async_db)
 ):
-    """List all versions of a shot."""
+    """List all shot versions for a project."""
     try:
+        # Get all shots (no filtering by shot_number to show all versions)
         result = await db.execute(
             select(ShotGeneration)
-            .where(ShotGeneration.shot_number == shot_number)
             .order_by(desc(ShotGeneration.created_at))
         )
         shots = result.scalars().all()
@@ -875,9 +875,9 @@ async def list_shot_versions(
         active_shot = next((s for s in shots if s.is_active), None)
 
         return {
-            "shots": shot_responses,
+            "versions": shot_responses,  # Changed from "shots" to "versions"
             "total_count": len(shot_responses),
-            "active_version": active_shot.id if active_shot else None
+            "active_version_id": active_shot.id if active_shot else None  # Match frontend
         }
 
     except Exception as e:
