@@ -14,7 +14,7 @@ Supports:
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any, Literal
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 import uuid
 import logging
@@ -22,7 +22,8 @@ import subprocess
 import os
 
 # Database
-from data.dao import get_db
+from sqlalchemy import select, func
+from data.async_dao import get_async_db
 from data.models import FilmProject, FilmShot
 
 router = APIRouter()
@@ -140,7 +141,7 @@ class ExportResponse(BaseModel):
 # ============================================================================
 
 
-def execute_trim_operation(clip_id: str, trim_in: float, trim_out: float, db: Session):
+def execute_trim_operation(clip_id: str, trim_in: float, trim_out: float, db: AsyncSession):
     """
     Execute trim operation using FFmpeg.
 
@@ -149,7 +150,8 @@ def execute_trim_operation(clip_id: str, trim_in: float, trim_out: float, db: Se
     """
     try:
         # Get clip from database
-        clip = db.query(FilmShot).filter(FilmShot.id == clip_id).first()
+        result = await db.execute(select(FilmShot).filter(FilmShot.id == clip_id))
+    clip = result.scalar_one_or_none()
         if not clip:
             raise HTTPException(status_code=404, detail=f"Clip {clip_id} not found")
 
@@ -187,7 +189,7 @@ def execute_trim_operation(clip_id: str, trim_in: float, trim_out: float, db: Se
         # Update clip in database
         clip.video_url = output_file
         clip.duration = new_duration
-        db.commit()
+        await db.flush()
 
         return output_file
 
@@ -196,7 +198,7 @@ def execute_trim_operation(clip_id: str, trim_in: float, trim_out: float, db: Se
         raise HTTPException(status_code=500, detail=f"Trim operation failed: {str(e)}")
 
 
-def execute_split_operation(clip_id: str, split_time: float, db: Session):
+def execute_split_operation(clip_id: str, split_time: float, db: AsyncSession):
     """
     Execute split operation using FFmpeg.
 
@@ -204,7 +206,8 @@ def execute_split_operation(clip_id: str, split_time: float, db: Session):
     """
     try:
         # Get clip from database
-        clip = db.query(FilmShot).filter(FilmShot.id == clip_id).first()
+        result = await db.execute(select(FilmShot).filter(FilmShot.id == clip_id))
+    clip = result.scalar_one_or_none()
         if not clip:
             raise HTTPException(status_code=404, detail=f"Clip {clip_id} not found")
 
@@ -269,9 +272,9 @@ def execute_split_operation(clip_id: str, split_time: float, db: Session):
         db.add(clip2)
 
         # Delete original clip
-        db.delete(clip)
+        await db.delete(clip)
 
-        db.commit()
+        await db.flush()
 
         return [clip1_id, clip2_id]
 
@@ -347,7 +350,7 @@ def apply_transition_ffmpeg(clip1_path: str, clip2_path: str, output_path: str, 
 
 
 @router.post("/trim", response_model=EditResponse)
-async def trim_clip(request: TrimRequest, db: Session = Depends(get_db)):
+async def trim_clip(request: TrimRequest, db: AsyncSession = Depends(get_async_db)):
     """
     Trim a clip by setting in/out points.
 
@@ -367,7 +370,7 @@ async def trim_clip(request: TrimRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/split", response_model=EditResponse)
-async def split_clip(request: SplitRequest, db: Session = Depends(get_db)):
+async def split_clip(request: SplitRequest, db: AsyncSession = Depends(get_async_db)):
     """
     Split a clip at a specific time.
 
@@ -387,7 +390,7 @@ async def split_clip(request: SplitRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/merge", response_model=EditResponse)
-async def merge_clips(request: MergeRequest, db: Session = Depends(get_db)):
+async def merge_clips(request: MergeRequest, db: AsyncSession = Depends(get_async_db)):
     """
     Merge two clips with optional transition.
 
@@ -395,8 +398,10 @@ async def merge_clips(request: MergeRequest, db: Session = Depends(get_db)):
     """
     try:
         # Get both clips
-        clip1 = db.query(FilmShot).filter(FilmShot.id == request.clip_id_1).first()
-        clip2 = db.query(FilmShot).filter(FilmShot.id == request.clip_id_2).first()
+        result = await db.execute(select(FilmShot).filter(FilmShot.id == request.clip_id_1))
+    clip1 = result.scalar_one_or_none()
+        result = await db.execute(select(FilmShot).filter(FilmShot.id == request.clip_id_2))
+    clip2 = result.scalar_one_or_none()
 
         if not clip1 or not clip2:
             raise HTTPException(status_code=404, detail="One or both clips not found")
@@ -439,7 +444,7 @@ async def merge_clips(request: MergeRequest, db: Session = Depends(get_db)):
         )
 
         db.add(merged_clip)
-        db.commit()
+        await db.flush()
 
         return EditResponse(
             success=True,
@@ -453,14 +458,15 @@ async def merge_clips(request: MergeRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/transition", response_model=EditResponse)
-async def add_transition(request: AddTransitionRequest, db: Session = Depends(get_db)):
+async def add_transition(request: AddTransitionRequest, db: AsyncSession = Depends(get_async_db)):
     """
     Add or update transition for a clip.
 
     Stores transition metadata in database for later export.
     """
     try:
-        clip = db.query(FilmShot).filter(FilmShot.id == request.clip_id).first()
+        result = await db.execute(select(FilmShot).filter(FilmShot.id == request.clip_id))
+    clip = result.scalar_one_or_none()
         if not clip:
             raise HTTPException(status_code=404, detail="Clip not found")
 
@@ -479,14 +485,15 @@ async def add_transition(request: AddTransitionRequest, db: Session = Depends(ge
 
 
 @router.post("/volume-envelope", response_model=EditResponse)
-async def set_volume_envelope(request: VolumeEnvelopeRequest, db: Session = Depends(get_db)):
+async def set_volume_envelope(request: VolumeEnvelopeRequest, db: AsyncSession = Depends(get_async_db)):
     """
     Set volume automation envelope for a clip.
 
     Stores keyframes in database for later export.
     """
     try:
-        clip = db.query(FilmShot).filter(FilmShot.id == request.clip_id).first()
+        result = await db.execute(select(FilmShot).filter(FilmShot.id == request.clip_id))
+    clip = result.scalar_one_or_none()
         if not clip:
             raise HTTPException(status_code=404, detail="Clip not found")
 
@@ -505,7 +512,7 @@ async def set_volume_envelope(request: VolumeEnvelopeRequest, db: Session = Depe
 
 
 @router.post("/export", response_model=ExportResponse)
-async def export_timeline(request: ExportRequest, db: Session = Depends(get_db)):
+async def export_timeline(request: ExportRequest, db: AsyncSession = Depends(get_async_db)):
     """
     Export edited timeline to final video file.
 
@@ -516,10 +523,11 @@ async def export_timeline(request: ExportRequest, db: Session = Depends(get_db))
     """
     try:
         # Get all shots for the project
-        shots = db.query(FilmShot).filter(
+        result = await db.execute(select(FilmShot).filter(
             FilmShot.film_project_id == request.film_project_id,
             FilmShot.status == "approved"
-        ).order_by(FilmShot.sequence_order).all()
+        ).order_by(FilmShot.sequence_order))
+    shots = list(result.scalars().all())
 
         if not shots:
             raise HTTPException(status_code=404, detail="No approved shots found for project")

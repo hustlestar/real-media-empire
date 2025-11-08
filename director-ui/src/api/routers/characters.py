@@ -1,14 +1,15 @@
 """Character API router for visual consistency tracking."""
 
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 
+from sqlalchemy import select, func
 from data.models import Character
-from data.dao import get_db
+from data.async_dao import get_async_db
 
 router = APIRouter()
 
@@ -87,20 +88,22 @@ Maintain consistent appearance across all generated images."""
 @router.post("/characters", response_model=CharacterResponse)
 async def create_character(
     character: CharacterCreate,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Create a new character within a workspace."""
     # Verify workspace exists
     from data.models import Workspace
-    workspace = db.query(Workspace).filter(Workspace.id == character.workspace_id).first()
+    result = await db.execute(select(Workspace).filter(Workspace.id == character.workspace_id))
+    workspace = result.scalar_one_or_none()
     if not workspace:
         raise HTTPException(status_code=404, detail=f"Workspace '{character.workspace_id}' not found")
 
     # Check if character with same name exists in this workspace
-    existing = db.query(Character).filter(
+    result = await db.execute(select(Character).filter(
         Character.workspace_id == character.workspace_id,
         Character.name == character.name
-    ).first()
+    ))
+    existing = result.scalar_one_or_none()
     if existing:
         raise HTTPException(
             status_code=400,
@@ -125,8 +128,8 @@ async def create_character(
     )
 
     db.add(new_character)
-    db.commit()
-    db.refresh(new_character)
+    await db.flush()
+    await db.refresh(new_character)
 
     return new_character
 
@@ -136,7 +139,7 @@ async def list_characters(
     workspace_id: Optional[str] = None,
     search: Optional[str] = None,
     project_id: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """List all characters with optional filtering.
 
@@ -170,10 +173,11 @@ async def list_characters(
 @router.get("/characters/{character_id}", response_model=CharacterResponse)
 async def get_character(
     character_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get a specific character by ID."""
-    character = db.query(Character).filter(Character.id == character_id).first()
+    result = await db.execute(select(Character).filter(Character.id == character_id))
+    character = result.scalar_one_or_none()
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
 
@@ -184,20 +188,22 @@ async def get_character(
 async def update_character(
     character_id: str,
     updates: CharacterUpdate,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Update a character."""
-    character = db.query(Character).filter(Character.id == character_id).first()
+    result = await db.execute(select(Character).filter(Character.id == character_id))
+    character = result.scalar_one_or_none()
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
 
     # Update fields if provided
     if updates.name is not None:
         # Check for name conflicts
-        existing = db.query(Character).filter(
+        result = await db.execute(select(Character).filter(
             Character.name == updates.name,
             Character.id != character_id
-        ).first()
+        ))
+    existing = result.scalar_one_or_none()
         if existing:
             raise HTTPException(status_code=400, detail=f"Character with name '{updates.name}' already exists")
         character.name = updates.name
@@ -221,8 +227,8 @@ async def update_character(
 
     character.updated_at = datetime.utcnow()
 
-    db.commit()
-    db.refresh(character)
+    await db.flush()
+    await db.refresh(character)
 
     return character
 
@@ -230,15 +236,16 @@ async def update_character(
 @router.delete("/characters/{character_id}")
 async def delete_character(
     character_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Delete a character."""
-    character = db.query(Character).filter(Character.id == character_id).first()
+    result = await db.execute(select(Character).filter(Character.id == character_id))
+    character = result.scalar_one_or_none()
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
 
-    db.delete(character)
-    db.commit()
+    await db.delete(character)
+    await db.flush()
 
     return {"message": "Character deleted successfully", "id": character_id}
 
@@ -247,10 +254,11 @@ async def delete_character(
 async def add_character_to_project(
     character_id: str,
     project_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Add a character to a project."""
-    character = db.query(Character).filter(Character.id == character_id).first()
+    result = await db.execute(select(Character).filter(Character.id == character_id))
+    character = result.scalar_one_or_none()
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
 
@@ -260,6 +268,6 @@ async def add_character_to_project(
     if project_id not in character.projects_used:
         character.projects_used.append(project_id)
         character.updated_at = datetime.utcnow()
-        db.commit()
+        await db.flush()
 
     return {"message": "Character added to project", "character_id": character_id, "project_id": project_id}

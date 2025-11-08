@@ -8,7 +8,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Import publishing system from shared library
 from features.publishing.manager import PublishingManager
@@ -16,8 +16,9 @@ from features.publishing.queue import PublishingQueue, QueuedPublishConfig, Queu
 from features.publishing.platforms.base import PublishConfig, PublishResult, PublishStatus
 
 # Import data models for tracking
+from sqlalchemy import select, func
 from data.models import PublishingPost, FilmProject
-from data.dao import get_db
+from data.async_dao import get_async_db
 import uuid as uuid_lib
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ _queue: Optional[PublishingQueue] = None
 # ============================================================================
 
 async def create_publish_history_record(
-    db: Session,
+    db: AsyncSession,
     film_project_id: Optional[str],
     film_variant_id: Optional[str],
     account_id: str,
@@ -70,7 +71,8 @@ async def create_publish_history_record(
 
         # Update film project published fields
         if film_project_id:
-            film_project = db.query(FilmProject).filter(FilmProject.id == film_project_id).first()
+            result = await db.execute(select(FilmProject).filter(FilmProject.id == film_project_id))
+    film_project = result.scalar_one_or_none()
             if film_project:
                 if not film_project.published_at:
                     film_project.published_at = datetime.utcnow()
@@ -81,8 +83,8 @@ async def create_publish_history_record(
                 if platform not in film_project.published_platforms:
                     film_project.published_platforms = list(film_project.published_platforms) + [platform]
 
-        db.commit()
-        db.refresh(history)
+        await db.flush()
+        await db.refresh(history)
         return history
 
     except Exception as e:
@@ -246,7 +248,7 @@ async def get_account_platforms(account_id: str, manager: PublishingManager = De
 async def publish_immediate(
     request: PublishRequest,
     manager: PublishingManager = Depends(get_manager),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Publish video immediately to specified platforms.

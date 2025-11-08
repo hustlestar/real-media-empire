@@ -9,12 +9,13 @@ Provides endpoints for:
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 
-from data.dao import get_db
+from sqlalchemy import select, func
+from data.async_dao import get_async_db
 from data.models import FilmShot, ShotReview, FilmProject
 
 router = APIRouter()
@@ -83,7 +84,7 @@ async def list_shots(
     status: Optional[str] = Query(None, description="Filter by status"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     List all shots with optional filtering.
@@ -152,7 +153,7 @@ async def list_project_shots(
     status: Optional[str] = Query(None, description="Filter by status"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     List all shots for a specific film project.
@@ -160,7 +161,8 @@ async def list_project_shots(
     Convenience endpoint that filters by film_project_id.
     """
     # Verify project exists
-    project = db.query(FilmProject).filter(FilmProject.id == film_project_id).first()
+    result = await db.execute(select(FilmProject).filter(FilmProject.id == film_project_id))
+    project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail=f"Film project '{film_project_id}' not found")
 
@@ -176,12 +178,13 @@ async def list_project_shots(
 @router.get("/shots/{shot_id}", response_model=ShotResponse)
 async def get_shot(
     shot_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get details for a specific shot.
     """
-    shot = db.query(FilmShot).filter(FilmShot.id == shot_id).first()
+    result = await db.execute(select(FilmShot).filter(FilmShot.id == shot_id))
+    shot = result.scalar_one_or_none()
 
     if not shot:
         raise HTTPException(status_code=404, detail=f"Shot '{shot_id}' not found")
@@ -220,7 +223,7 @@ async def get_shot(
 async def review_shot(
     shot_id: str,
     review: ShotReviewRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Submit a review for a shot.
@@ -228,7 +231,8 @@ async def review_shot(
     Updates or creates review record and updates shot status.
     """
     # Get shot
-    shot = db.query(FilmShot).filter(FilmShot.id == shot_id).first()
+    result = await db.execute(select(FilmShot).filter(FilmShot.id == shot_id))
+    shot = result.scalar_one_or_none()
     if not shot:
         raise HTTPException(status_code=404, detail=f"Shot '{shot_id}' not found")
 
@@ -241,7 +245,8 @@ async def review_shot(
         )
 
     # Update or create review
-    existing_review = db.query(ShotReview).filter(ShotReview.shot_id == shot_id).first()
+    result = await db.execute(select(ShotReview).filter(ShotReview.shot_id == shot_id))
+    existing_review = result.scalar_one_or_none()
 
     if existing_review:
         # Update existing review
@@ -264,8 +269,8 @@ async def review_shot(
     shot.status = review.status
     shot.updated_at = datetime.now()
 
-    db.commit()
-    db.refresh(shot)
+    await db.flush()
+    await db.refresh(shot)
 
     # Build response
     shot_dict = {
@@ -300,25 +305,27 @@ async def review_shot(
 @router.delete("/shots/{shot_id}/review")
 async def delete_shot_review(
     shot_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete a shot review (reset to un-reviewed state).
     """
-    shot = db.query(FilmShot).filter(FilmShot.id == shot_id).first()
+    result = await db.execute(select(FilmShot).filter(FilmShot.id == shot_id))
+    shot = result.scalar_one_or_none()
     if not shot:
         raise HTTPException(status_code=404, detail=f"Shot '{shot_id}' not found")
 
     # Delete review if exists
-    review = db.query(ShotReview).filter(ShotReview.shot_id == shot_id).first()
+    result = await db.execute(select(ShotReview).filter(ShotReview.shot_id == shot_id))
+    review = result.scalar_one_or_none()
     if review:
-        db.delete(review)
+        await db.delete(review)
 
         # Reset shot status to completed
         shot.status = "completed"
         shot.updated_at = datetime.now()
 
-        db.commit()
+        await db.flush()
 
     return {"message": "Review deleted successfully"}
 
@@ -326,7 +333,7 @@ async def delete_shot_review(
 @router.get("/projects/{film_project_id}/stats")
 async def get_project_shot_stats(
     film_project_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get statistics for shots in a film project.
@@ -334,12 +341,14 @@ async def get_project_shot_stats(
     Returns counts by status (approved, rejected, needs review, etc.).
     """
     # Verify project exists
-    project = db.query(FilmProject).filter(FilmProject.id == film_project_id).first()
+    result = await db.execute(select(FilmProject).filter(FilmProject.id == film_project_id))
+    project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail=f"Film project '{film_project_id}' not found")
 
     # Count shots by status
-    all_shots = db.query(FilmShot).filter(FilmShot.film_project_id == film_project_id).all()
+    result = await db.execute(select(FilmShot).filter(FilmShot.film_project_id == film_project_id))
+    all_shots = list(result.scalars().all())
 
     stats = {
         "total": len(all_shots),
