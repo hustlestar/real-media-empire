@@ -142,7 +142,7 @@ class AvatarVideo(Base):
     duration = Column(Float)  # Video duration in seconds
     cost = Column(Float, default=0.0)
     error_message = Column(Text, nullable=True)
-    metadata = Column(JSON)  # Additional HeyGen metadata
+    heygen_metadata = Column(JSON)  # Additional HeyGen metadata
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
