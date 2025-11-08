@@ -215,7 +215,7 @@ async def list_assets(
     Args:
         workspace_id: Filter by workspace (recommended for multi-tenant isolation)
     """
-    query = db.query(Asset)
+    query = select(Asset)
 
     # Filter by workspace (recommended)
     if workspace_id:
@@ -240,7 +240,21 @@ async def list_assets(
         query = query.filter(Asset.is_favorite == True)
 
     # Get total count
-    total = query.count()
+    count_query = select(func.count()).select_from(Asset)
+    if workspace_id:
+        count_query = count_query.filter(Asset.workspace_id == workspace_id)
+    if type:
+        count_query = count_query.filter(Asset.type == type)
+    if search:
+        count_query = count_query.filter(Asset.name.ilike(f"%{search}%"))
+    if tags:
+        for tag in tag_list:
+            count_query = count_query.filter(Asset.tags.contains([tag]))
+    if favorite_only:
+        count_query = count_query.filter(Asset.is_favorite == True)
+
+    count_result = await db.execute(count_query)
+    total = count_result.scalar()
 
     # Apply sorting
     sort_column = getattr(Asset, sort_by)
@@ -251,7 +265,9 @@ async def list_assets(
 
     # Apply pagination
     offset = (page - 1) * page_size
-    assets = query.offset(offset).limit(page_size).all()
+    query = query.offset(offset).limit(page_size)
+    result = await db.execute(query)
+    assets = list(result.scalars().all())
 
     return {
         "assets": assets,
@@ -412,8 +428,9 @@ async def get_assets_stats(
     total_favorites = result.scalar()
 
     # Calculate total storage size
-    total_size = db.query(Asset).with_entities(Asset.size).all()
-    total_storage = sum(size[0] for size in total_size if size[0])
+    size_result = await db.execute(select(Asset.size))
+    total_sizes = size_result.scalars().all()
+    total_storage = sum(size for size in total_sizes if size)
 
     return {
         "total_assets": total_assets,

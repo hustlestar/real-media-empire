@@ -93,7 +93,7 @@ async def list_shots(
     - film_project_id: Show shots from specific film
     - status: Show shots with specific status (approved, rejected, etc.)
     """
-    query = db.query(FilmShot)
+    query = select(FilmShot)
 
     # Apply filters
     if film_project_id:
@@ -103,10 +103,18 @@ async def list_shots(
         query = query.filter(FilmShot.status == status)
 
     # Get total count
-    total = query.count()
+    count_query = select(func.count()).select_from(FilmShot)
+    if film_project_id:
+        count_query = count_query.filter(FilmShot.film_project_id == film_project_id)
+    if status:
+        count_query = count_query.filter(FilmShot.status == status)
+    count_result = await db.execute(count_query)
+    total = count_result.scalar()
 
     # Apply pagination
-    shots = query.order_by(FilmShot.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    query = query.order_by(FilmShot.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    shots = list(result.scalars().all())
 
     # Build response with reviews
     shot_responses = []

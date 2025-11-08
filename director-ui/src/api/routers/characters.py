@@ -148,7 +148,7 @@ async def list_characters(
         search: Search in character name or description
         project_id: Filter by project_id in projects_used array (deprecated)
     """
-    query = db.query(Character)
+    query = select(Character)
 
     # Filter by workspace (recommended)
     if workspace_id:
@@ -165,7 +165,9 @@ async def list_characters(
         # TODO: Use shot_characters table instead
         query = query.filter(Character.projects_used.contains([project_id]))
 
-    characters = query.order_by(Character.created_at.desc()).all()
+    query = query.order_by(Character.created_at.desc())
+    result = await db.execute(query)
+    characters = list(result.scalars().all())
 
     return {"characters": characters}
 
