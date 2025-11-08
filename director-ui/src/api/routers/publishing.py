@@ -72,7 +72,7 @@ async def create_publish_history_record(
         # Update film project published fields
         if film_project_id:
             result = await db.execute(select(FilmProject).filter(FilmProject.id == film_project_id))
-    film_project = result.scalar_one_or_none()
+            film_project = result.scalar_one_or_none()
             if film_project:
                 if not film_project.published_at:
                     film_project.published_at = datetime.utcnow()

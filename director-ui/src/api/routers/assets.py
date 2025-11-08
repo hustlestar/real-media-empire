@@ -348,7 +348,7 @@ async def bulk_delete_assets(
 
     for asset_id in asset_ids:
         result = await db.execute(select(Asset).filter(Asset.id == asset_id))
-    asset = result.scalar_one_or_none()
+        asset = result.scalar_one_or_none()
         if not asset:
             errors.append({"id": asset_id, "error": "Asset not found"})
             continue

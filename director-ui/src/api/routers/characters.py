@@ -203,7 +203,7 @@ async def update_character(
             Character.name == updates.name,
             Character.id != character_id
         ))
-    existing = result.scalar_one_or_none()
+        existing = result.scalar_one_or_none()
         if existing:
             raise HTTPException(status_code=400, detail=f"Character with name '{updates.name}' already exists")
         character.name = updates.name

@@ -141,7 +141,7 @@ class ExportResponse(BaseModel):
 # ============================================================================
 
 
-def execute_trim_operation(clip_id: str, trim_in: float, trim_out: float, db: AsyncSession):
+async def execute_trim_operation(clip_id: str, trim_in: float, trim_out: float, db: AsyncSession):
     """
     Execute trim operation using FFmpeg.
 
@@ -151,7 +151,7 @@ def execute_trim_operation(clip_id: str, trim_in: float, trim_out: float, db: As
     try:
         # Get clip from database
         result = await db.execute(select(FilmShot).filter(FilmShot.id == clip_id))
-    clip = result.scalar_one_or_none()
+        clip = result.scalar_one_or_none()
         if not clip:
             raise HTTPException(status_code=404, detail=f"Clip {clip_id} not found")
 
@@ -198,7 +198,7 @@ def execute_trim_operation(clip_id: str, trim_in: float, trim_out: float, db: As
         raise HTTPException(status_code=500, detail=f"Trim operation failed: {str(e)}")
 
 
-def execute_split_operation(clip_id: str, split_time: float, db: AsyncSession):
+async def execute_split_operation(clip_id: str, split_time: float, db: AsyncSession):
     """
     Execute split operation using FFmpeg.
 
@@ -207,7 +207,7 @@ def execute_split_operation(clip_id: str, split_time: float, db: AsyncSession):
     try:
         # Get clip from database
         result = await db.execute(select(FilmShot).filter(FilmShot.id == clip_id))
-    clip = result.scalar_one_or_none()
+        clip = result.scalar_one_or_none()
         if not clip:
             raise HTTPException(status_code=404, detail=f"Clip {clip_id} not found")
 
@@ -399,9 +399,9 @@ async def merge_clips(request: MergeRequest, db: AsyncSession = Depends(get_asyn
     try:
         # Get both clips
         result = await db.execute(select(FilmShot).filter(FilmShot.id == request.clip_id_1))
-    clip1 = result.scalar_one_or_none()
+        clip1 = result.scalar_one_or_none()
         result = await db.execute(select(FilmShot).filter(FilmShot.id == request.clip_id_2))
-    clip2 = result.scalar_one_or_none()
+        clip2 = result.scalar_one_or_none()
 
         if not clip1 or not clip2:
             raise HTTPException(status_code=404, detail="One or both clips not found")
@@ -466,7 +466,7 @@ async def add_transition(request: AddTransitionRequest, db: AsyncSession = Depen
     """
     try:
         result = await db.execute(select(FilmShot).filter(FilmShot.id == request.clip_id))
-    clip = result.scalar_one_or_none()
+        clip = result.scalar_one_or_none()
         if not clip:
             raise HTTPException(status_code=404, detail="Clip not found")
 
@@ -493,7 +493,7 @@ async def set_volume_envelope(request: VolumeEnvelopeRequest, db: AsyncSession =
     """
     try:
         result = await db.execute(select(FilmShot).filter(FilmShot.id == request.clip_id))
-    clip = result.scalar_one_or_none()
+        clip = result.scalar_one_or_none()
         if not clip:
             raise HTTPException(status_code=404, detail="Clip not found")
 
@@ -527,7 +527,7 @@ async def export_timeline(request: ExportRequest, db: AsyncSession = Depends(get
             FilmShot.film_project_id == request.film_project_id,
             FilmShot.status == "approved"
         ).order_by(FilmShot.sequence_order))
-    shots = list(result.scalars().all())
+        shots = list(result.scalars().all())
 
         if not shots:
             raise HTTPException(status_code=404, detail="No approved shots found for project")
