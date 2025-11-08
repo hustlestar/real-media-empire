@@ -12,8 +12,18 @@ import {
   Lightbulb,
   Heart,
   Play,
-  Wand2
+  Wand2,
+  Users
 } from 'lucide-react';
+
+interface Character {
+  id: string;
+  name: string;
+  description: string;
+  consistency_prompt: string;
+  reference_images: string[];
+  attributes: any;
+}
 
 interface ShotVersion {
   id: string;
@@ -69,11 +79,39 @@ export default function ShotStudioPage() {
   const [isRefining, setIsRefining] = useState(false);
   const [showRefinementBox, setShowRefinementBox] = useState(false);
   const [refinementFeedback, setRefinementFeedback] = useState('');
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string>('');
 
-  // Load all versions on mount
+  // Load all versions and characters on mount
   useEffect(() => {
     loadVersions();
+    loadCharacters();
   }, []);
+
+  const loadCharacters = async () => {
+    try {
+      const response = await fetch(apiUrl('/api/characters'));
+      if (response.ok) {
+        const data = await response.json();
+        // API returns {characters: [...]} for each workspace
+        const allCharacters = Object.values(data).flat() as Character[];
+        setCharacters(allCharacters);
+      }
+    } catch (error) {
+      console.error('Failed to load characters:', error);
+    }
+  };
+
+  const handleCharacterSelect = (characterId: string) => {
+    setSelectedCharacterId(characterId);
+    if (characterId) {
+      const character = characters.find(c => c.id === characterId);
+      if (character) {
+        // Use consistency prompt as subject
+        handleChange('subject', character.consistency_prompt || character.description);
+      }
+    }
+  };
 
   // Load form data when version is selected
   useEffect(() => {
@@ -284,6 +322,31 @@ export default function ShotStudioPage() {
               </div>
 
               <div className="space-y-4">
+                {/* Character Picker */}
+                {characters.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-purple-400" />
+                      Pick Existing Character (Optional)
+                    </label>
+                    <select
+                      value={selectedCharacterId}
+                      onChange={(e) => handleCharacterSelect(e.target.value)}
+                      className="w-full px-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="">-- Create New or Pick Character --</option>
+                      {characters.map(char => (
+                        <option key={char.id} value={char.id}>
+                          {char.name} - {char.description.substring(0, 50)}...
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Selecting a character will auto-fill the subject field with consistent details
+                    </p>
+                  </div>
+                )}
+
                 {/* Subject with AI */}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
