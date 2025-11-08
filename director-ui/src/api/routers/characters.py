@@ -85,7 +85,7 @@ Maintain consistent appearance across all generated images."""
     return prompt
 
 
-@router.post("/characters", response_model=CharacterResponse)
+@router.post("", response_model=CharacterResponse)
 async def create_character(
     character: CharacterCreate,
     db: AsyncSession = Depends(get_async_db)
@@ -134,7 +134,7 @@ async def create_character(
     return new_character
 
 
-@router.get("/characters", response_model=Dict[str, List[CharacterResponse]])
+@router.get("", response_model=Dict[str, List[CharacterResponse]])
 async def list_characters(
     workspace_id: Optional[str] = None,
     search: Optional[str] = None,
@@ -172,7 +172,7 @@ async def list_characters(
     return {"characters": characters}
 
 
-@router.get("/characters/{character_id}", response_model=CharacterResponse)
+@router.get("/{character_id}", response_model=CharacterResponse)
 async def get_character(
     character_id: str,
     db: AsyncSession = Depends(get_async_db)
@@ -186,7 +186,7 @@ async def get_character(
     return character
 
 
-@router.put("/characters/{character_id}", response_model=CharacterResponse)
+@router.put("/{character_id}", response_model=CharacterResponse)
 async def update_character(
     character_id: str,
     updates: CharacterUpdate,
@@ -235,7 +235,7 @@ async def update_character(
     return character
 
 
-@router.delete("/characters/{character_id}")
+@router.delete("/{character_id}")
 async def delete_character(
     character_id: str,
     db: AsyncSession = Depends(get_async_db)
@@ -252,7 +252,7 @@ async def delete_character(
     return {"message": "Character deleted successfully", "id": character_id}
 
 
-@router.post("/characters/{character_id}/add-project")
+@router.post("/{character_id}/add-project")
 async def add_character_to_project(
     character_id: str,
     project_id: str,
