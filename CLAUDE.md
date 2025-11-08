@@ -6,6 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Media Empire is a Python-based automated content creation system for generating and publishing YouTube videos and shorts. It uses ZenML for pipeline orchestration, MoviePy for video editing, OpenAI/ChatGPT for content generation, and integrates with various TTS providers and YouTube API.
 
+The project now includes a comprehensive **Production Platform** with 21 professional features for automated video production, editing, and optimization. See `docs/PRODUCTION_PLATFORM_SUMMARY.md` for complete details.
+
+## Documentation
+
+All project documentation should be placed in the `docs/` directory:
+
+```
+docs/
+├── PRODUCTION_PLATFORM_SUMMARY.md  # Complete production platform overview
+└── [other documentation files]
+```
+
+**Documentation Guidelines:**
+- ✅ **DO** place all new documentation in `docs/` directory
+- ✅ **DO** use descriptive filenames (UPPER_SNAKE_CASE.md)
+- ✅ **DO** keep CLAUDE.md and README.md in project root
+- ❌ **DON'T** create documentation files in project root
+- ❌ **DON'T** create temporary analysis or status files
+
 ## Core Architecture
 
 ### Pipeline System (ZenML-based)
@@ -71,7 +90,6 @@ The system follows a "data lake" pattern:
    - Audio providers: OpenAI TTS, ElevenLabs
    - Asset caching and metadata indexing
    - Cost tracking and budget enforcement
-   - See `FILM_GENERATION.md` for details
 
 8. **PPTX Generation** (`src/pptx_gen/`)
    - AI-powered PowerPoint presentation creation
@@ -79,7 +97,14 @@ The system follows a "data lake" pattern:
    - Template support (custom or auto-generated)
    - Content caching and cost optimization
    - Multiple slide layouts and styling options
-   - See `PPTX_GENERATION.md` for details
+
+9. **Production Features** (`src/features/`)
+   - **Video Processing** (`features/video/`) - Subtitles, formatting, cropping, hooks, thumbnails
+   - **Workflow** (`features/workflow/`) - Repurposing, templates, branding, calendar
+   - **Editing** (`features/editing/`) - B-roll insertion, timeline editor, post-production
+   - **Platform** (`features/platform/`) - Platform optimization, virality, storytelling
+   - **Production** (`features/production/`) - VFX, film grain, color LUTs, Director AI
+   - See `docs/PRODUCTION_PLATFORM_SUMMARY.md` for complete feature list
 
 ## Environment Setup
 
@@ -213,8 +238,6 @@ uv run python -m pipelines.film_generation \
   --video-provider minimax
 ```
 
-See `FILM_GENERATION.md` for complete documentation.
-
 ### Generate PowerPoint Presentation (AI-Powered)
 ```bash
 cd src
@@ -226,8 +249,6 @@ uv run python -m pipelines.pptx_generation \
   --budget-limit 1.00 \
   --model gpt-4o-mini
 ```
-
-See `PPTX_GENERATION.md` for complete documentation.
 
 ### Recovery Mode
 All pipelines support `--recover` flag to resume failed runs:
