@@ -10,13 +10,31 @@ cd /home/user/real-media-empire/director-ui
 # Copy the example .env file
 cp .env.example .env
 
-# Edit .env with your values (minimum required):
-# TELEGRAM_BOT_TOKEN=your_bot_token
-# DATABASE_URL=postgresql://user:password@localhost:5432/director_ui
+# Edit .env with your values
 ```
 
-### 2. Run Database Migrations
+**For Local Development (Easiest):**
+Use SQLite - no PostgreSQL installation required:
+```bash
+# In .env file:
+TELEGRAM_BOT_TOKEN=dummy_token_for_api_only
+DATABASE_URL=sqlite:///./mediaempire.db
+```
 
+**For Production/PostgreSQL:**
+```bash
+# In .env file:
+TELEGRAM_BOT_TOKEN=your_bot_token
+DATABASE_URL=postgresql://user:password@localhost:5432/director_ui
+# IMPORTANT: Use postgresql:// NOT postgresql+asyncpg://
+# The codebase uses synchronous SQLAlchemy (sessionmaker, not AsyncSession)
+```
+
+### 2. Run Database Migrations (Optional for SQLite)
+
+If using **SQLite**, tables are created automatically - skip this step.
+
+If using **PostgreSQL**:
 ```bash
 # Make sure PostgreSQL is running
 # Then run migrations to create all tables
@@ -129,6 +147,28 @@ DATABASE_URL=postgresql://user:password@localhost:5432/director_ui
 ```bash
 uv run python -c "from sqlalchemy import create_engine; engine = create_engine('postgresql://user:password@localhost:5432/director_ui'); engine.connect(); print('✅ Connected')"
 ```
+
+### SQLAlchemy MissingGreenlet Error
+
+**Error:**
+```
+sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can't call await_only() here.
+```
+
+**Cause:** The DATABASE_URL is using an async driver (`postgresql+asyncpg://`) but the codebase uses synchronous SQLAlchemy.
+
+**Fix:** Update your DATABASE_URL in `.env` to use the synchronous driver:
+```bash
+# ❌ Wrong (will cause greenlet error):
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/director_ui
+
+# ✅ Correct:
+DATABASE_URL=postgresql://user:password@localhost:5432/director_ui
+# Or explicitly:
+DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/director_ui
+```
+
+The codebase uses `sessionmaker` and `Session` (synchronous), NOT `AsyncSession`.
 
 ## Running with Docker
 
