@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { User, Activity, MapPin, Info, Users, Video, Sparkles } from 'lucide-react';
+import { User, Activity, MapPin, Info, Users, Video } from 'lucide-react';
+import AIEnhancer from '../AIEnhancer';
 
 interface PromptConfig {
   subject: string;
@@ -17,73 +18,8 @@ interface PromptBuilderProps {
 }
 
 const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
-  const [generatingField, setGeneratingField] = useState<string | null>(null);
-
   const handleChange = (field: string, value: string) => {
     onChange({ ...config, [field]: value });
-  };
-
-  // AI Assist: Generate suggestions for fields
-  const handleAIAssist = async (field: string) => {
-    setGeneratingField(field);
-
-    try {
-      // Create context from existing fields
-      const context = {
-        subject: config.subject || null,
-        action: config.action || null,
-        location: config.location || null
-      };
-
-      // Simple AI generation based on field type
-      // In production, this would call an AI API
-      let suggestion = '';
-
-      switch (field) {
-        case 'subject':
-          // Generate character description
-          if (config.action) {
-            suggestion = 'Professional actor in their 30s, confident demeanor, wearing modern business casual attire';
-          } else {
-            suggestion = 'Charismatic protagonist, distinctive features, natural presence';
-          }
-          break;
-
-        case 'action':
-          // Generate action description
-          if (config.subject) {
-            suggestion = `${config.subject.split(',')[0] || 'The character'} performing a pivotal moment of realization, subtle expressions conveying inner transformation`;
-          } else {
-            suggestion = 'Contemplative moment of discovery, nuanced performance capturing emotional depth';
-          }
-          break;
-
-        case 'location':
-          // Generate location description
-          if (config.action.includes('office') || config.action.includes('work')) {
-            suggestion = 'Contemporary office space with glass walls, natural light streaming through floor-to-ceiling windows, minimalist modern design';
-          } else {
-            suggestion = 'Atmospheric interior with dramatic lighting, cinematic composition, rich visual textures';
-          }
-          break;
-
-        case 'additionalDetails':
-          suggestion = 'Specific wardrobe details: tailored fit, neutral color palette. Props: laptop, coffee cup. Makeup: natural, professional.';
-          break;
-
-        default:
-          suggestion = 'AI-generated suggestion';
-      }
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      handleChange(field, suggestion);
-    } catch (error) {
-      console.error('AI assist error:', error);
-    } finally {
-      setGeneratingField(null);
-    }
   };
 
   return (
@@ -96,25 +32,14 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
             <span>Subject / Character</span>
             <span className="text-red-400">*</span>
           </div>
-          <button
-            type="button"
-            onClick={() => handleAIAssist('subject')}
-            disabled={generatingField === 'subject'}
-            className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 rounded-lg text-xs font-semibold transition"
-            title="Generate with AI"
-          >
-            {generatingField === 'subject' ? (
-              <>
-                <Sparkles className="w-3 h-3 animate-spin" />
-                <span>Generating...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3 h-3" />
-                <span>AI Assist</span>
-              </>
-            )}
-          </button>
+          <AIEnhancer
+            fieldName="subject"
+            fieldLabel="Subject / Character"
+            formData={config}
+            onUpdate={handleChange}
+            enhancementPrompt="Generate a detailed character description including age, appearance, clothing, and character traits."
+            variant="compact"
+          />
         </label>
         <input
           type="text"
@@ -136,25 +61,14 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
             <span>Action / What's Happening</span>
             <span className="text-red-400">*</span>
           </div>
-          <button
-            type="button"
-            onClick={() => handleAIAssist('action')}
-            disabled={generatingField === 'action'}
-            className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 rounded-lg text-xs font-semibold transition"
-            title="Generate with AI"
-          >
-            {generatingField === 'action' ? (
-              <>
-                <Sparkles className="w-3 h-3 animate-spin" />
-                <span>Generating...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3 h-3" />
-                <span>AI Assist</span>
-              </>
-            )}
-          </button>
+          <AIEnhancer
+            fieldName="action"
+            fieldLabel="Action"
+            formData={config}
+            onUpdate={handleChange}
+            enhancementPrompt="Generate a compelling action description focusing on the moment, story beat, and emotional beats happening in this shot."
+            variant="compact"
+          />
         </label>
         <textarea
           value={config.action}
@@ -176,25 +90,14 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
             <span>Location / Setting</span>
             <span className="text-red-400">*</span>
           </div>
-          <button
-            type="button"
-            onClick={() => handleAIAssist('location')}
-            disabled={generatingField === 'location'}
-            className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 rounded-lg text-xs font-semibold transition"
-            title="Generate with AI"
-          >
-            {generatingField === 'location' ? (
-              <>
-                <Sparkles className="w-3 h-3 animate-spin" />
-                <span>Generating...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3 h-3" />
-                <span>AI Assist</span>
-              </>
-            )}
-          </button>
+          <AIEnhancer
+            fieldName="location"
+            fieldLabel="Location / Setting"
+            formData={config}
+            onUpdate={handleChange}
+            enhancementPrompt="Generate a vivid location description including environment, time of day, weather, lighting, and atmosphere."
+            variant="compact"
+          />
         </label>
         <input
           type="text"
@@ -262,25 +165,14 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
             <Info className="w-4 h-4 text-purple-400" />
             <span>Additional Details (Optional)</span>
           </div>
-          <button
-            type="button"
-            onClick={() => handleAIAssist('additionalDetails')}
-            disabled={generatingField === 'additionalDetails'}
-            className="flex items-center space-x-1 px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 rounded-lg text-xs font-semibold transition"
-            title="Generate with AI"
-          >
-            {generatingField === 'additionalDetails' ? (
-              <>
-                <Sparkles className="w-3 h-3 animate-spin" />
-                <span>Generating...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3 h-3" />
-                <span>AI Assist</span>
-              </>
-            )}
-          </button>
+          <AIEnhancer
+            fieldName="additionalDetails"
+            fieldLabel="Additional Details"
+            formData={config}
+            onUpdate={handleChange}
+            enhancementPrompt="Generate specific production details including props, wardrobe, makeup, special effects, and other creative direction."
+            variant="compact"
+          />
         </label>
         <textarea
           value={config.additionalDetails}

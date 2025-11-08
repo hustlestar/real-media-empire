@@ -112,6 +112,10 @@ app = FastAPI(
             "name": "stock-videos",
             "description": "Stock video search from Pexels and Pixabay for avatar backgrounds"
         },
+        {
+            "name": "ai-enhancement",
+            "description": "AI-powered content enhancement via OpenRouter with multiple model support"
+        },
     ]
 )
 
@@ -125,7 +129,7 @@ app.add_middleware(
 )
 
 # Import and include routers
-from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, style, heygen, postiz, veed, trends, stock_videos, film_shots, audio_generation, editing, script_writer
+from api.routers import health, content, processing, bundles, tags, prompts, film, pptx, publishing, characters, assets, workspaces, style, heygen, postiz, veed, trends, stock_videos, film_shots, audio_generation, editing, script_writer, ai_enhancement
 
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(content.router, prefix="/api/v1", tags=["content"])
@@ -149,6 +153,7 @@ app.include_router(postiz.router, prefix="/api/postiz", tags=["postiz"])
 app.include_router(veed.router, prefix="/api/veed", tags=["veed"])
 app.include_router(trends.router, prefix="/api/trends", tags=["trends"])
 app.include_router(stock_videos.router, prefix="/api/stock-videos", tags=["stock-videos"])
+app.include_router(ai_enhancement.router, prefix="/api/ai", tags=["ai-enhancement"])
 
 # Mount WebSocket app
 from websocket.manager import socket_app
