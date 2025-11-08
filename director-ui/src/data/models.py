@@ -28,6 +28,41 @@ class Author(Base):
     channels = relationship("Channel", secondary=channel_authors, back_populates="authors")
 
 
+class Workspace(Base):
+    """Workspace model for multi-tenant organization."""
+    __tablename__ = "workspaces"
+
+    id = Column(String, primary_key=True)  # UUID
+    name = Column(String, nullable=False)
+    slug = Column(String, unique=True, nullable=False)
+    owner_id = Column(Integer, nullable=False)
+    storage_quota_gb = Column(Integer, default=100)
+    monthly_budget_usd = Column(Float, default=1000.0)
+    settings = Column(JSON, default=dict)  # Workspace settings
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Project(Base):
+    """Project model for organizing work within workspaces."""
+    __tablename__ = "projects"
+
+    id = Column(String, primary_key=True)  # UUID
+    workspace_id = Column(String, ForeignKey("workspaces.id"), nullable=False)
+    name = Column(String, nullable=False)
+    slug = Column(String, nullable=False)
+    type = Column(String, default="campaign")  # campaign, brand, series, folder
+    parent_project_id = Column(String, ForeignKey("projects.id"), nullable=True)
+    status = Column(String, default="active")  # active, archived, deleted
+    description = Column(Text, nullable=True)
+    project_metadata = Column(JSON, default=dict)  # Project metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    workspace = relationship("Workspace", backref="projects")
+
+
 class Character(Base):
     """Character model for visual consistency tracking."""
     __tablename__ = "characters"

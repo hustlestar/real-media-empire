@@ -59,7 +59,7 @@ class ProjectCreate(BaseModel):
     type: str = Field("campaign", regex=r"^(campaign|brand|series|folder)$")
     parent_project_id: Optional[str] = None
     description: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = {}
+    project_metadata: Optional[Dict[str, Any]] = {}
 
 
 class ProjectUpdate(BaseModel):
@@ -67,7 +67,7 @@ class ProjectUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     status: Optional[str] = Field(None, regex=r"^(active|archived|deleted)$")
     description: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    project_metadata: Optional[Dict[str, Any]] = None
 
 
 class ProjectResponse(BaseModel):
@@ -80,7 +80,7 @@ class ProjectResponse(BaseModel):
     parent_project_id: Optional[str]
     status: str
     description: Optional[str]
-    metadata: Dict[str, Any]
+    project_metadata: Dict[str, Any]
     created_at: datetime
     updated_at: datetime
 
@@ -243,7 +243,7 @@ async def create_project(
         parent_project_id=project.parent_project_id,
         status="active",
         description=project.description,
-        metadata=project.metadata or {},
+        project_metadata=project.project_metadata or {},
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
     )
@@ -316,9 +316,9 @@ async def update_project(
     if updates.description is not None:
         project.description = updates.description
 
-    if updates.metadata is not None:
+    if updates.project_metadata is not None:
         # Merge metadata
-        project.metadata = {**project.metadata, **updates.metadata}
+        project.project_metadata = {**(project.project_metadata or {}), **updates.project_metadata}
 
     project.updated_at = datetime.utcnow()
 
