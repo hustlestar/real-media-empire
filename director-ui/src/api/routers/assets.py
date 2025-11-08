@@ -100,7 +100,7 @@ async def create_asset(
         duration=asset.duration,
         thumbnail_url=asset.thumbnail_url,
         tags=asset.tags,
-        metadata=asset.metadata or {},
+        asset_metadata=asset.metadata or {},
         is_favorite=asset.is_favorite,
         source_asset_id=asset.source_asset_id,
         generation_params=asset.generation_params,
@@ -294,7 +294,7 @@ async def update_asset(
 
     if updates.metadata is not None:
         # Merge metadata
-        asset.metadata = {**asset.metadata, **updates.metadata}
+        asset.asset_metadata = {**asset.asset_metadata, **updates.metadata}
 
     asset.updated_at = datetime.utcnow()
 

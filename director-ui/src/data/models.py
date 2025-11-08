@@ -61,6 +61,11 @@ class Asset(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    @property
+    def metadata(self):
+        """Alias for asset_metadata for API compatibility."""
+        return self.asset_metadata
+
 
 class FilmProject(Base):
     """Film project model for tracking AI-generated films."""
@@ -97,7 +102,8 @@ class Presentation(Base):
     num_slides = Column(Integer, default=10)
     tone = Column(String, default="professional")
     target_audience = Column(String)
-    model = Column(String, default="gpt-4o-mini")
+    provider = Column(String, nullable=False, default="openai")  # openai, anthropic, etc.
+    model = Column(String, default="gpt-4o-mini")  # Model name
     status = Column(String, default="pending")  # pending, processing, completed, failed
     outline = Column(JSON)  # Generated outline
     total_cost = Column(Float, default=0.0)
