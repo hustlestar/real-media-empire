@@ -110,11 +110,12 @@ class Presentation(Base):
 
 
 class AvatarVideo(Base):
-    """HeyGen avatar video generation tracking."""
+    """Avatar video generation tracking (HeyGen, Veed.io, etc.)."""
     __tablename__ = "avatar_videos"
 
     id = Column(String, primary_key=True)  # UUID
-    video_id = Column(String, unique=True, nullable=False)  # HeyGen video_id
+    provider = Column(String, nullable=False, default="heygen")  # heygen, veed, etc.
+    video_id = Column(String, unique=True, nullable=False)  # Provider's video_id
     title = Column(String)
     script = Column(Text, nullable=False)
     avatar_id = Column(String, nullable=False)
@@ -142,7 +143,7 @@ class AvatarVideo(Base):
     duration = Column(Float)  # Video duration in seconds
     cost = Column(Float, default=0.0)
     error_message = Column(Text, nullable=True)
-    heygen_metadata = Column(JSON)  # Additional HeyGen metadata
+    provider_metadata = Column(JSON)  # Provider-specific metadata (HeyGen, Veed.io, etc.)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
