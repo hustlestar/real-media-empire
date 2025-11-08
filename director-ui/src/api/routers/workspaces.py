@@ -20,7 +20,7 @@ router = APIRouter()
 class WorkspaceCreate(BaseModel):
     """Workspace creation schema."""
     name: str = Field(..., min_length=1, max_length=255)
-    slug: str = Field(..., min_length=1, max_length=100, regex=r"^[a-z0-9-]+$")
+    slug: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
     owner_id: int = Field(...)
     storage_quota_gb: int = Field(100, ge=1)
     monthly_budget_usd: float = Field(1000.0, ge=0)
@@ -55,8 +55,8 @@ class ProjectCreate(BaseModel):
     """Project creation schema."""
     workspace_id: str
     name: str = Field(..., min_length=1, max_length=255)
-    slug: str = Field(..., min_length=1, max_length=100, regex=r"^[a-z0-9-]+$")
-    type: str = Field("campaign", regex=r"^(campaign|brand|series|folder)$")
+    slug: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
+    type: str = Field("campaign", pattern=r"^(campaign|brand|series|folder)$")
     parent_project_id: Optional[str] = None
     description: Optional[str] = None
     project_metadata: Optional[Dict[str, Any]] = {}
@@ -65,7 +65,7 @@ class ProjectCreate(BaseModel):
 class ProjectUpdate(BaseModel):
     """Project update schema."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    status: Optional[str] = Field(None, regex=r"^(active|archived|deleted)$")
+    status: Optional[str] = Field(None, pattern=r"^(active|archived|deleted)$")
     description: Optional[str] = None
     project_metadata: Optional[Dict[str, Any]] = None
 
@@ -260,7 +260,7 @@ async def list_projects(
     workspace_id: Optional[str] = None,
     project_type: Optional[str] = None,
     parent_project_id: Optional[str] = None,
-    status: str = Query("active", regex=r"^(active|archived|deleted)$"),
+    status: str = Query("active", pattern=r"^(active|archived|deleted)$"),
     db: Session = Depends(get_db)
 ):
     """List all projects with optional filtering."""
