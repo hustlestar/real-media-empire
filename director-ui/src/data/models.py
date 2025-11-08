@@ -61,11 +61,6 @@ class Asset(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    @property
-    def metadata(self):
-        """Alias for asset_metadata for API compatibility."""
-        return self.asset_metadata
-
 
 class FilmProject(Base):
     """Film project model for tracking AI-generated films."""
