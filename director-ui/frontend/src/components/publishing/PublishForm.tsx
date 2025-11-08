@@ -22,7 +22,7 @@ import {
   Loader2,
   X
 } from 'lucide-react';
-import { PublishingPost } from './PublishingHub';
+import type { PublishingPost } from './PublishingHub';
 
 interface PublishFormProps {
   selectedAccounts: string[];

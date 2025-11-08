@@ -21,7 +21,7 @@ import {
   Download,
   ExternalLink
 } from 'lucide-react';
-import { GenerationResult } from './AvatarStudio';
+import type { GenerationResult } from './AvatarStudio';
 
 interface GenerationStatusProps {
   result: GenerationResult;

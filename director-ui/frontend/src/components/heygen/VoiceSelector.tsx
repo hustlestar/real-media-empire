@@ -11,7 +11,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Search, Play, Pause, Volume2, Check, Filter, Globe } from 'lucide-react';
-import { Voice } from './AvatarStudio';
+import type { Voice } from './AvatarStudio';
 
 interface VoiceSelectorProps {
   selectedVoice: Voice | null;

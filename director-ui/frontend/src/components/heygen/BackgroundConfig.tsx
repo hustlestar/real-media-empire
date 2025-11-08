@@ -11,7 +11,7 @@
 
 import React, { useState } from 'react';
 import { Palette, Image, Video, Link, Upload } from 'lucide-react';
-import { BackgroundSettings } from './AvatarStudio';
+import type { BackgroundSettings } from './AvatarStudio';
 
 interface BackgroundConfigProps {
   background: BackgroundSettings;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle, XCircle, RefreshCw, MessageSquare, ThumbsUp, ThumbsDown, AlertCircle, Send } from 'lucide-react';
 import VideoPlayer from './VideoPlayer';
-import { Shot } from './ShotGallery';
+import type { Shot } from './ShotGallery';
 import { apiUrl } from '../../config/api';
 
 interface ShotReviewProps {
