@@ -57,6 +57,11 @@ class RefineGenerationRequest(BaseModel):
     regenerate_fields: Optional[List[str]] = Field(None, description="Which fields to regenerate (prompt, scene, etc.)")
 
 
+class RatingRequest(BaseModel):
+    """Request to rate a generation."""
+    rating: int = Field(..., ge=1, le=5, description="Rating from 1 to 5 stars")
+
+
 class GenerationResponse(BaseModel):
     """Response with generation data."""
     id: str
@@ -469,7 +474,7 @@ async def toggle_favorite(
 @router.put("/script/generation/{generation_id}/rating")
 async def rate_generation(
     generation_id: str,
-    rating: int = Field(..., ge=1, le=5),
+    request: RatingRequest,
     db: AsyncSession = Depends(get_async_db)
 ):
     """Rate a generation (1-5 stars)."""
@@ -482,7 +487,7 @@ async def rate_generation(
         if not generation:
             raise HTTPException(status_code=404, detail="Generation not found")
 
-        generation.rating = rating
+        generation.rating = request.rating
         generation.updated_at = datetime.utcnow()
 
         await db.commit()
