@@ -26,8 +26,8 @@ DATABASE_URL=sqlite:///./mediaempire.db
 # In .env file:
 TELEGRAM_BOT_TOKEN=your_bot_token
 DATABASE_URL=postgresql://user:password@localhost:5432/director_ui
-# IMPORTANT: Use postgresql:// NOT postgresql+asyncpg://
-# The codebase uses synchronous SQLAlchemy (sessionmaker, not AsyncSession)
+# Note: Plain postgresql:// works for both sync (data/dao.py) and async (core/database.py)
+# SQLAlchemy drivers like +psycopg2 are automatically stripped for asyncpg compatibility
 ```
 
 ### 2. Run Database Migrations (Optional for SQLite)
@@ -148,6 +148,28 @@ DATABASE_URL=postgresql://user:password@localhost:5432/director_ui
 uv run python -c "from sqlalchemy import create_engine; engine = create_engine('postgresql://user:password@localhost:5432/director_ui'); engine.connect(); print('✅ Connected')"
 ```
 
+### Database Architecture
+
+The codebase has **two database systems**:
+
+1. **Synchronous ORM** (`src/data/dao.py`)
+   - Uses SQLAlchemy with `sessionmaker` and `Session`
+   - Used by: `workspaces`, `film_shots`, `editing` routers
+   - Supports: SQLite, PostgreSQL (with any driver)
+
+2. **Async Connection Pool** (`src/core/database.py`)
+   - Uses `asyncpg` directly (no ORM)
+   - Used by: `content`, `processing`, some legacy endpoints
+   - Supports: PostgreSQL only (requires asyncpg)
+
+**Database URL Compatibility:**
+- `sqlite:///./mediaempire.db` - Works with synchronous ORM only
+- `postgresql://user:pass@host:5432/db` - Works with both systems
+- `postgresql+psycopg2://...` - Auto-converted to work with both systems
+- `postgresql+asyncpg://...` - Auto-converted to work with both systems
+
+The code automatically strips SQLAlchemy driver specifications (`+psycopg2`, `+asyncpg`) when connecting with asyncpg.
+
 ### SQLAlchemy MissingGreenlet Error
 
 **Error:**
@@ -155,20 +177,24 @@ uv run python -c "from sqlalchemy import create_engine; engine = create_engine('
 sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can't call await_only() here.
 ```
 
-**Cause:** The DATABASE_URL is using an async driver (`postgresql+asyncpg://`) but the codebase uses synchronous SQLAlchemy.
+**Cause:** The DATABASE_URL is using an async driver (`postgresql+asyncpg://`) but some code uses synchronous SQLAlchemy.
 
-**Fix:** Update your DATABASE_URL in `.env` to use the synchronous driver:
+**Fix:** Use plain `postgresql://` in your DATABASE_URL:
 ```bash
-# ❌ Wrong (will cause greenlet error):
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/director_ui
-
-# ✅ Correct:
+# ✅ Recommended (works with all systems):
 DATABASE_URL=postgresql://user:password@localhost:5432/director_ui
-# Or explicitly:
-DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/director_ui
 ```
 
-The codebase uses `sessionmaker` and `Session` (synchronous), NOT `AsyncSession`.
+### Invalid DSN Error (asyncpg)
+
+**Error:**
+```
+asyncpg.exceptions.ClientConfigurationError: invalid DSN: scheme is expected to be either "postgresql" or "postgres", got 'postgresql+psycopg2'
+```
+
+**Cause:** Old version of the code didn't strip SQLAlchemy driver specifications before passing to asyncpg.
+
+**Fix:** Update to the latest code (already fixed in `src/core/database.py`). The code now automatically strips `+psycopg2`, `+asyncpg`, etc.
 
 ## Running with Docker
 

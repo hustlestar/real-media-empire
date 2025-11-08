@@ -40,6 +40,13 @@ class DatabaseManager:
     async def setup(self) -> None:
         """Initialize database connection and ensure schema is up to date."""
         try:
+            # Check if using SQLite
+            if self.database_url.startswith("sqlite"):
+                logger.warning("SQLite database detected. Async DatabaseManager requires PostgreSQL.")
+                logger.warning("Some features may not work. Consider using PostgreSQL or the synchronous DAO.")
+                # Don't try to create asyncpg pool for SQLite
+                return
+
             # Run migrations first if auto_migrate is enabled
             if self.auto_migrate:
                 logger.info("Checking for pending database migrations...")
@@ -47,11 +54,14 @@ class DatabaseManager:
                 if not migration_success:
                     raise RuntimeError("Database migration failed")
 
-            # asyncpg expects DSN without the +asyncpg dialect part
+            # asyncpg expects DSN without SQLAlchemy driver specifications
+            # Strip any +driver suffix (e.g., +asyncpg, +psycopg2, +psycopg)
             asyncpg_compatible_dsn = self.database_url
-            if "postgresql+asyncpg://" in asyncpg_compatible_dsn:
-                asyncpg_compatible_dsn = asyncpg_compatible_dsn.replace("postgresql+asyncpg://", "postgresql://")
-            
+            if "postgresql+" in asyncpg_compatible_dsn:
+                # Replace postgresql+<driver>:// with postgresql://
+                import re
+                asyncpg_compatible_dsn = re.sub(r'postgresql\+\w+://', 'postgresql://', asyncpg_compatible_dsn)
+
             self._pool = await asyncpg.create_pool(asyncpg_compatible_dsn)
             logger.info("Database setup completed successfully")
         except Exception as e:
