@@ -75,6 +75,8 @@ class Character(Base):
     __tablename__ = "characters"
 
     id = Column(String, primary_key=True)
+    workspace_id = Column(String, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True)
+
     name = Column(String, nullable=False, unique=True)
     description = Column(Text)
     reference_images = Column(JSON)  # Array of image URLs
@@ -84,12 +86,17 @@ class Character(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Relationships
+    workspace = relationship("Workspace", back_populates="characters")
+
 
 class Asset(Base):
     """Asset model for media file tracking."""
     __tablename__ = "assets"
 
     id = Column(String, primary_key=True)
+    workspace_id = Column(String, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True)
+
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)  # image, video, audio
     url = Column(String, nullable=False)
@@ -102,6 +109,9 @@ class Asset(Base):
     is_favorite = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    workspace = relationship("Workspace", back_populates="assets")
 
 
 class FilmProject(Base):

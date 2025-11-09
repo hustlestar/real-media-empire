@@ -14,8 +14,11 @@ src_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
 sys.path.insert(0, src_path)
 
 # Import our models and configuration
-from models.base import metadata
+from data.models import Base
 from config.settings import BotConfig
+
+# Get metadata from the ORM Base
+metadata = Base.metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
