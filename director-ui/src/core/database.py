@@ -36,7 +36,13 @@ class SQLAlchemyConnectionWrapper:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_type:
             await self._session.rollback()
+        else:
+            await self._session.commit()
         await self._session.close()
+
+    def transaction(self):
+        """Begin a transaction (asyncpg compatibility)."""
+        return self._session.begin()
 
     async def fetchrow(self, query: str, *args):
         """Execute query and fetch one row (asyncpg compatibility)."""
@@ -61,7 +67,6 @@ class SQLAlchemyConnectionWrapper:
         """Execute query (asyncpg compatibility)."""
         named_query, params = self._convert_positional_to_named(query, args)
         result = await self._session.execute(text(named_query), params)
-        await self._session.commit()
         return f"UPDATE {result.rowcount}"
 
     def _convert_positional_to_named(self, query: str, args: tuple) -> tuple:
