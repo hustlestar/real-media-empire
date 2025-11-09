@@ -308,6 +308,12 @@ class ContentService:
             return None
 
         content = dict(row)
+
+        # Map content_metadata column to metadata field for API response
+        # (metadata is reserved in SQLAlchemy, so DB column is content_metadata)
+        if 'content_metadata' in content:
+            content['metadata'] = content.pop('content_metadata')
+
         # Parse metadata JSON if it's a string
         if isinstance(content.get('metadata'), str):
             try:
