@@ -8,6 +8,9 @@ import JobDetailPage from './pages/JobDetailPage'
 import { BundlesPage } from './pages/BundlesPage'
 import { BundleDetailPage } from './pages/BundleDetailPage'
 import FilmGenerationPage from './pages/FilmGenerationPage'
+import ScriptWriterPage from './pages/ScriptWriterPage'
+import ShotStudioPage from './pages/ShotStudioPage'
+import StoryboardPage from './pages/StoryboardPage'
 import PPTXGenerationPage from './pages/PPTXGenerationPage'
 import HeyGenStudioPage from './pages/HeyGenStudioPage'
 import PostizPublishingPage from './pages/PostizPublishingPage'
@@ -47,6 +50,9 @@ function App() {
                 <Route path="/bundles/:bundleId" element={<BundleDetailPage />} />
 
                 {/* Creation Tools */}
+                <Route path="/script-writer" element={<ScriptWriterPage />} />
+                <Route path="/shot-studio" element={<ShotStudioPage />} />
+                <Route path="/storyboard" element={<StoryboardPage />} />
                 <Route path="/film-generation" element={<FilmGenerationPage />} />
                 <Route path="/pptx-generation" element={<PPTXGenerationPage />} />
                 <Route path="/heygen-studio" element={<HeyGenStudioPage />} />

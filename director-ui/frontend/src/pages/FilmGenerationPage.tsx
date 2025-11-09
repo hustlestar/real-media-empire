@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { PlayCircle, Film, Sparkles, Save, Download, Zap, Users, Upload } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PlayCircle, Film, Sparkles, Save, Download, Zap, Users, Upload, Camera, Grid } from 'lucide-react';
 import StyleSelector from '../components/film/StyleSelector';
 import ShotTypeSelector from '../components/film/ShotTypeSelector';
 import LightingSelector from '../components/film/LightingSelector';
@@ -50,6 +50,54 @@ const FilmGenerationPage: React.FC = () => {
 
   const [generatedPrompt, setGeneratedPrompt] = useState<any>(null);
   const [sceneShots, setSceneShots] = useState<any[]>([]);
+  const [availableShots, setAvailableShots] = useState<any[]>([]);
+  const [selectedShots, setSelectedShots] = useState<any[]>([]);
+  const [showShotSelector, setShowShotSelector] = useState<boolean>(false);
+
+  // Load available shots when workspace changes
+  useEffect(() => {
+    if (currentWorkspace) {
+      loadAvailableShots();
+    }
+  }, [currentWorkspace]);
+
+  const loadAvailableShots = async () => {
+    if (!currentWorkspace) return;
+
+    try {
+      const response = await fetch(apiUrl(`/api/storyboard/shots/by-workspace/${currentWorkspace.id}`));
+      if (response.ok) {
+        const shots = await response.json();
+        setAvailableShots(shots);
+      }
+    } catch (error) {
+      console.error('Failed to load shots:', error);
+    }
+  };
+
+  const handleShotSelect = (shot: any) => {
+    // Check if shot is already selected
+    if (selectedShots.find(s => s.id === shot.id)) {
+      return;
+    }
+
+    // Add shot to selection
+    setSelectedShots([...selectedShots, shot]);
+
+    // Pre-populate prompt config from shot metadata
+    setPromptConfig({
+      ...promptConfig,
+      subject: shot.input_subject || promptConfig.subject,
+      action: shot.input_action || promptConfig.action,
+      location: shot.input_location || promptConfig.location,
+      shotType: shot.shot_type || promptConfig.shotType,
+      lighting: shot.lighting || promptConfig.lighting,
+      emotion: shot.emotion || promptConfig.emotion,
+      cameraMotion: shot.camera_motion || promptConfig.cameraMotion
+    });
+
+    setShowShotSelector(false);
+  };
 
   const handleGenerateSingleShot = async () => {
     try {
@@ -299,6 +347,150 @@ const FilmGenerationPage: React.FC = () => {
                 }}
                 title="Select Character for Film"
               />
+            )}
+
+            {/* Shot Selection from Shot Studio */}
+            <div className="bg-black bg-opacity-40 backdrop-blur-md rounded-xl p-6 border border-purple-500 border-opacity-30">
+              <h3 className="text-lg font-semibold mb-3 flex items-center space-x-2">
+                <Camera className="w-5 h-5 text-purple-400" />
+                <span>Shots from Shot Studio</span>
+              </h3>
+
+              {selectedShots.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedShots.map((shot: any, idx: number) => (
+                    <div key={shot.id} className="p-3 bg-purple-900 bg-opacity-30 rounded-lg border border-purple-500 border-opacity-30">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="font-semibold text-sm">Shot #{shot.sequence_order || idx + 1} - v{shot.version}</div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            {shot.shot_type && <span className="mr-2">📷 {shot.shot_type}</span>}
+                            {shot.camera_motion && <span className="mr-2">🎬 {shot.camera_motion}</span>}
+                            {shot.duration_seconds && <span>⏱️ {shot.duration_seconds}s</span>}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedShots(selectedShots.filter((_, i) => i !== idx));
+                          }}
+                          className="px-2 py-1 bg-red-600 bg-opacity-50 hover:bg-opacity-70 rounded text-xs"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="text-sm text-gray-300 line-clamp-2">
+                        {shot.prompt}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-gray-400 bg-gray-900 bg-opacity-30 rounded-lg">
+                  <Camera className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No shots selected</p>
+                  <p className="text-sm mt-1">Add shots from your Shot Studio library</p>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowShotSelector(true)}
+                className="mt-4 w-full px-4 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg font-semibold flex items-center justify-center space-x-2"
+              >
+                <Grid className="w-5 h-5" />
+                <span>Browse Shots ({availableShots.length} available)</span>
+              </button>
+            </div>
+
+            {/* Shot Selector Modal */}
+            {showShotSelector && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm">
+                <div className="bg-gray-900 rounded-xl shadow-2xl border border-purple-500 max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                  <div className="p-6 border-b border-purple-500 border-opacity-30">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold flex items-center space-x-2">
+                        <Camera className="w-6 h-6 text-purple-400" />
+                        <span>Select Shot from Shot Studio</span>
+                      </h2>
+                      <button
+                        onClick={() => setShowShotSelector(false)}
+                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-6 overflow-y-auto max-h-[60vh]">
+                    {availableShots.length === 0 ? (
+                      <div className="text-center py-12 text-gray-400">
+                        <Camera className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg">No shots available in this workspace</p>
+                        <p className="text-sm mt-2">Create shots in Shot Studio first</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {availableShots.map((shot: any) => (
+                          <div
+                            key={shot.id}
+                            onClick={() => handleShotSelect(shot)}
+                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                              selectedShots.find(s => s.id === shot.id)
+                                ? 'border-purple-500 bg-purple-900 bg-opacity-30'
+                                : 'border-gray-700 bg-gray-800 bg-opacity-50 hover:border-purple-400'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold">#{shot.sequence_order || '?'}</span>
+                                <span className="text-sm text-gray-400">v{shot.version}</span>
+                                {shot.is_favorite && (
+                                  <span className="text-yellow-400">⭐</span>
+                                )}
+                              </div>
+                              {shot.duration_seconds && (
+                                <span className="text-xs text-gray-400">{shot.duration_seconds}s</span>
+                              )}
+                            </div>
+
+                            <div className="text-sm text-gray-300 mb-3 line-clamp-3">
+                              {shot.prompt}
+                            </div>
+
+                            <div className="flex flex-wrap gap-1">
+                              {shot.shot_type && (
+                                <span className="px-2 py-1 bg-blue-900 bg-opacity-50 text-blue-300 text-xs rounded">
+                                  {shot.shot_type}
+                                </span>
+                              )}
+                              {shot.camera_motion && (
+                                <span className="px-2 py-1 bg-green-900 bg-opacity-50 text-green-300 text-xs rounded">
+                                  {shot.camera_motion}
+                                </span>
+                              )}
+                              {shot.lighting && (
+                                <span className="px-2 py-1 bg-yellow-900 bg-opacity-50 text-yellow-300 text-xs rounded">
+                                  {shot.lighting}
+                                </span>
+                              )}
+                              {shot.emotion && (
+                                <span className="px-2 py-1 bg-pink-900 bg-opacity-50 text-pink-300 text-xs rounded">
+                                  {shot.emotion}
+                                </span>
+                              )}
+                            </div>
+
+                            {selectedShots.find(s => s.id === shot.id) && (
+                              <div className="mt-3 text-center text-sm text-purple-300 font-semibold">
+                                ✓ Selected
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Style Selection */}

@@ -21,7 +21,7 @@ assets_table = Table(
     Column("duration", Float, nullable=True, comment="Duration for video/audio assets"),
     Column("thumbnail_url", String(1024), nullable=True, comment="Thumbnail URL"),
     Column("tags", JSON, nullable=True, comment="Array of tags"),
-    Column("metadata", JSON, nullable=True, comment="Additional metadata"),
+    Column("asset_metadata", JSON, nullable=True, comment="Additional metadata (dimensions, codec, etc.)"),
     Column("is_favorite", Boolean, nullable=False, default=False, server_default="false", comment="Favorite flag"),
     Column(
         "created_at",

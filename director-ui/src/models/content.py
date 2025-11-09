@@ -62,7 +62,7 @@ content_items_table = Table(
     Column("source_url", Text, nullable=True, comment="Original URL if from URL source"),
     Column("file_reference", Text, nullable=True, comment="Path to uploaded file"),
     Column("extracted_text_path", Text, nullable=False, comment="Path to file containing extracted text"),
-    Column("metadata", JSONB, nullable=False, server_default="{}", comment="Content metadata (title, duration, word_count, etc.)"),
+    Column("content_metadata", JSONB, nullable=False, server_default="{}", comment="Content metadata (title, duration, word_count, etc.)"),
     Column("user_id", BigInteger, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, comment="User who created this content"),
     Column(
         "processing_status",

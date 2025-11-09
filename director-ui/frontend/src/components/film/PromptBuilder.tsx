@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { User, Activity, MapPin, Info, Users, Video } from 'lucide-react';
+import AIEnhancer from '../AIEnhancer';
 
 interface PromptConfig {
   subject: string;
@@ -25,10 +26,20 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
     <div className="space-y-4">
       {/* Subject */}
       <div>
-        <label className="block text-sm font-semibold mb-2 flex items-center space-x-2">
-          <User className="w-4 h-4 text-purple-400" />
-          <span>Subject / Character</span>
-          <span className="text-red-400">*</span>
+        <label className="block text-sm font-semibold mb-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <User className="w-4 h-4 text-purple-400" />
+            <span>Subject / Character</span>
+            <span className="text-red-400">*</span>
+          </div>
+          <AIEnhancer
+            fieldName="subject"
+            fieldLabel="Subject / Character"
+            formData={config}
+            onUpdate={handleChange}
+            enhancementPrompt="Generate a detailed character description including age, appearance, clothing, and character traits."
+            variant="compact"
+          />
         </label>
         <input
           type="text"
@@ -44,10 +55,20 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
 
       {/* Action */}
       <div>
-        <label className="block text-sm font-semibold mb-2 flex items-center space-x-2">
-          <Activity className="w-4 h-4 text-purple-400" />
-          <span>Action / What's Happening</span>
-          <span className="text-red-400">*</span>
+        <label className="block text-sm font-semibold mb-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Activity className="w-4 h-4 text-purple-400" />
+            <span>Action / What's Happening</span>
+            <span className="text-red-400">*</span>
+          </div>
+          <AIEnhancer
+            fieldName="action"
+            fieldLabel="Action"
+            formData={config}
+            onUpdate={handleChange}
+            enhancementPrompt="Generate a compelling action description focusing on the moment, story beat, and emotional beats happening in this shot."
+            variant="compact"
+          />
         </label>
         <textarea
           value={config.action}
@@ -63,10 +84,20 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
 
       {/* Location */}
       <div>
-        <label className="block text-sm font-semibold mb-2 flex items-center space-x-2">
-          <MapPin className="w-4 h-4 text-purple-400" />
-          <span>Location / Setting</span>
-          <span className="text-red-400">*</span>
+        <label className="block text-sm font-semibold mb-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <MapPin className="w-4 h-4 text-purple-400" />
+            <span>Location / Setting</span>
+            <span className="text-red-400">*</span>
+          </div>
+          <AIEnhancer
+            fieldName="location"
+            fieldLabel="Location / Setting"
+            formData={config}
+            onUpdate={handleChange}
+            enhancementPrompt="Generate a vivid location description including environment, time of day, weather, lighting, and atmosphere."
+            variant="compact"
+          />
         </label>
         <input
           type="text"
@@ -129,9 +160,19 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({ config, onChange }) => {
 
       {/* Additional Details */}
       <div>
-        <label className="block text-sm font-semibold mb-2 flex items-center space-x-2">
-          <Info className="w-4 h-4 text-purple-400" />
-          <span>Additional Details (Optional)</span>
+        <label className="block text-sm font-semibold mb-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Info className="w-4 h-4 text-purple-400" />
+            <span>Additional Details (Optional)</span>
+          </div>
+          <AIEnhancer
+            fieldName="additionalDetails"
+            fieldLabel="Additional Details"
+            formData={config}
+            onUpdate={handleChange}
+            enhancementPrompt="Generate specific production details including props, wardrobe, makeup, special effects, and other creative direction."
+            variant="compact"
+          />
         </label>
         <textarea
           value={config.additionalDetails}

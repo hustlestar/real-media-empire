@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { Calendar, Clock, Trash2, Edit } from 'lucide-react';
-import { PublishingPost } from './PublishingHub';
+import type { PublishingPost } from './PublishingHub';
 
 interface ScheduleManagerProps {
   onPublishSuccess: (post: PublishingPost) => void;

@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 import logging
 
-from social.base_publisher import SocialPublisher, PublishResult, PostContent
+from publishers.base_publisher import SocialPublisher, PublishResult, PostContent
 
 logger = logging.getLogger(__name__)
 

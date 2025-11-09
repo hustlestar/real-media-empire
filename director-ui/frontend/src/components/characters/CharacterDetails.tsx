@@ -1,9 +1,32 @@
 import React from 'react';
 import { X, Copy, Edit, Trash2, Film } from 'lucide-react';
 
-const CharacterDetails: React.FC<any> = ({ character, onClose, onUpdate }) => {
+const CharacterDetails: React.FC<any> = ({ character, onClose, onUpdate, onEdit }) => {
   const copyPrompt = () => {
     navigator.clipboard.writeText(character.consistency_prompt);
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete ${character.name}?`)) {
+      return;
+    }
+
+    try {
+      const apiUrl = (path: string) => path;
+      const response = await fetch(apiUrl(`/api/characters/${character.id}`), {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        onUpdate();
+        onClose();
+      } else {
+        alert('Failed to delete character');
+      }
+    } catch (error) {
+      console.error('Error deleting character:', error);
+      alert('Failed to delete character');
+    }
   };
 
   return (
@@ -73,11 +96,17 @@ const CharacterDetails: React.FC<any> = ({ character, onClose, onUpdate }) => {
       </div>
 
       <div className="mt-6 space-y-2">
-        <button className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded flex items-center justify-center space-x-2">
+        <button
+          onClick={() => onEdit && onEdit(character)}
+          className="w-full py-2 bg-gray-700 hover:bg-gray-600 rounded flex items-center justify-center space-x-2"
+        >
           <Edit className="w-4 h-4" />
           <span>Edit</span>
         </button>
-        <button className="w-full py-2 bg-red-600 hover:bg-red-500 rounded flex items-center justify-center space-x-2">
+        <button
+          onClick={handleDelete}
+          className="w-full py-2 bg-red-600 hover:bg-red-500 rounded flex items-center justify-center space-x-2"
+        >
           <Trash2 className="w-4 h-4" />
           <span>Delete</span>
         </button>

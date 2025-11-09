@@ -1,7 +1,7 @@
 """Asset API router for media file tracking and management."""
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime
@@ -10,8 +10,9 @@ import os
 import shutil
 from pathlib import Path
 
+from sqlalchemy import select, func
 from data.models import Asset
-from data.dao import get_db
+from data.async_dao import get_async_db
 
 router = APIRouter()
 
@@ -27,7 +28,7 @@ class AssetCreate(BaseModel):
     duration: Optional[float] = None
     thumbnail_url: Optional[str] = None
     tags: List[str] = []
-    metadata: Optional[Dict[str, Any]] = {}
+    asset_metadata: Optional[Dict[str, Any]] = {}
     is_favorite: bool = False
     source_asset_id: Optional[str] = None  # For lineage tracking
     generation_params: Optional[Dict[str, Any]] = None
@@ -39,7 +40,7 @@ class AssetUpdate(BaseModel):
     name: Optional[str] = None
     tags: Optional[List[str]] = None
     is_favorite: Optional[bool] = None
-    metadata: Optional[Dict[str, Any]] = None
+    asset_metadata: Optional[Dict[str, Any]] = None
 
 
 class AssetResponse(BaseModel):
@@ -54,7 +55,7 @@ class AssetResponse(BaseModel):
     duration: Optional[float]
     thumbnail_url: Optional[str]
     tags: List[str]
-    metadata: Dict[str, Any]
+    asset_metadata: Dict[str, Any]
     is_favorite: bool
     source_asset_id: Optional[str]
     generation_params: Optional[Dict[str, Any]]
@@ -80,12 +81,13 @@ class AssetListResponse(BaseModel):
 @router.post("", response_model=AssetResponse)
 async def create_asset(
     asset: AssetCreate,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Create a new asset record within a workspace."""
     # Verify workspace exists
     from data.models import Workspace
-    workspace = db.query(Workspace).filter(Workspace.id == asset.workspace_id).first()
+    result = await db.execute(select(Workspace).filter(Workspace.id == asset.workspace_id))
+    workspace = result.scalar_one_or_none()
     if not workspace:
         raise HTTPException(status_code=404, detail=f"Workspace '{asset.workspace_id}' not found")
 
@@ -100,7 +102,7 @@ async def create_asset(
         duration=asset.duration,
         thumbnail_url=asset.thumbnail_url,
         tags=asset.tags,
-        metadata=asset.metadata or {},
+        asset_metadata=asset.asset_metadata or {},
         is_favorite=asset.is_favorite,
         source_asset_id=asset.source_asset_id,
         generation_params=asset.generation_params,
@@ -111,8 +113,8 @@ async def create_asset(
     )
 
     db.add(new_asset)
-    db.commit()
-    db.refresh(new_asset)
+    await db.flush()
+    await db.refresh(new_asset)
 
     return new_asset
 
@@ -123,12 +125,13 @@ async def upload_asset(
     file: UploadFile = File(...),
     tags: Optional[str] = Query(None),  # Comma-separated tags
     is_favorite: bool = False,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Upload a new asset file to a workspace."""
     # Verify workspace exists
     from data.models import Workspace
-    workspace = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+    result = await db.execute(select(Workspace).filter(Workspace.id == workspace_id))
+    workspace = result.scalar_one_or_none()
     if not workspace:
         raise HTTPException(status_code=404, detail=f"Workspace '{workspace_id}' not found")
     # Create upload directory
@@ -188,8 +191,8 @@ async def upload_asset(
     )
 
     db.add(new_asset)
-    db.commit()
-    db.refresh(new_asset)
+    await db.flush()
+    await db.refresh(new_asset)
 
     return new_asset
 
@@ -205,14 +208,14 @@ async def list_assets(
     favorite_only: bool = False,
     sort_by: str = Query("created_at", regex="^(created_at|name|size|updated_at)$"),
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """List assets with filtering, search, and pagination.
 
     Args:
         workspace_id: Filter by workspace (recommended for multi-tenant isolation)
     """
-    query = db.query(Asset)
+    query = select(Asset)
 
     # Filter by workspace (recommended)
     if workspace_id:
@@ -237,7 +240,21 @@ async def list_assets(
         query = query.filter(Asset.is_favorite == True)
 
     # Get total count
-    total = query.count()
+    count_query = select(func.count()).select_from(Asset)
+    if workspace_id:
+        count_query = count_query.filter(Asset.workspace_id == workspace_id)
+    if type:
+        count_query = count_query.filter(Asset.type == type)
+    if search:
+        count_query = count_query.filter(Asset.name.ilike(f"%{search}%"))
+    if tags:
+        for tag in tag_list:
+            count_query = count_query.filter(Asset.tags.contains([tag]))
+    if favorite_only:
+        count_query = count_query.filter(Asset.is_favorite == True)
+
+    count_result = await db.execute(count_query)
+    total = count_result.scalar()
 
     # Apply sorting
     sort_column = getattr(Asset, sort_by)
@@ -248,7 +265,9 @@ async def list_assets(
 
     # Apply pagination
     offset = (page - 1) * page_size
-    assets = query.offset(offset).limit(page_size).all()
+    query = query.offset(offset).limit(page_size)
+    result = await db.execute(query)
+    assets = list(result.scalars().all())
 
     return {
         "assets": assets,
@@ -261,10 +280,11 @@ async def list_assets(
 @router.get("/{asset_id}", response_model=AssetResponse)
 async def get_asset(
     asset_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get a specific asset by ID."""
-    asset = db.query(Asset).filter(Asset.id == asset_id).first()
+    result = await db.execute(select(Asset).filter(Asset.id == asset_id))
+    asset = result.scalar_one_or_none()
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
 
@@ -275,10 +295,11 @@ async def get_asset(
 async def update_asset(
     asset_id: str,
     updates: AssetUpdate,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Update an asset."""
-    asset = db.query(Asset).filter(Asset.id == asset_id).first()
+    result = await db.execute(select(Asset).filter(Asset.id == asset_id))
+    asset = result.scalar_one_or_none()
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
 
@@ -292,14 +313,14 @@ async def update_asset(
     if updates.is_favorite is not None:
         asset.is_favorite = updates.is_favorite
 
-    if updates.metadata is not None:
+    if updates.asset_metadata is not None:
         # Merge metadata
-        asset.metadata = {**asset.metadata, **updates.metadata}
+        asset.asset_metadata = {**(asset.asset_metadata or {}), **updates.asset_metadata}
 
     asset.updated_at = datetime.utcnow()
 
-    db.commit()
-    db.refresh(asset)
+    await db.flush()
+    await db.refresh(asset)
 
     return asset
 
@@ -308,10 +329,11 @@ async def update_asset(
 async def delete_asset(
     asset_id: str,
     delete_file: bool = False,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Delete an asset and optionally delete the file."""
-    asset = db.query(Asset).filter(Asset.id == asset_id).first()
+    result = await db.execute(select(Asset).filter(Asset.id == asset_id))
+    asset = result.scalar_one_or_none()
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
 
@@ -324,8 +346,8 @@ async def delete_asset(
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
 
-    db.delete(asset)
-    db.commit()
+    await db.delete(asset)
+    await db.flush()
 
     return {"message": "Asset deleted successfully", "id": asset_id}
 
@@ -334,14 +356,15 @@ async def delete_asset(
 async def bulk_delete_assets(
     asset_ids: List[str],
     delete_files: bool = False,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Bulk delete assets."""
     deleted_count = 0
     errors = []
 
     for asset_id in asset_ids:
-        asset = db.query(Asset).filter(Asset.id == asset_id).first()
+        result = await db.execute(select(Asset).filter(Asset.id == asset_id))
+        asset = result.scalar_one_or_none()
         if not asset:
             errors.append({"id": asset_id, "error": "Asset not found"})
             continue
@@ -356,10 +379,10 @@ async def bulk_delete_assets(
                     errors.append({"id": asset_id, "error": f"Failed to delete file: {str(e)}"})
                     continue
 
-        db.delete(asset)
+        await db.delete(asset)
         deleted_count += 1
 
-    db.commit()
+    await db.flush()
 
     return {
         "deleted_count": deleted_count,
@@ -371,36 +394,43 @@ async def bulk_delete_assets(
 @router.post("/{asset_id}/toggle-favorite", response_model=AssetResponse)
 async def toggle_favorite(
     asset_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Toggle favorite status of an asset."""
-    asset = db.query(Asset).filter(Asset.id == asset_id).first()
+    result = await db.execute(select(Asset).filter(Asset.id == asset_id))
+    asset = result.scalar_one_or_none()
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
 
     asset.is_favorite = not asset.is_favorite
     asset.updated_at = datetime.utcnow()
 
-    db.commit()
-    db.refresh(asset)
+    await db.flush()
+    await db.refresh(asset)
 
     return asset
 
 
 @router.get("/stats/summary")
 async def get_assets_stats(
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get asset statistics summary."""
-    total_assets = db.query(Asset).count()
-    total_images = db.query(Asset).filter(Asset.type == "image").count()
-    total_videos = db.query(Asset).filter(Asset.type == "video").count()
-    total_audio = db.query(Asset).filter(Asset.type == "audio").count()
-    total_favorites = db.query(Asset).filter(Asset.is_favorite == True).count()
+    result = await db.execute(select(func.count()).select_from(Asset))
+    total_assets = result.scalar()
+    result = await db.execute(select(func.count()).select_from(Asset).filter(Asset.type == "image"))
+    total_images = result.scalar()
+    result = await db.execute(select(func.count()).select_from(Asset).filter(Asset.type == "video"))
+    total_videos = result.scalar()
+    result = await db.execute(select(func.count()).select_from(Asset).filter(Asset.type == "audio"))
+    total_audio = result.scalar()
+    result = await db.execute(select(func.count()).select_from(Asset).filter(Asset.is_favorite == True))
+    total_favorites = result.scalar()
 
     # Calculate total storage size
-    total_size = db.query(Asset).with_entities(Asset.size).all()
-    total_storage = sum(size[0] for size in total_size if size[0])
+    size_result = await db.execute(select(Asset.size))
+    total_sizes = size_result.scalars().all()
+    total_storage = sum(size for size in total_sizes if size)
 
     return {
         "total_assets": total_assets,

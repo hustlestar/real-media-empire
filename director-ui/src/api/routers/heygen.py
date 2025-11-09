@@ -178,7 +178,14 @@ async def generate_avatar_video(
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        # Check if it's an authentication error
+        if "401" in error_msg or "UNAUTHORIZED" in error_msg:
+            raise HTTPException(
+                status_code=401,
+                detail="HeyGen API authentication failed. Please check your HEYGEN_API_KEY in .env file."
+            )
+        raise HTTPException(status_code=500, detail=error_msg)
 
 
 @router.get("/avatars", response_model=list[AvatarInfo])
@@ -208,7 +215,14 @@ async def list_avatars(
         ]
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        # Check if it's an authentication error
+        if "401" in error_msg or "UNAUTHORIZED" in error_msg:
+            raise HTTPException(
+                status_code=401,
+                detail="HeyGen API authentication failed. Please check your HEYGEN_API_KEY in .env file."
+            )
+        raise HTTPException(status_code=500, detail=error_msg)
 
 
 @router.get("/voices", response_model=list[VoiceInfo])
@@ -245,7 +259,14 @@ async def list_voices(
         ]
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        # Check if it's an authentication error
+        if "401" in error_msg or "UNAUTHORIZED" in error_msg:
+            raise HTTPException(
+                status_code=401,
+                detail="HeyGen API authentication failed. Please check your HEYGEN_API_KEY in .env file."
+            )
+        raise HTTPException(status_code=500, detail=error_msg)
 
 
 @router.get("/videos/{video_id}/status")
@@ -267,7 +288,14 @@ async def get_video_status(
         return status
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = str(e)
+        # Check if it's an authentication error
+        if "401" in error_msg or "UNAUTHORIZED" in error_msg:
+            raise HTTPException(
+                status_code=401,
+                detail="HeyGen API authentication failed. Please check your HEYGEN_API_KEY in .env file."
+            )
+        raise HTTPException(status_code=500, detail=error_msg)
 
 
 @router.get("/aspect-ratios")

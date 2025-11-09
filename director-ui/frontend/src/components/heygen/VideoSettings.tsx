@@ -24,7 +24,7 @@ import {
   TestTube,
   Captions
 } from 'lucide-react';
-import { VideoConfig } from './AvatarStudio';
+import type { VideoConfig } from './AvatarStudio';
 
 interface VideoSettingsProps {
   config: VideoConfig;

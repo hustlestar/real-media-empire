@@ -1,14 +1,15 @@
 """Workspace and Project management API endpoints."""
 
 from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 
 from data.models import Workspace, Project
-from data.dao import get_db
+from data.async_dao import get_async_db
 
 router = APIRouter()
 
@@ -20,7 +21,7 @@ router = APIRouter()
 class WorkspaceCreate(BaseModel):
     """Workspace creation schema."""
     name: str = Field(..., min_length=1, max_length=255)
-    slug: str = Field(..., min_length=1, max_length=100, regex=r"^[a-z0-9-]+$")
+    slug: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
     owner_id: int = Field(...)
     storage_quota_gb: int = Field(100, ge=1)
     monthly_budget_usd: float = Field(1000.0, ge=0)
@@ -55,19 +56,19 @@ class ProjectCreate(BaseModel):
     """Project creation schema."""
     workspace_id: str
     name: str = Field(..., min_length=1, max_length=255)
-    slug: str = Field(..., min_length=1, max_length=100, regex=r"^[a-z0-9-]+$")
-    type: str = Field("campaign", regex=r"^(campaign|brand|series|folder)$")
+    slug: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
+    type: str = Field("campaign", pattern=r"^(campaign|brand|series|folder)$")
     parent_project_id: Optional[str] = None
     description: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = {}
+    project_metadata: Optional[Dict[str, Any]] = {}
 
 
 class ProjectUpdate(BaseModel):
     """Project update schema."""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    status: Optional[str] = Field(None, regex=r"^(active|archived|deleted)$")
+    status: Optional[str] = Field(None, pattern=r"^(active|archived|deleted)$")
     description: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    project_metadata: Optional[Dict[str, Any]] = None
 
 
 class ProjectResponse(BaseModel):
@@ -80,7 +81,7 @@ class ProjectResponse(BaseModel):
     parent_project_id: Optional[str]
     status: str
     description: Optional[str]
-    metadata: Dict[str, Any]
+    project_metadata: Dict[str, Any]
     created_at: datetime
     updated_at: datetime
 
@@ -95,11 +96,12 @@ class ProjectResponse(BaseModel):
 @router.post("/workspaces", response_model=WorkspaceResponse, status_code=201)
 async def create_workspace(
     workspace: WorkspaceCreate,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Create a new workspace."""
     # Check if slug already exists
-    existing = db.query(Workspace).filter(Workspace.slug == workspace.slug).first()
+    result = await db.execute(select(Workspace).filter(Workspace.slug == workspace.slug))
+    existing = result.scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=400, detail=f"Workspace with slug '{workspace.slug}' already exists")
 
@@ -116,8 +118,8 @@ async def create_workspace(
     )
 
     db.add(new_workspace)
-    db.commit()
-    db.refresh(new_workspace)
+    await db.flush()
+    await db.refresh(new_workspace)
 
     return new_workspace
 
@@ -125,26 +127,29 @@ async def create_workspace(
 @router.get("/workspaces", response_model=Dict[str, List[WorkspaceResponse]])
 async def list_workspaces(
     owner_id: Optional[int] = None,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """List all workspaces, optionally filtered by owner."""
-    query = db.query(Workspace)
+    query = select(Workspace)
 
     if owner_id is not None:
         query = query.filter(Workspace.owner_id == owner_id)
 
-    workspaces = query.order_by(Workspace.created_at.desc()).all()
+    query = query.order_by(Workspace.created_at.desc())
+    result = await db.execute(query)
+    workspaces = result.scalars().all()
 
-    return {"workspaces": workspaces}
+    return {"workspaces": list(workspaces)}
 
 
 @router.get("/workspaces/{workspace_id}", response_model=WorkspaceResponse)
 async def get_workspace(
     workspace_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get a specific workspace by ID."""
-    workspace = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+    result = await db.execute(select(Workspace).filter(Workspace.id == workspace_id))
+    workspace = result.scalar_one_or_none()
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
@@ -155,10 +160,11 @@ async def get_workspace(
 async def update_workspace(
     workspace_id: str,
     updates: WorkspaceUpdate,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Update a workspace."""
-    workspace = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+    result = await db.execute(select(Workspace).filter(Workspace.id == workspace_id))
+    workspace = result.scalar_one_or_none()
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
@@ -178,8 +184,8 @@ async def update_workspace(
 
     workspace.updated_at = datetime.utcnow()
 
-    db.commit()
-    db.refresh(workspace)
+    await db.flush()
+    await db.refresh(workspace)
 
     return workspace
 
@@ -187,15 +193,15 @@ async def update_workspace(
 @router.delete("/workspaces/{workspace_id}")
 async def delete_workspace(
     workspace_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Delete a workspace and all associated content (CASCADE)."""
-    workspace = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+    result = await db.execute(select(Workspace).filter(Workspace.id == workspace_id))
+    workspace = result.scalar_one_or_none()
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
-    db.delete(workspace)
-    db.commit()
+    await db.delete(workspace)
 
     return {"message": "Workspace deleted successfully", "id": workspace_id}
 
@@ -207,19 +213,23 @@ async def delete_workspace(
 @router.post("/projects", response_model=ProjectResponse, status_code=201)
 async def create_project(
     project: ProjectCreate,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Create a new project within a workspace."""
     # Verify workspace exists
-    workspace = db.query(Workspace).filter(Workspace.id == project.workspace_id).first()
+    result = await db.execute(select(Workspace).filter(Workspace.id == project.workspace_id))
+    workspace = result.scalar_one_or_none()
     if not workspace:
         raise HTTPException(status_code=404, detail=f"Workspace '{project.workspace_id}' not found")
 
     # Check if slug already exists in this workspace
-    existing = db.query(Project).filter(
-        Project.workspace_id == project.workspace_id,
-        Project.slug == project.slug
-    ).first()
+    result = await db.execute(
+        select(Project).filter(
+            Project.workspace_id == project.workspace_id,
+            Project.slug == project.slug
+        )
+    )
+    existing = result.scalar_one_or_none()
     if existing:
         raise HTTPException(
             status_code=400,
@@ -228,7 +238,8 @@ async def create_project(
 
     # Verify parent project exists if specified
     if project.parent_project_id:
-        parent = db.query(Project).filter(Project.id == project.parent_project_id).first()
+        result = await db.execute(select(Project).filter(Project.id == project.parent_project_id))
+        parent = result.scalar_one_or_none()
         if not parent:
             raise HTTPException(status_code=404, detail=f"Parent project '{project.parent_project_id}' not found")
         if parent.workspace_id != project.workspace_id:
@@ -243,14 +254,14 @@ async def create_project(
         parent_project_id=project.parent_project_id,
         status="active",
         description=project.description,
-        metadata=project.metadata or {},
+        project_metadata=project.project_metadata or {},
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
     )
 
     db.add(new_project)
-    db.commit()
-    db.refresh(new_project)
+    await db.flush()
+    await db.refresh(new_project)
 
     return new_project
 
@@ -260,11 +271,11 @@ async def list_projects(
     workspace_id: Optional[str] = None,
     project_type: Optional[str] = None,
     parent_project_id: Optional[str] = None,
-    status: str = Query("active", regex=r"^(active|archived|deleted)$"),
-    db: Session = Depends(get_db)
+    status: str = Query("active", pattern=r"^(active|archived|deleted)$"),
+    db: AsyncSession = Depends(get_async_db)
 ):
     """List all projects with optional filtering."""
-    query = db.query(Project)
+    query = select(Project)
 
     if workspace_id:
         query = query.filter(Project.workspace_id == workspace_id)
@@ -276,19 +287,22 @@ async def list_projects(
         query = query.filter(Project.parent_project_id == parent_project_id)
 
     query = query.filter(Project.status == status)
+    query = query.order_by(Project.created_at.desc())
 
-    projects = query.order_by(Project.created_at.desc()).all()
+    result = await db.execute(query)
+    projects = result.scalars().all()
 
-    return {"projects": projects}
+    return {"projects": list(projects)}
 
 
 @router.get("/projects/{project_id}", response_model=ProjectResponse)
 async def get_project(
     project_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get a specific project by ID."""
-    project = db.query(Project).filter(Project.id == project_id).first()
+    result = await db.execute(select(Project).filter(Project.id == project_id))
+    project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -299,10 +313,11 @@ async def get_project(
 async def update_project(
     project_id: str,
     updates: ProjectUpdate,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Update a project."""
-    project = db.query(Project).filter(Project.id == project_id).first()
+    result = await db.execute(select(Project).filter(Project.id == project_id))
+    project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -316,14 +331,14 @@ async def update_project(
     if updates.description is not None:
         project.description = updates.description
 
-    if updates.metadata is not None:
+    if updates.project_metadata is not None:
         # Merge metadata
-        project.metadata = {**project.metadata, **updates.metadata}
+        project.project_metadata = {**(project.project_metadata or {}), **updates.project_metadata}
 
     project.updated_at = datetime.utcnow()
 
-    db.commit()
-    db.refresh(project)
+    await db.flush()
+    await db.refresh(project)
 
     return project
 
@@ -331,15 +346,15 @@ async def update_project(
 @router.delete("/projects/{project_id}")
 async def delete_project(
     project_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Delete a project and all associated content (CASCADE)."""
-    project = db.query(Project).filter(Project.id == project_id).first()
+    result = await db.execute(select(Project).filter(Project.id == project_id))
+    project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    db.delete(project)
-    db.commit()
+    await db.delete(project)
 
     return {"message": "Project deleted successfully", "id": project_id}
 
@@ -351,10 +366,11 @@ async def delete_project(
 @router.get("/workspaces/{workspace_id}/stats")
 async def get_workspace_stats(
     workspace_id: str,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get statistics for a workspace."""
-    workspace = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+    result = await db.execute(select(Workspace).filter(Workspace.id == workspace_id))
+    workspace = result.scalar_one_or_none()
     if not workspace:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
@@ -362,19 +378,36 @@ async def get_workspace_stats(
     from data.models import FilmProject, Character, Asset
 
     # Count resources
-    total_projects = db.query(Project).filter(Project.workspace_id == workspace_id).count()
-    total_films = db.query(FilmProject).filter(FilmProject.workspace_id == workspace_id).count()
-    total_characters = db.query(Character).filter(Character.workspace_id == workspace_id).count()
-    total_assets = db.query(Asset).filter(Asset.workspace_id == workspace_id).count()
+    total_projects_result = await db.execute(
+        select(func.count()).select_from(Project).filter(Project.workspace_id == workspace_id)
+    )
+    total_projects = total_projects_result.scalar()
+
+    total_films_result = await db.execute(
+        select(func.count()).select_from(FilmProject).filter(FilmProject.workspace_id == workspace_id)
+    )
+    total_films = total_films_result.scalar()
+
+    total_characters_result = await db.execute(
+        select(func.count()).select_from(Character).filter(Character.workspace_id == workspace_id)
+    )
+    total_characters = total_characters_result.scalar()
+
+    total_assets_result = await db.execute(
+        select(func.count()).select_from(Asset).filter(Asset.workspace_id == workspace_id)
+    )
+    total_assets = total_assets_result.scalar()
 
     # Calculate storage usage
-    storage_query = db.query(Asset).filter(Asset.workspace_id == workspace_id).all()
-    storage_bytes = sum(asset.size or 0 for asset in storage_query)
+    storage_result = await db.execute(select(Asset).filter(Asset.workspace_id == workspace_id))
+    storage_assets = storage_result.scalars().all()
+    storage_bytes = sum(asset.size or 0 for asset in storage_assets)
     storage_gb = storage_bytes / (1024 ** 3)
 
     # Calculate costs
-    cost_query = db.query(FilmProject).filter(FilmProject.workspace_id == workspace_id).all()
-    total_cost = sum(film.total_cost or 0 for film in cost_query)
+    cost_result = await db.execute(select(FilmProject).filter(FilmProject.workspace_id == workspace_id))
+    films = cost_result.scalars().all()
+    total_cost = sum(film.total_cost or 0 for film in films)
 
     return {
         "workspace_id": workspace_id,

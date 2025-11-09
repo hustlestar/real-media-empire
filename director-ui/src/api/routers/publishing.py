@@ -8,7 +8,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Import publishing system from shared library
 from features.publishing.manager import PublishingManager
@@ -16,8 +16,9 @@ from features.publishing.queue import PublishingQueue, QueuedPublishConfig, Queu
 from features.publishing.platforms.base import PublishConfig, PublishResult, PublishStatus
 
 # Import data models for tracking
-from data.models import PublishHistory, FilmProject, FilmVariant
-from data.dao import get_db
+from sqlalchemy import select, func
+from data.models import PublishingPost, FilmProject
+from data.async_dao import get_async_db
 import uuid as uuid_lib
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ _queue: Optional[PublishingQueue] = None
 # ============================================================================
 
 async def create_publish_history_record(
-    db: Session,
+    db: AsyncSession,
     film_project_id: Optional[str],
     film_variant_id: Optional[str],
     account_id: str,
@@ -42,26 +43,26 @@ async def create_publish_history_record(
     title: str,
     description: Optional[str],
     result: PublishResult,
-) -> Optional[PublishHistory]:
-    """Create a PublishHistory record to track publication."""
+) -> Optional[PublishingPost]:
+    """Create a PublishingPost record to track publication."""
     if not film_project_id:
         # If no film project linked, don't create history
         return None
 
     try:
-        history = PublishHistory(
+        history = PublishingPost(
             id=str(uuid_lib.uuid4()),
-            film_project_id=film_project_id,
-            film_variant_id=film_variant_id,
-            account_id=account_id,
+            social_account_id=account_id,
+            content_type="video",  # Assuming video content
+            content_url=None,  # Will be set later if available
+            caption=description,
             platform=platform,
-            platform_post_id=result.post_id if hasattr(result, 'post_id') else None,
-            post_url=result.post_url if hasattr(result, 'post_url') else None,
-            title=title,
-            description=description,
-            published_at=datetime.utcnow(),
             status="published" if result.success else "failed",
-            metrics={},
+            published_at=datetime.utcnow() if result.success else None,
+            platform_post_id=result.post_id if hasattr(result, 'post_id') else None,
+            platform_url=result.post_url if hasattr(result, 'post_url') else None,
+            source_id=film_project_id,
+            source_type="film",
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -70,7 +71,8 @@ async def create_publish_history_record(
 
         # Update film project published fields
         if film_project_id:
-            film_project = db.query(FilmProject).filter(FilmProject.id == film_project_id).first()
+            result = await db.execute(select(FilmProject).filter(FilmProject.id == film_project_id))
+            film_project = result.scalar_one_or_none()
             if film_project:
                 if not film_project.published_at:
                     film_project.published_at = datetime.utcnow()
@@ -81,8 +83,8 @@ async def create_publish_history_record(
                 if platform not in film_project.published_platforms:
                     film_project.published_platforms = list(film_project.published_platforms) + [platform]
 
-        db.commit()
-        db.refresh(history)
+        await db.flush()
+        await db.refresh(history)
         return history
 
     except Exception as e:
@@ -99,13 +101,28 @@ def get_manager() -> PublishingManager:
     return _manager
 
 
-def get_queue() -> PublishingQueue:
-    """Get publishing queue instance."""
+def get_queue() -> Optional[PublishingQueue]:
+    """
+    Get publishing queue instance.
+
+    Returns None if queue is not initialized (requires sync SQLAlchemy session).
+    Endpoints should handle None gracefully by returning empty results.
+    """
     global _queue
-    if _queue is None:
-        # TODO: Initialize with proper DB session
-        raise HTTPException(status_code=500, detail="Queue not initialized")
     return _queue
+
+
+async def initialize_queue():
+    """
+    Initialize publishing queue.
+
+    Note: Currently disabled because PublishingQueue requires sync SQLAlchemy,
+    but we're using async SQLAlchemy. This needs architectural refactoring.
+    """
+    global _queue
+    logger.warning("Publishing queue initialization skipped - requires sync SQLAlchemy session")
+    logger.warning("Queue features will return empty results instead of errors")
+    _queue = None  # Explicitly set to None
 
 
 # ============================================================================
@@ -246,7 +263,7 @@ async def get_account_platforms(account_id: str, manager: PublishingManager = De
 async def publish_immediate(
     request: PublishRequest,
     manager: PublishingManager = Depends(get_manager),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Publish video immediately to specified platforms.
@@ -254,7 +271,7 @@ async def publish_immediate(
     This is a synchronous operation that will wait for all platforms to complete.
     For scheduled or background publishing, use /publish/scheduled endpoint.
 
-    If film_project_id is provided, creates PublishHistory records for tracking.
+    If film_project_id is provided, creates PublishingPost records for tracking.
     """
     try:
         # Create publish config
@@ -308,7 +325,7 @@ async def publish_immediate(
 @router.post("/publish/scheduled", status_code=202)
 async def publish_scheduled(
     request: ScheduledPublishRequest,
-    queue: PublishingQueue = Depends(get_queue)
+    queue: Optional[PublishingQueue] = Depends(get_queue)
 ):
     """
     Schedule video for publishing.
@@ -316,6 +333,9 @@ async def publish_scheduled(
     Returns job ID that can be used to check status.
     Video will be published at scheduled_time or immediately if time is in the past.
     """
+    if queue is None:
+        raise HTTPException(status_code=503, detail="Queue not available - scheduled publishing disabled")
+
     try:
         import uuid
 
@@ -361,9 +381,12 @@ async def publish_scheduled(
 @router.post("/publish/batch", status_code=202)
 async def publish_batch(
     request: BatchPublishRequest,
-    queue: PublishingQueue = Depends(get_queue)
+    queue: Optional[PublishingQueue] = Depends(get_queue)
 ):
     """Schedule multiple videos for publishing."""
+    if queue is None:
+        raise HTTPException(status_code=503, detail="Queue not available - batch publishing disabled")
+
     try:
         import uuid
 
@@ -410,8 +433,10 @@ async def publish_batch(
 # ============================================================================
 
 @router.get("/jobs/{job_id}", response_model=JobResponse)
-async def get_job_status(job_id: str, queue: PublishingQueue = Depends(get_queue)):
+async def get_job_status(job_id: str, queue: Optional[PublishingQueue] = Depends(get_queue)):
     """Get status of publishing job."""
+    if queue is None:
+        raise HTTPException(status_code=503, detail="Queue not available")
     job = queue.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
@@ -437,9 +462,18 @@ async def list_jobs(
     account_id: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
-    queue: PublishingQueue = Depends(get_queue)
+    queue: Optional[PublishingQueue] = Depends(get_queue)
 ):
     """List jobs with optional filtering."""
+    if queue is None:
+        return {
+            "jobs": [],
+            "count": 0,
+            "limit": limit,
+            "offset": offset,
+            "queue_available": False
+        }
+
     try:
         # Parse status
         status_filter = QueueStatus(status) if status else None
@@ -478,8 +512,10 @@ async def list_jobs(
 
 
 @router.delete("/jobs/{job_id}")
-async def cancel_job(job_id: str, queue: PublishingQueue = Depends(get_queue)):
+async def cancel_job(job_id: str, queue: Optional[PublishingQueue] = Depends(get_queue)):
     """Cancel pending or scheduled job."""
+    if queue is None:
+        raise HTTPException(status_code=503, detail="Queue not available - cannot cancel jobs")
     success = queue.cancel_job(job_id)
     if not success:
         raise HTTPException(status_code=400, detail="Job cannot be cancelled (not pending/scheduled or not found)")
@@ -487,8 +523,19 @@ async def cancel_job(job_id: str, queue: PublishingQueue = Depends(get_queue)):
 
 
 @router.get("/queue/stats")
-async def get_queue_stats(queue: PublishingQueue = Depends(get_queue)):
+async def get_queue_stats(queue: Optional[PublishingQueue] = Depends(get_queue)):
     """Get queue statistics."""
+    if queue is None:
+        return {
+            "stats": {
+                "total_jobs": 0,
+                "pending": 0,
+                "processing": 0,
+                "completed": 0,
+                "failed": 0,
+                "queue_available": False
+            }
+        }
     stats = queue.get_queue_stats()
     return {"stats": stats}
 

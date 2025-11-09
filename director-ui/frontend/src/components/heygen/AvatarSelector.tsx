@@ -11,7 +11,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Video, User, Search, Play, Check, Filter } from 'lucide-react';
-import { Avatar } from './AvatarStudio';
+import type { Avatar } from './AvatarStudio';
 
 interface AvatarSelectorProps {
   selectedAvatar: Avatar | null;
