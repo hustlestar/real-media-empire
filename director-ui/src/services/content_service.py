@@ -139,29 +139,36 @@ class ContentService:
             logger.info(f"Reprocessed existing content {content_id} for hash {content_hash}")
             return content, False
 
-        # Create new content item in database
+        # Create new content item in database and link tags in a single transaction
         extracted_text_paths = {detected_language: text_path}
-        content_id = await self._create_content_item(
-            content_hash=content_hash,
-            source_type=source_type,
-            source_url=url,
-            file_reference=None,
-            extracted_text_path=text_path,
-            extracted_text_paths=extracted_text_paths,
-            metadata=metadata,
-            user_id=user_id,
-            status=ProcessingStatus.COMPLETED.value,
-            detected_language=detected_language
-        )
 
-        # Link tags to content
-        if tag_names:
-            try:
-                tag_ids = await self.tag_service.get_or_create_tags(tag_names)
-                await self.tag_service.link_tags_to_content(content_id, tag_ids)
-            except Exception as e:
-                logger.error(f"Error linking tags to content: {e}")
+        async with self.db._pool.acquire() as conn:
+            async with conn.transaction():
+                # Create content item
+                content_id = await self._create_content_item_in_transaction(
+                    conn,
+                    content_hash=content_hash,
+                    source_type=source_type,
+                    source_url=url,
+                    file_reference=None,
+                    extracted_text_path=text_path,
+                    extracted_text_paths=extracted_text_paths,
+                    metadata=metadata,
+                    user_id=user_id,
+                    status=ProcessingStatus.COMPLETED.value,
+                    detected_language=detected_language
+                )
 
+                # Link tags to content in same transaction
+                if tag_names:
+                    try:
+                        tag_ids = await self.tag_service.get_or_create_tags(tag_names)
+                        await self.tag_service.link_tags_to_content(content_id, tag_ids)
+                    except Exception as e:
+                        logger.error(f"Error linking tags to content: {e}")
+                        raise  # Re-raise to rollback transaction
+
+        # Now retrieve the committed content
         content = await self._get_by_id(content_id)
         if not content:
             logger.error(f"Failed to retrieve newly created content {content_id}")
@@ -376,6 +383,60 @@ class ContentService:
                 logger.warning(f"No row found for content_id {content_id}")
             return self._parse_content_row(row)
 
+    async def _create_content_item_in_transaction(
+        self,
+        conn,
+        content_hash: str,
+        source_type: str,
+        source_url: Optional[str],
+        file_reference: Optional[str],
+        extracted_text_path: str,
+        extracted_text_paths: Dict[str, str],
+        metadata: Dict,
+        user_id: int,
+        status: str,
+        detected_language: Optional[str] = None
+    ) -> UUID:
+        """Create content item in database using provided connection.
+
+        Args:
+            conn: Database connection to use (for transaction support)
+            ... other params
+
+        Returns:
+            Content UUID
+        """
+        import json
+
+        row = await conn.fetchrow(
+            """
+            INSERT INTO content_items (
+                content_hash, source_type, source_url, file_reference,
+                extracted_text_path, extracted_text_paths, content_metadata, user_id, processing_status,
+                detected_language, created_at, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)
+            RETURNING id
+            """,
+            content_hash,
+            source_type,
+            source_url,
+            file_reference,
+            extracted_text_path,
+            json.dumps(extracted_text_paths),
+            json.dumps(metadata),
+            user_id,
+            status,
+            detected_language,
+            datetime.utcnow()
+        )
+        if not row:
+            logger.error("INSERT did not return a row with id")
+            raise ValueError("Failed to create content item - no ID returned")
+        content_id = row['id']
+        logger.info(f"Created content item with ID {content_id}")
+        return content_id
+
     async def _create_content_item(
         self,
         content_hash: str,
@@ -389,42 +450,16 @@ class ContentService:
         status: str,
         detected_language: Optional[str] = None
     ) -> UUID:
-        """Create content item in database.
+        """Create content item in database (wraps transaction method).
 
         Returns:
             Content UUID
         """
-        import json
-
         async with self.db._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                INSERT INTO content_items (
-                    content_hash, source_type, source_url, file_reference,
-                    extracted_text_path, extracted_text_paths, content_metadata, user_id, processing_status,
-                    detected_language, created_at, updated_at
-                )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)
-                RETURNING id
-                """,
-                content_hash,
-                source_type,
-                source_url,
-                file_reference,
-                extracted_text_path,
-                json.dumps(extracted_text_paths),
-                json.dumps(metadata),
-                user_id,
-                status,
-                detected_language,
-                datetime.utcnow()
+            return await self._create_content_item_in_transaction(
+                conn, content_hash, source_type, source_url, file_reference,
+                extracted_text_path, extracted_text_paths, metadata, user_id, status, detected_language
             )
-            if not row:
-                logger.error("INSERT did not return a row with id")
-                raise ValueError("Failed to create content item - no ID returned")
-            content_id = row['id']
-            logger.info(f"Created content item with ID {content_id}")
-            return content_id
 
     async def _update_content_item(
         self,
