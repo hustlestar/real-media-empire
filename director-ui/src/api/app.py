@@ -2,6 +2,7 @@
 
 import logging
 import sys
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config.settings import BotConfig
@@ -194,13 +195,11 @@ register_error_handlers(app)
 async def run_database_migrations():
     """Run alembic database migrations on startup."""
     try:
-        from alembic.config import Config
-        from alembic import command
-        import asyncio
         from pathlib import Path
+        import subprocess
+        import asyncio
 
         # Get project root (director-ui/) from current file location
-        # This file is at: director-ui/src/api/app.py
         current_file = Path(__file__).resolve()
         project_root = current_file.parent.parent.parent  # Go up 3 levels: api/ -> src/ -> director-ui/
         alembic_ini_path = project_root / "alembic.ini"
@@ -209,33 +208,51 @@ async def run_database_migrations():
             logger.warning(f"⚠ alembic.ini not found at {alembic_ini_path}, skipping migrations")
             return
 
-        # Get the alembic.ini config
-        alembic_cfg = Config(str(alembic_ini_path))
-
-        # Set the script location to the alembic directory
-        alembic_cfg.set_main_option('script_location', str(project_root / 'alembic'))
-
-        # Suppress alembic's INFO logging to reduce noise
-        import logging as stdlib_logging
-        stdlib_logging.getLogger('alembic').setLevel(stdlib_logging.WARNING)
-
-        # Run migrations to head in a thread since alembic command interface is sync
-        # but it triggers async code internally
+        # Run migrations in subprocess to avoid event loop conflicts
         logger.info("Running database migrations...")
-        logger.info(f"  Alembic config: {alembic_ini_path}")
-        logger.info(f"  Script location: {project_root / 'alembic'}")
+        logger.info(f"  Working directory: {project_root}")
         logger.info(f"  Timeout: {config.migration_timeout} seconds")
 
         try:
-            await asyncio.wait_for(
-                asyncio.to_thread(command.upgrade, alembic_cfg, "head"),
-                timeout=float(config.migration_timeout)
+            # Run alembic upgrade in subprocess with timeout
+            # Use asyncio.create_subprocess_exec for async subprocess
+            process = await asyncio.create_subprocess_exec(
+                "alembic", "upgrade", "head",
+                cwd=str(project_root),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env={**os.environ}
             )
-            logger.info("✓ Database migrations completed successfully")
-        except asyncio.TimeoutError:
-            logger.error(f"⚠ Database migration timed out after {config.migration_timeout} seconds")
+
+            # Wait for completion with timeout
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(),
+                    timeout=float(config.migration_timeout)
+                )
+
+                if process.returncode == 0:
+                    logger.info("✓ Database migrations completed successfully")
+                else:
+                    logger.error(f"⚠ Database migration failed with code {process.returncode}")
+                    if stdout:
+                        logger.error(f"  stdout: {stdout.decode()}")
+                    if stderr:
+                        logger.error(f"  stderr: {stderr.decode()}")
+                    logger.warning("⚠ Application will continue but database schema may be outdated")
+
+            except asyncio.TimeoutError:
+                logger.error(f"⚠ Database migration timed out after {config.migration_timeout} seconds")
+                logger.warning("⚠ Killing migration process...")
+                process.kill()
+                await process.wait()
+                logger.warning("⚠ Application will continue but database schema may be outdated")
+                logger.warning("⚠ Try running migrations manually: cd director-ui && alembic upgrade head")
+
+        except FileNotFoundError:
+            logger.error("⚠ alembic command not found - is it installed in venv?")
             logger.warning("⚠ Application will continue but database schema may be outdated")
-            logger.warning("⚠ Try running migrations manually: cd director-ui && alembic upgrade head")
+            logger.warning("⚠ Try: uv add alembic")
 
     except Exception as e:
         logger.error(f"Failed to run database migrations: {e}", exc_info=True)
