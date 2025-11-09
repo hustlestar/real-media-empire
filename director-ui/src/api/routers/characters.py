@@ -7,6 +7,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 import os
+import logging
 
 from sqlalchemy import select, func
 from data.models import Character
@@ -15,6 +16,7 @@ from image.fal_client import FALClient
 from image.replicate_client import ReplicateClient
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Best models for character consistency
 CHARACTER_GENERATION_MODELS = {
@@ -539,14 +541,25 @@ async def generate_character_image(
     import time
     start_time = time.time()
 
+    logger.info("=" * 80)
+    logger.info("CHARACTER IMAGE GENERATION REQUEST")
+    logger.info(f"Character ID: {request.character_id}")
+    logger.info(f"Model: {request.model}")
+    logger.info(f"Number of images: {request.num_images}")
+    logger.info(f"Seed: {request.seed}")
+    logger.info(f"Add to character: {request.add_to_character}")
+
     # Validate model
     if request.model not in CHARACTER_GENERATION_MODELS:
+        logger.error(f"Invalid model requested: {request.model}")
         raise HTTPException(
             status_code=400,
             detail=f"Invalid model. Available: {list(CHARACTER_GENERATION_MODELS.keys())}"
         )
 
     model_config = CHARACTER_GENERATION_MODELS[request.model]
+    logger.info(f"Using model: {model_config['name']} ({model_config['provider']})")
+    logger.info(f"Cost per image: ${model_config['cost_per_image']:.4f}")
 
     # Build final prompt
     final_prompt = request.prompt or ""
@@ -556,54 +569,79 @@ async def generate_character_image(
         result = await db.execute(select(Character).filter(Character.id == request.character_id))
         character = result.scalar_one_or_none()
         if not character:
+            logger.error(f"Character not found: {request.character_id}")
             raise HTTPException(status_code=404, detail="Character not found")
+
+        logger.info(f"Generating for character: {character.name} (ID: {character.id})")
 
         # Combine consistency prompt with custom prompt/refinement
         if request.prompt:
             final_prompt = f"{character.consistency_prompt}\n\nRefinement: {request.prompt}"
+            logger.info(f"Using consistency prompt with refinement")
         else:
             final_prompt = character.consistency_prompt
+            logger.info(f"Using character consistency prompt")
     elif not request.prompt:
+        logger.error("No character_id or prompt provided")
         raise HTTPException(
             status_code=400,
             detail="Either character_id or prompt must be provided"
         )
 
+    logger.info(f"Final prompt ({len(final_prompt)} chars):")
+    logger.info(f"  {final_prompt[:200]}{'...' if len(final_prompt) > 200 else ''}")
+    if request.negative_prompt:
+        logger.info(f"Negative prompt: {request.negative_prompt}")
+
     # Generate images using appropriate provider
     generated_images = []
     provider = model_config["provider"]
+
+    logger.info(f"Starting image generation with {provider.upper()} provider...")
 
     try:
         if provider == "fal":
             client = FALClient()
             for i in range(request.num_images):
+                current_seed = request.seed + i if request.seed else None
+                logger.info(f"Generating image {i+1}/{request.num_images} (seed: {current_seed})...")
+
                 image_url = await client.generate_image(
                     prompt=final_prompt,
                     model=model_config["model_id"],
                     negative_prompt=request.negative_prompt,
-                    seed=request.seed + i if request.seed else None
+                    seed=current_seed
                 )
                 generated_images.append(image_url)
+                logger.info(f"✓ Image {i+1} generated: {image_url}")
 
         elif provider == "replicate":
             client = ReplicateClient()
             for i in range(request.num_images):
+                current_seed = request.seed + i if request.seed else None
+                logger.info(f"Generating image {i+1}/{request.num_images} (seed: {current_seed})...")
+
                 image_url = await client.generate_image(
                     prompt=final_prompt,
                     model=model_config["model_id"],
                     negative_prompt=request.negative_prompt,
-                    seed=request.seed + i if request.seed else None
+                    seed=current_seed
                 )
                 generated_images.append(image_url)
+                logger.info(f"✓ Image {i+1} generated: {image_url}")
 
         else:
+            logger.error(f"Unsupported provider: {provider}")
             raise HTTPException(status_code=500, detail=f"Unsupported provider: {provider}")
 
     except Exception as e:
+        logger.error(f"Image generation failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
 
     # Save all generated images to assets table for reusability and cost tracking
     from api.helpers.asset_saver import save_generation_as_asset
+
+    logger.info(f"Saving {len(generated_images)} images to assets table...")
 
     character = None
     if request.character_id:
@@ -611,11 +649,14 @@ async def generate_character_image(
         character = result.scalar_one_or_none()
 
     for idx, image_url in enumerate(generated_images):
-        await save_generation_as_asset(
+        asset_name = f"{character.name if character else 'Character'}_{model_config['name']}_generation_{idx+1}"
+        logger.info(f"Saving asset {idx+1}/{len(generated_images)}: {asset_name}")
+
+        asset = await save_generation_as_asset(
             db=db,
             workspace_id=character.workspace_id if character else None,
             character_id=character.id if character else None,
-            name=f"{character.name if character else 'Character'}_{model_config['name']}_generation_{idx+1}",
+            name=asset_name,
             asset_type="image",
             url=image_url,
             source="generation",
@@ -633,6 +674,7 @@ async def generate_character_image(
             },
             tags=["ai-generated", "character-image", model_config["name"].lower().replace(" ", "-")]
         )
+        logger.info(f"✓ Asset saved - ID: {asset.id}, URL: {image_url}, Cost: ${model_config['cost_per_image']:.4f}")
 
     # Add to character reference images if requested
     if request.add_to_character and character:
@@ -641,9 +683,16 @@ async def generate_character_image(
         character.reference_images.extend(generated_images)
         character.updated_at = datetime.utcnow()
         await db.flush()
+        logger.info(f"Added {len(generated_images)} images to character '{character.name}' reference images")
 
     generation_time = time.time() - start_time
     total_cost = model_config["cost_per_image"] * request.num_images
+
+    logger.info(f"Generation completed successfully!")
+    logger.info(f"Total time: {generation_time:.2f}s")
+    logger.info(f"Total cost: ${total_cost:.4f}")
+    logger.info(f"Generated {len(generated_images)} images")
+    logger.info("=" * 80)
 
     return GenerateCharacterImageResponse(
         images=generated_images,
