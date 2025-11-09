@@ -51,15 +51,15 @@ export default function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: Cre
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black bg-opacity-50"
+        className="absolute inset-0 bg-black bg-opacity-75"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="relative bg-gray-800 border border-gray-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+      <div className="relative bg-gray-800 border border-gray-700 rounded-xl p-6 w-full max-w-md shadow-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
