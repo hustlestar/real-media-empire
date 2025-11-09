@@ -3,13 +3,14 @@ import { X, Save, Upload, Sparkles, RefreshCw, Download, Zap, Image as ImageIcon
 import { apiUrl } from '../../config/api';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
 
-const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
+const CharacterForm: React.FC<any> = ({ character, onClose, onSave }) => {
   const { currentWorkspace } = useWorkspace();
-  const [characterType, setCharacterType] = useState('human');
+  const isEditing = !!character;
+  const [characterType, setCharacterType] = useState(character?.attributes?.character_type || 'human');
   const [characterTypes, setCharacterTypes] = useState<any>({});
   const [formData, setFormData] = useState<any>({
-    name: '',
-    description: '',
+    name: character?.name || '',
+    description: character?.description || '',
     // Universal
     distinctive_features: '',
     color_scheme: '',
@@ -51,7 +52,7 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
   const [availableModels, setAvailableModels] = useState<any>({});
   const [selectedModel, setSelectedModel] = useState('flux-dev');
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<string[]>(character?.reference_images || []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationPrompt, setGenerationPrompt] = useState('');
   const [generationSeed, setGenerationSeed] = useState<number | null>(null);
@@ -65,6 +66,20 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
     loadAvailableModels();
     loadCharacterTypes();
   }, []);
+
+  // Populate form data when editing
+  useEffect(() => {
+    if (character?.attributes) {
+      const attrs = character.attributes;
+      setFormData((prev: any) => ({
+        ...prev,
+        ...attrs,
+        distinctive_features: Array.isArray(attrs.distinctive_features)
+          ? attrs.distinctive_features.join(', ')
+          : (attrs.distinctive_features || '')
+      }));
+    }
+  }, [character]);
 
   const loadAvailableModels = async () => {
     try {
@@ -298,20 +313,35 @@ Be creative and specific! Make this character memorable and visually distinctive
         }
       });
 
-      const characterData = {
-        workspace_id: currentWorkspace.id,
+      const characterData: any = {
         name: formData.name,
         description: formData.description,
         reference_images: selectedImages,
-        attributes: attributes,
-        projects_used: []
+        attributes: attributes
       };
 
-      await fetch(apiUrl('/api/characters'), {
-        method: 'POST',
+      // Only set workspace_id and projects_used when creating
+      if (!isEditing) {
+        characterData.workspace_id = currentWorkspace.id;
+        characterData.projects_used = [];
+      }
+
+      const url = isEditing
+        ? apiUrl(`/api/characters/${character.id}`)
+        : apiUrl('/api/characters');
+
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(characterData)
       });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${isEditing ? 'update' : 'create'} character`);
+      }
+
       onSave();
       onClose();
     } catch (error) {
@@ -359,7 +389,7 @@ Be creative and specific! Make this character memorable and visually distinctive
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 overflow-y-auto">
       <div className="bg-gray-800 rounded-xl p-8 max-w-3xl w-full mx-4 my-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Create Character</h2>
+          <h2 className="text-2xl font-bold">{isEditing ? 'Edit Character' : 'Create Character'}</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-700 rounded">
             <X className="w-6 h-6" />
           </button>

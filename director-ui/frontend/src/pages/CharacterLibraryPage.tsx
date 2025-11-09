@@ -31,6 +31,7 @@ const CharacterLibraryPage: React.FC = () => {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -51,6 +52,16 @@ const CharacterLibraryPage: React.FC = () => {
     char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     char.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleEdit = (character: Character) => {
+    setEditingCharacter(character);
+    setShowForm(true);
+  };
+
+  const handleFormClose = () => {
+    setShowForm(false);
+    setEditingCharacter(null);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-pink-900 to-red-900 text-white">
@@ -87,8 +98,8 @@ const CharacterLibraryPage: React.FC = () => {
       </header>
 
       <div className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className={`${selectedCharacter ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className={`${selectedCharacter ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
             {filteredCharacters.length === 0 ? (
               <div className="text-center py-20 text-gray-400">
                 <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
@@ -120,6 +131,7 @@ const CharacterLibraryPage: React.FC = () => {
                 character={selectedCharacter}
                 onClose={() => setSelectedCharacter(null)}
                 onUpdate={fetchCharacters}
+                onEdit={handleEdit}
               />
             </div>
           )}
@@ -128,7 +140,8 @@ const CharacterLibraryPage: React.FC = () => {
 
       {showForm && (
         <CharacterForm
-          onClose={() => setShowForm(false)}
+          character={editingCharacter}
+          onClose={handleFormClose}
           onSave={fetchCharacters}
         />
       )}
