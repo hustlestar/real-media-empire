@@ -58,6 +58,7 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
   const [numVariations, setNumVariations] = useState(1);
   const [lastCost, setLastCost] = useState(0);
   const [showImageGen, setShowImageGen] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   // Load available models and types
   useEffect(() => {
@@ -88,6 +89,122 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
       }
     } catch (error) {
       console.error('Failed to load character types:', error);
+    }
+  };
+
+  const handleAIEnhance = async () => {
+    // Name or description is helpful but not required for enhancement
+    setIsEnhancing(true);
+    try {
+      // Get available attributes for this character type
+      const typeInfo = characterTypes[characterType];
+      if (!typeInfo) {
+        alert('Please select a character type first');
+        return;
+      }
+
+      const availableAttributes = typeInfo.attributes;
+
+      // Collect any existing attributes
+      const existingAttributes: any = {};
+      Object.keys(formData).forEach(key => {
+        if (key !== 'name' && key !== 'description' && key !== 'distinctive_features' && formData[key]) {
+          existingAttributes[key] = formData[key];
+        }
+      });
+
+      // Build comprehensive prompt for AI enhancement using existing endpoint
+      const existingInfo = Object.keys(existingAttributes).length > 0
+        ? `\nExisting attributes to preserve/refine:\n${JSON.stringify(existingAttributes, null, 2)}`
+        : '';
+
+      const userPrompt = `Fill in detailed character attributes for a ${typeInfo.name} character.
+
+Character Type: ${typeInfo.name} (${typeInfo.description})
+Name: ${formData.name || 'Unnamed'}
+Description: ${formData.description || 'No description provided'}${existingInfo}
+
+Available attributes to fill: ${availableAttributes.join(', ')}
+
+Instructions:
+1. Generate creative, specific, and vivid values for ALL available attributes
+2. Make attributes consistent with each other and the character description
+3. Be specific (e.g., "fluffy long-haired" not just "fluffy", "titanium alloy" not just "metal")
+4. Add 3-5 distinctive features that make this character unique and recognizable
+5. If existing attributes are provided, refine them but keep the essence
+
+Return ONLY a valid JSON object with this exact structure:
+{
+  "attributes": {
+    ${availableAttributes.map(attr => `"${attr}": "string value"`).join(',\n    ')}
+  },
+  "distinctive_features": ["feature1", "feature2", "feature3"]
+}
+
+Be creative and specific! Make this character memorable and visually distinctive.`;
+
+      const systemPrompt = "You are a creative character designer that generates detailed, specific character attributes in JSON format. Return ONLY valid JSON, no markdown formatting.";
+
+      // Use existing AI enhancement endpoint
+      const response = await fetch(apiUrl('/api/ai-enhancement/enhance'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash', // Good balance of quality and cost
+          system_prompt: systemPrompt,
+          user_prompt: userPrompt,
+          field_name: 'character_attributes',
+          form_data: { character_type: characterType },
+          max_tokens: 2000,
+          temperature: 0.8
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Parse the enhanced text as JSON
+        let result;
+        try {
+          // Remove markdown code blocks if present
+          let jsonText = data.enhanced_text.trim();
+          if (jsonText.startsWith('```json')) {
+            jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
+          } else if (jsonText.startsWith('```')) {
+            jsonText = jsonText.replace(/```\n?/g, '');
+          }
+          result = JSON.parse(jsonText);
+        } catch (parseError) {
+          console.error('Failed to parse AI response:', data.enhanced_text);
+          alert('AI returned invalid response. Please try again.');
+          return;
+        }
+
+        // Update form with AI-suggested attributes
+        const updatedFormData = { ...formData };
+        if (result.attributes) {
+          Object.entries(result.attributes).forEach(([key, value]) => {
+            if (value && typeof value === 'string') {
+              updatedFormData[key] = value;
+            }
+          });
+        }
+
+        // Update distinctive features
+        if (result.distinctive_features && Array.isArray(result.distinctive_features)) {
+          updatedFormData.distinctive_features = result.distinctive_features.join(', ');
+        }
+
+        setFormData(updatedFormData);
+      } else {
+        const error = await response.json();
+        alert(`AI Enhancement failed: ${error.detail || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('AI enhancement error:', error);
+      alert('Failed to enhance character attributes. Please try again.');
+    } finally {
+      setIsEnhancing(false);
     }
   };
 
@@ -295,6 +412,42 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
                 {characterTypes[characterType].description}
               </p>
             )}
+          </div>
+
+          {/* AI Enhance Button */}
+          <div className="bg-purple-900 bg-opacity-20 border border-purple-500 border-opacity-40 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-semibold flex items-center gap-2 mb-1">
+                  <Zap className="w-4 h-4 text-purple-400" />
+                  AI Auto-Fill Character Attributes
+                </h4>
+                <p className="text-xs text-gray-400">
+                  Let AI intelligently fill all character details based on type{formData.name ? `, name` : ''}{formData.description ? `, and description` : ''}
+                </p>
+              </div>
+              <button
+                onClick={handleAIEnhance}
+                disabled={isEnhancing}
+                className={`px-6 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                  isEnhancing
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-purple-500/50'
+                }`}
+              >
+                {isEnhancing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Enhancing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    AI Enhance
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Type-Specific Attributes */}
