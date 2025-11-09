@@ -1,12 +1,12 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import type { ContentItemResponse } from '../api/types.gen';
+import React, { createContext, useContext, useState, useCallback, type ReactNode, useEffect } from 'react';
+import type { ContentResponse } from '../api/types.gen';
 
 const STORAGE_KEY = 'bundler_items';
 const FORM_STATE_KEY = 'bundle_form_state';
 
 export interface BundleItem {
   id: string;
-  content: ContentItemResponse;
+  content: ContentResponse;
 }
 
 export interface BundlerState {
@@ -20,7 +20,7 @@ export interface BundlerContextType {
   isOpen: boolean;
 
   // Actions
-  addItem: (content: ContentItemResponse) => void;
+  addItem: (content: ContentResponse) => void;
   removeItem: (contentId: string) => void;
   clearItems: () => void;
   clearFormState: () => void;
@@ -29,7 +29,7 @@ export interface BundlerContextType {
   closePanel: () => void;
   hasItem: (contentId: string) => boolean;
   getItemCount: () => number;
-  loadBundle: (contents: ContentItemResponse[]) => void;
+  loadBundle: (contents: ContentResponse[]) => void;
 }
 
 const BundlerContext = createContext<BundlerContextType | undefined>(undefined);
@@ -82,7 +82,7 @@ export const BundlerProvider: React.FC<BundlerProviderProps> = ({ children }) =>
     }
   }, [items]);
 
-  const addItem = useCallback((content: ContentItemResponse) => {
+  const addItem = useCallback((content: ContentResponse) => {
     setItems(prev => {
       // Check if item already exists
       if (prev.some(item => item.id === content.id)) {
@@ -146,7 +146,7 @@ export const BundlerProvider: React.FC<BundlerProviderProps> = ({ children }) =>
     return items.length;
   }, [items]);
 
-  const loadBundle = useCallback((contents: ContentItemResponse[]) => {
+  const loadBundle = useCallback((contents: ContentResponse[]) => {
     const newItems: BundleItem[] = contents.map(content => ({
       id: content.id,
       content

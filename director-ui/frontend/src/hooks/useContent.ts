@@ -7,7 +7,7 @@ import {
   deleteContentApiV1ContentContentIdDelete,
   updateContentLanguageApiV1ContentContentIdLanguagePatch,
 } from '@/api/sdk.gen'
-import type { ContentCreateFromURL } from '@/api/types.gen'
+import type { ContentCreateFromUrl } from '@/api/types.gen'
 
 export const useContentList = (page = 1, pageSize = 20, sourceType?: string) => {
   return useQuery({
@@ -29,7 +29,7 @@ export const useCreateContentFromUrl = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (data: ContentCreateFromURL) => {
+    mutationFn: async (data: ContentCreateFromUrl) => {
       const response = await createContentFromUrlApiV1ContentFromUrlPost({
         body: data,
       })
