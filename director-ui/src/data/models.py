@@ -42,6 +42,12 @@ class Workspace(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Relationships
+    projects = relationship("Project", back_populates="workspace", cascade="all, delete-orphan")
+    film_projects = relationship("FilmProject", back_populates="workspace")
+    characters = relationship("Character", back_populates="workspace")
+    assets = relationship("Asset", back_populates="workspace")
+
 
 class Project(Base):
     """Project model for organizing work within workspaces."""
@@ -60,7 +66,8 @@ class Project(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    workspace = relationship("Workspace", backref="projects")
+    workspace = relationship("Workspace", back_populates="projects")
+    films = relationship("FilmProject", back_populates="project")
 
 
 class Character(Base):
@@ -98,10 +105,17 @@ class Asset(Base):
 
 
 class FilmProject(Base):
-    """Film project model for tracking AI-generated films."""
+    """Film project model for tracking AI-generated films.
+
+    Each film belongs to a workspace and optionally a project for organization.
+    Supports platform variants and publishing tracking.
+    """
     __tablename__ = "film_projects"
 
     id = Column(String, primary_key=True)  # film_id
+    workspace_id = Column(String, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True)
+    project_id = Column(String, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True)
+
     title = Column(String, nullable=False)
     description = Column(Text)
     status = Column(String, default="pending")  # pending, processing, completed, failed
@@ -117,6 +131,10 @@ class FilmProject(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
+
+    # Relationships
+    workspace = relationship("Workspace", back_populates="film_projects")
+    project = relationship("Project", back_populates="films")
 
 
 class Presentation(Base):
