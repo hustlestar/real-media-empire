@@ -22,12 +22,25 @@ export default function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: Cre
     setIsCreating(true);
 
     try {
+      // Generate slug from name: lowercase, replace spaces with hyphens, remove special chars
+      const slug = name
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
       const response = await fetch(apiUrl('/api/workspaces/workspaces'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
-          description: description || undefined,
+          slug,
+          owner_id: 1, // Default owner ID (will be replaced with auth system later)
+          storage_quota_gb: 100,
+          monthly_budget_usd: 1000.0,
+          settings: {},
         }),
       });
 
