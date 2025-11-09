@@ -383,7 +383,7 @@ class ContentService:
                 """
                 INSERT INTO content_items (
                     content_hash, source_type, source_url, file_reference,
-                    extracted_text_path, extracted_text_paths, metadata, user_id, processing_status,
+                    extracted_text_path, extracted_text_paths, content_metadata, user_id, processing_status,
                     detected_language, created_at, updated_at
                 )
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)
