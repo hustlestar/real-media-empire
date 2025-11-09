@@ -218,8 +218,15 @@ async def run_database_migrations():
         # Run migrations to head in a thread since alembic command interface is sync
         # but it triggers async code internally
         logger.info("Running database migrations...")
-        await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
-        logger.info("✓ Database migrations completed successfully")
+        try:
+            await asyncio.wait_for(
+                asyncio.to_thread(command.upgrade, alembic_cfg, "head"),
+                timeout=60.0  # 60 second timeout
+            )
+            logger.info("✓ Database migrations completed successfully")
+        except asyncio.TimeoutError:
+            logger.error("⚠ Database migration timed out after 60 seconds")
+            logger.warning("⚠ Application will continue but database schema may be outdated")
 
     except Exception as e:
         logger.error(f"Failed to run database migrations: {e}", exc_info=True)
@@ -249,8 +256,11 @@ async def startup_event():
             logger.info(f"  {key}: {value}")
     logger.info("=" * 50)
 
-    # Run database migrations
-    await run_database_migrations()
+    # Run database migrations if enabled
+    if config.auto_migrate:
+        await run_database_migrations()
+    else:
+        logger.info("⏭  Skipping database migrations (auto_migrate=False)")
 
     # Initialize publishing queue if Redis is configured
     try:
