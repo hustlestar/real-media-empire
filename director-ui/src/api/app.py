@@ -163,12 +163,12 @@ app.mount("/ws", socket_app)
 from api.error_handlers import register_error_handlers
 register_error_handlers(app)
 
-def run_database_migrations():
+async def run_database_migrations():
     """Run alembic database migrations on startup."""
     try:
         from alembic.config import Config
         from alembic import command
-        import os
+        import asyncio
         from pathlib import Path
 
         # Get project root (director-ui/) from current file location
@@ -187,9 +187,10 @@ def run_database_migrations():
         # Set the script location to the alembic directory
         alembic_cfg.set_main_option('script_location', str(project_root / 'alembic'))
 
-        # Run migrations to head
+        # Run migrations to head in a thread since alembic command interface is sync
+        # but it triggers async code internally
         logger.info("Running database migrations...")
-        command.upgrade(alembic_cfg, "head")
+        await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
         logger.info("✓ Database migrations completed successfully")
 
     except Exception as e:
@@ -221,7 +222,7 @@ async def startup_event():
     logger.info("=" * 50)
 
     # Run database migrations
-    run_database_migrations()
+    await run_database_migrations()
 
     # Initialize publishing queue if Redis is configured
     try:
