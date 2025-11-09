@@ -215,18 +215,27 @@ async def run_database_migrations():
         # Set the script location to the alembic directory
         alembic_cfg.set_main_option('script_location', str(project_root / 'alembic'))
 
+        # Suppress alembic's INFO logging to reduce noise
+        import logging as stdlib_logging
+        stdlib_logging.getLogger('alembic').setLevel(stdlib_logging.WARNING)
+
         # Run migrations to head in a thread since alembic command interface is sync
         # but it triggers async code internally
         logger.info("Running database migrations...")
+        logger.info(f"  Alembic config: {alembic_ini_path}")
+        logger.info(f"  Script location: {project_root / 'alembic'}")
+        logger.info(f"  Timeout: {config.migration_timeout} seconds")
+
         try:
             await asyncio.wait_for(
                 asyncio.to_thread(command.upgrade, alembic_cfg, "head"),
-                timeout=60.0  # 60 second timeout
+                timeout=float(config.migration_timeout)
             )
             logger.info("✓ Database migrations completed successfully")
         except asyncio.TimeoutError:
-            logger.error("⚠ Database migration timed out after 60 seconds")
+            logger.error(f"⚠ Database migration timed out after {config.migration_timeout} seconds")
             logger.warning("⚠ Application will continue but database schema may be outdated")
+            logger.warning("⚠ Try running migrations manually: cd director-ui && alembic upgrade head")
 
     except Exception as e:
         logger.error(f"Failed to run database migrations: {e}", exc_info=True)
