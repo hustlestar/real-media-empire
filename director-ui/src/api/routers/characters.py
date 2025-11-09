@@ -602,16 +602,52 @@ async def generate_character_image(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
 
-    # Add to character reference images if requested
-    if request.add_to_character and request.character_id:
+    # Save all generated images to assets table for reusability and cost tracking
+    character = None
+    if request.character_id:
         result = await db.execute(select(Character).filter(Character.id == request.character_id))
         character = result.scalar_one_or_none()
-        if character:
-            if character.reference_images is None:
-                character.reference_images = []
-            character.reference_images.extend(generated_images)
-            character.updated_at = datetime.utcnow()
-            await db.flush()
+
+    for idx, image_url in enumerate(generated_images):
+        from data.models import Asset
+        import uuid
+
+        # Create asset record for each generated image
+        asset = Asset(
+            id=str(uuid.uuid4()),
+            workspace_id=character.workspace_id if character else None,
+            character_id=character.id if character else None,
+            name=f"{character.name if character else 'Character'}_{model_config['name']}_generation_{idx+1}",
+            type="image",
+            url=image_url,
+            source="generation",
+            generation_cost=model_config["cost_per_image"],
+            generation_metadata={
+                "model": request.model,
+                "model_name": model_config["name"],
+                "provider": provider,
+                "prompt": final_prompt,
+                "negative_prompt": request.negative_prompt,
+                "seed": (request.seed + idx) if request.seed else None,
+                "character_id": character.id if character else None,
+                "character_name": character.name if character else None,
+                "generated_at": datetime.utcnow().isoformat()
+            },
+            tags=["ai-generated", "character-image", model_config["name"].lower().replace(" ", "-")],
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(asset)
+
+    await db.flush()
+
+    # Add to character reference images if requested
+    if request.add_to_character and character:
+        if character.reference_images is None:
+            character.reference_images = []
+        character.reference_images.extend(generated_images)
+        character.updated_at = datetime.utcnow()
+        await db.flush()
 
     generation_time = time.time() - start_time
     total_cost = model_config["cost_per_image"] * request.num_images

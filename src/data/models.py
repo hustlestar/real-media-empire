@@ -141,7 +141,7 @@ class Asset(Base):
     id = Column(String, primary_key=True)
     workspace_id = Column(String, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
-    type = Column(String, nullable=False)  # image, video, audio
+    type = Column(String, nullable=False)  # image, video, audio, text, script
     url = Column(String, nullable=False)
     file_path = Column(String)  # Local file path
     size = Column(Integer)  # File size in bytes
@@ -150,6 +150,12 @@ class Asset(Base):
     tags = Column(JSON)  # Array of tags
     asset_metadata = Column(JSON)  # Additional metadata (dimensions, codec, etc.)
     is_favorite = Column(Boolean, default=False)
+
+    # Asset generation and tracking
+    character_id = Column(String, ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)  # Character this asset was generated for
+    source = Column(String, nullable=True)  # Source of asset: 'upload', 'generation', 'import'
+    generation_cost = Column(Float, nullable=True)  # Cost to generate this asset (USD)
+    generation_metadata = Column(JSON, nullable=True)  # Generation details (model, prompt, seed, provider)
 
     # Asset lifecycle management
     source_asset_id = Column(String, ForeignKey("assets.id"), nullable=True)  # Lineage tracking
@@ -164,13 +170,16 @@ class Asset(Base):
 
     # Relationships
     workspace = relationship("Workspace", back_populates="assets")
+    character = relationship("Character", backref="generated_assets")
     source = relationship("Asset", remote_side="Asset.id", backref="derivatives")
     project_associations = relationship("ProjectAsset", back_populates="asset")
 
     __table_args__ = (
         Index('idx_assets_workspace', 'workspace_id'),
         Index('idx_assets_type', 'type'),
-        Index('idx_assets_source', 'source_asset_id'),
+        Index('idx_assets_character', 'character_id'),
+        Index('idx_assets_source_type', 'source'),
+        Index('idx_assets_source_asset', 'source_asset_id'),
         Index('idx_assets_cache_key', 'cache_key'),
         Index('idx_assets_expires_at', 'expires_at'),
     )
