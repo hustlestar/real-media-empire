@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { X, Save, Upload } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Save, Upload, Sparkles, RefreshCw, Download, Zap, Image as ImageIcon } from 'lucide-react';
 import { apiUrl } from '../../config/api';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 
 const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
+  const { currentWorkspace } = useWorkspace();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -18,17 +20,134 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
     distinctive_features: ''
   });
 
-  const handleSave = async () => {
+  // Image generation state
+  const [availableModels, setAvailableModels] = useState<any>({});
+  const [selectedModel, setSelectedModel] = useState('flux-dev');
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationPrompt, setGenerationPrompt] = useState('');
+  const [generationSeed, setGenerationSeed] = useState<number | null>(null);
+  const [numVariations, setNumVariations] = useState(1);
+  const [lastCost, setLastCost] = useState(0);
+  const [showImageGen, setShowImageGen] = useState(false);
+
+  // Load available models
+  useEffect(() => {
+    loadAvailableModels();
+  }, []);
+
+  const loadAvailableModels = async () => {
     try {
+      const response = await fetch(apiUrl('/api/characters/models/available'));
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableModels(data.models);
+        setSelectedModel(data.recommended);
+      }
+    } catch (error) {
+      console.error('Failed to load models:', error);
+    }
+  };
+
+  const handleGenerateImages = async () => {
+    if (!formData.name || !formData.description) {
+      alert('Please fill in character name and description first');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      // Build prompt from character attributes
+      const promptParts = [
+        `${formData.description}`,
+        formData.age && `Age: ${formData.age}`,
+        formData.gender && `Gender: ${formData.gender}`,
+        formData.ethnicity && `Ethnicity: ${formData.ethnicity}`,
+        formData.hair_color && formData.hair_style && `Hair: ${formData.hair_color}, ${formData.hair_style}`,
+        formData.eye_color && `Eyes: ${formData.eye_color}`,
+        formData.build && `Build: ${formData.build}`,
+        formData.clothing_style && `Clothing: ${formData.clothing_style}`,
+        formData.distinctive_features && `Features: ${formData.distinctive_features}`,
+        generationPrompt && `Additional: ${generationPrompt}`
+      ].filter(Boolean);
+
+      const finalPrompt = promptParts.join(', ');
+
+      const response = await fetch(apiUrl('/api/characters/generate-image'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: finalPrompt,
+          model: selectedModel,
+          num_images: numVariations,
+          seed: generationSeed,
+          add_to_character: false
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGeneratedImages([...generatedImages, ...data.images]);
+        setLastCost(data.cost);
+        setGenerationSeed(Math.floor(Math.random() * 1000000)); // New seed for next iteration
+      } else {
+        const error = await response.json();
+        alert(`Generation failed: ${error.detail || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Image generation error:', error);
+      alert('Failed to generate images. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const toggleImageSelection = (imageUrl: string) => {
+    if (selectedImages.includes(imageUrl)) {
+      setSelectedImages(selectedImages.filter(url => url !== imageUrl));
+    } else {
+      setSelectedImages([...selectedImages, imageUrl]);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!currentWorkspace) {
+      alert('Please select a workspace first');
+      return;
+    }
+
+    try {
+      const characterData = {
+        workspace_id: currentWorkspace.id,
+        name: formData.name,
+        description: formData.description,
+        reference_images: selectedImages,
+        attributes: {
+          age: formData.age,
+          gender: formData.gender,
+          ethnicity: formData.ethnicity,
+          hair_color: formData.hair_color,
+          hair_style: formData.hair_style,
+          eye_color: formData.eye_color,
+          height: formData.height,
+          build: formData.build,
+          clothing_style: formData.clothing_style,
+          distinctive_features: formData.distinctive_features ? formData.distinctive_features.split(',').map(f => f.trim()) : []
+        },
+        projects_used: []
+      };
+
       await fetch(apiUrl('/api/characters'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(characterData)
       });
       onSave();
       onClose();
     } catch (error) {
       console.error('Error saving character:', error);
+      alert('Failed to save character. Please try again.');
     }
   };
 
@@ -108,13 +227,151 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
             />
           </div>
 
-          <div className="border-2 border-dashed border-purple-500 border-opacity-50 rounded-lg p-6 text-center">
-            <Upload className="w-12 h-12 text-purple-400 mx-auto mb-2" />
-            <div className="text-sm text-gray-400 mb-2">Upload Reference Images</div>
-            <label className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded cursor-pointer inline-block">
-              <span>Select Images</span>
-              <input type="file" multiple accept="image/*" className="hidden" />
-            </label>
+          {/* AI Image Generation Section */}
+          <div className="border-2 border-purple-500 border-opacity-50 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+                AI Character Image Generation
+              </h3>
+              <button
+                onClick={() => setShowImageGen(!showImageGen)}
+                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+              >
+                {showImageGen ? 'Hide' : 'Show'}
+              </button>
+            </div>
+
+            {showImageGen && (
+              <div className="space-y-4">
+                {/* Model Selection */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Model Selection</label>
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg"
+                  >
+                    {Object.entries(availableModels).map(([key, model]: [string, any]) => (
+                      <option key={key} value={key}>
+                        {model.name} - ${model.cost_per_image.toFixed(3)}/img - Quality: {model.consistency_score}/10
+                      </option>
+                    ))}
+                  </select>
+                  {availableModels[selectedModel] && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      {availableModels[selectedModel].description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Refinement Prompt */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Refinement (Optional)</label>
+                  <input
+                    type="text"
+                    value={generationPrompt}
+                    onChange={(e) => setGenerationPrompt(e.target.value)}
+                    placeholder="e.g., smiling, professional lighting, studio background"
+                    className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg"
+                  />
+                </div>
+
+                {/* Generation Options */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Variations</label>
+                    <input
+                      type="number"
+                      value={numVariations}
+                      onChange={(e) => setNumVariations(parseInt(e.target.value))}
+                      min="1"
+                      max="4"
+                      className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Seed (for iteration)</label>
+                    <input
+                      type="number"
+                      value={generationSeed || ''}
+                      onChange={(e) => setGenerationSeed(e.target.value ? parseInt(e.target.value) : null)}
+                      placeholder="Random"
+                      className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                {/* Generate Button */}
+                <button
+                  onClick={handleGenerateImages}
+                  disabled={isGenerating || !formData.name || !formData.description}
+                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:from-gray-600 disabled:to-gray-600 rounded-lg font-semibold flex items-center justify-center gap-2"
+                >
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5" />
+                      Generate Images
+                    </>
+                  )}
+                </button>
+
+                {lastCost > 0 && (
+                  <div className="text-xs text-gray-400 text-center">
+                    Last generation cost: ${lastCost.toFixed(3)}
+                  </div>
+                )}
+
+                {/* Generated Images Grid */}
+                {generatedImages.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-semibold mb-3">
+                      Generated Images ({generatedImages.length}) - Click to select for character
+                    </label>
+                    <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                      {generatedImages.map((imageUrl, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => toggleImageSelection(imageUrl)}
+                          className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                            selectedImages.includes(imageUrl)
+                              ? 'border-purple-500 ring-2 ring-purple-400'
+                              : 'border-gray-600 hover:border-purple-400'
+                          }`}
+                        >
+                          <img src={imageUrl} alt={`Generated ${idx + 1}`} className="w-full h-32 object-cover" />
+                          {selectedImages.includes(imageUrl) && (
+                            <div className="absolute top-2 right-2 bg-purple-500 text-white rounded-full p-1">
+                              <Zap className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-2">
+                      {selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} selected as reference
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Alternative: Manual Upload */}
+            <div className="mt-4 border-t border-gray-700 pt-4">
+              <div className="text-sm text-gray-400 mb-2 flex items-center gap-2">
+                <Upload className="w-4 h-4" />
+                Or upload existing images
+              </div>
+              <label className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded cursor-pointer inline-block">
+                <span>Select Images</span>
+                <input type="file" multiple accept="image/*" className="hidden" />
+              </label>
+            </div>
           </div>
         </div>
 

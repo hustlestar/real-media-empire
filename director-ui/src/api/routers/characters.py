@@ -6,12 +6,51 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
+import os
 
 from sqlalchemy import select, func
 from data.models import Character
 from data.async_dao import get_async_db
+from image.fal_client import FALClient
+from image.replicate_client import ReplicateClient
 
 router = APIRouter()
+
+# Best models for character consistency
+CHARACTER_GENERATION_MODELS = {
+    "flux-pro": {
+        "name": "FLUX.1 Pro",
+        "provider": "fal",
+        "model_id": "fal-ai/flux-pro",
+        "description": "Highest quality, best for photorealistic characters",
+        "consistency_score": 9.5,
+        "cost_per_image": 0.055
+    },
+    "flux-dev": {
+        "name": "FLUX.1 Dev",
+        "provider": "fal",
+        "model_id": "fal-ai/flux/dev",
+        "description": "Great quality, faster generation",
+        "consistency_score": 9.0,
+        "cost_per_image": 0.025
+    },
+    "flux-schnell": {
+        "name": "FLUX.1 Schnell",
+        "provider": "fal",
+        "model_id": "fal-ai/flux/schnell",
+        "description": "Fast generation, good for iteration",
+        "consistency_score": 8.5,
+        "cost_per_image": 0.003
+    },
+    "sdxl": {
+        "name": "Stable Diffusion XL",
+        "provider": "replicate",
+        "model_id": "stability-ai/sdxl",
+        "description": "Reliable and cost-effective",
+        "consistency_score": 8.0,
+        "cost_per_image": 0.002
+    }
+}
 
 
 class CharacterAttributes(BaseModel):
@@ -273,3 +312,135 @@ async def add_character_to_project(
         await db.flush()
 
     return {"message": "Character added to project", "character_id": character_id, "project_id": project_id}
+
+
+@router.get("/models/available")
+async def get_available_models():
+    """Get list of available models for character generation with consistency scores."""
+    return {
+        "models": CHARACTER_GENERATION_MODELS,
+        "recommended": "flux-dev"  # Best balance of quality and cost
+    }
+
+
+class GenerateCharacterImageRequest(BaseModel):
+    """Request schema for generating character images."""
+    character_id: Optional[str] = None  # If provided, use character's consistency prompt
+    prompt: Optional[str] = None  # Custom prompt or refinement instructions
+    model: str = "flux-dev"  # Model to use for generation
+    negative_prompt: Optional[str] = None
+    num_images: int = 1  # Number of variations to generate
+    seed: Optional[int] = None  # For reproducibility
+    add_to_character: bool = False  # Auto-add generated image to character's reference images
+
+
+class GenerateCharacterImageResponse(BaseModel):
+    """Response schema for character image generation."""
+    images: List[str]  # URLs of generated images
+    model_used: str
+    prompt_used: str
+    cost: float
+    generation_time: float
+
+
+@router.post("/generate-image", response_model=GenerateCharacterImageResponse)
+async def generate_character_image(
+    request: GenerateCharacterImageRequest,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Generate character image using AI with model selection and iteration support.
+
+    This endpoint supports:
+    - Generating images for existing characters (uses consistency prompt)
+    - Standalone image generation with custom prompts
+    - Multiple models with different quality/cost tradeoffs
+    - Iteration with seed for reproducibility
+    - Automatic addition to character reference images
+    """
+    import time
+    start_time = time.time()
+
+    # Validate model
+    if request.model not in CHARACTER_GENERATION_MODELS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid model. Available: {list(CHARACTER_GENERATION_MODELS.keys())}"
+        )
+
+    model_config = CHARACTER_GENERATION_MODELS[request.model]
+
+    # Build final prompt
+    final_prompt = request.prompt or ""
+
+    if request.character_id:
+        # Get character and use consistency prompt
+        result = await db.execute(select(Character).filter(Character.id == request.character_id))
+        character = result.scalar_one_or_none()
+        if not character:
+            raise HTTPException(status_code=404, detail="Character not found")
+
+        # Combine consistency prompt with custom prompt/refinement
+        if request.prompt:
+            final_prompt = f"{character.consistency_prompt}\n\nRefinement: {request.prompt}"
+        else:
+            final_prompt = character.consistency_prompt
+    elif not request.prompt:
+        raise HTTPException(
+            status_code=400,
+            detail="Either character_id or prompt must be provided"
+        )
+
+    # Generate images using appropriate provider
+    generated_images = []
+    provider = model_config["provider"]
+
+    try:
+        if provider == "fal":
+            client = FALClient()
+            for i in range(request.num_images):
+                image_url = await client.generate_image(
+                    prompt=final_prompt,
+                    model=model_config["model_id"],
+                    negative_prompt=request.negative_prompt,
+                    seed=request.seed + i if request.seed else None
+                )
+                generated_images.append(image_url)
+
+        elif provider == "replicate":
+            client = ReplicateClient()
+            for i in range(request.num_images):
+                image_url = await client.generate_image(
+                    prompt=final_prompt,
+                    model=model_config["model_id"],
+                    negative_prompt=request.negative_prompt,
+                    seed=request.seed + i if request.seed else None
+                )
+                generated_images.append(image_url)
+
+        else:
+            raise HTTPException(status_code=500, detail=f"Unsupported provider: {provider}")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
+
+    # Add to character reference images if requested
+    if request.add_to_character and request.character_id:
+        result = await db.execute(select(Character).filter(Character.id == request.character_id))
+        character = result.scalar_one_or_none()
+        if character:
+            if character.reference_images is None:
+                character.reference_images = []
+            character.reference_images.extend(generated_images)
+            character.updated_at = datetime.utcnow()
+            await db.flush()
+
+    generation_time = time.time() - start_time
+    total_cost = model_config["cost_per_image"] * request.num_images
+
+    return GenerateCharacterImageResponse(
+        images=generated_images,
+        model_used=request.model,
+        prompt_used=final_prompt,
+        cost=total_cost,
+        generation_time=generation_time
+    )
