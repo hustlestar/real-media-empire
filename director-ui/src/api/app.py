@@ -123,6 +123,29 @@ app = FastAPI(
     ]
 )
 
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request, call_next):
+    """Log all incoming requests."""
+    logger.info(f"🔵 Incoming request: {request.method} {request.url.path}")
+    logger.info(f"   Headers: {dict(request.headers)}")
+
+    # Get request body for POST/PUT requests
+    if request.method in ["POST", "PUT", "PATCH"]:
+        body = await request.body()
+        logger.info(f"   Body: {body.decode('utf-8') if body else 'empty'}")
+        # Re-create request with body for downstream processing
+        from starlette.requests import Request
+
+        async def receive():
+            return {"type": "http.request", "body": body}
+
+        request = Request(request.scope, receive)
+
+    response = await call_next(request)
+    logger.info(f"🟢 Response: {request.method} {request.url.path} → {response.status_code}")
+    return response
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
