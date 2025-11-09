@@ -146,7 +146,7 @@ Be creative and specific! Make this character memorable and visually distinctive
       const systemPrompt = "You are a creative character designer that generates detailed, specific character attributes in JSON format. Return ONLY valid JSON, no markdown formatting.";
 
       // Use existing AI enhancement endpoint
-      const response = await fetch(apiUrl('/api/ai-enhancement/enhance'), {
+      const response = await fetch(apiUrl('/api/ai/enhance'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
