@@ -433,7 +433,7 @@ class ContentService:
                 UPDATE content_items
                 SET extracted_text_path = $1,
                     extracted_text_paths = $2,
-                    metadata = $3,
+                    content_metadata = $3,
                     detected_language = $4,
                     updated_at = $5
                 WHERE id = $6
