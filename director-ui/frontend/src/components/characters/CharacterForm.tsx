@@ -78,6 +78,12 @@ const CharacterForm: React.FC<any> = ({ character, onClose, onSave }) => {
           ? attrs.distinctive_features.join(', ')
           : (attrs.distinctive_features || '')
       }));
+
+      // Set character type from attributes
+      if (attrs.character_type) {
+        console.log('🔄 Setting character type from attributes:', attrs.character_type);
+        setCharacterType(attrs.character_type);
+      }
     }
   }, [character]);
 
@@ -100,7 +106,10 @@ const CharacterForm: React.FC<any> = ({ character, onClose, onSave }) => {
       if (response.ok) {
         const data = await response.json();
         setCharacterTypes(data.types);
-        setCharacterType(data.default);
+        // Only set default type if not editing (to avoid overriding character's actual type)
+        if (!character) {
+          setCharacterType(data.default);
+        }
       }
     } catch (error) {
       console.error('Failed to load character types:', error);
@@ -224,10 +233,21 @@ Be creative and specific! Make this character memorable and visually distinctive
   };
 
   const handleGenerateImages = async () => {
+    console.log('🖼️ ========================================');
+    console.log('🖼️ CHARACTER IMAGE GENERATION STARTED');
+    console.log('🖼️ ========================================');
+
     if (!formData.name || !formData.description) {
+      console.warn('⚠️ Missing name or description');
       alert('Please fill in character name and description first');
       return;
     }
+
+    console.log('📝 Character Info:', {
+      name: formData.name,
+      description: formData.description,
+      type: characterType
+    });
 
     setIsGenerating(true);
     try {
@@ -239,9 +259,11 @@ Be creative and specific! Make this character memorable and visually distinctive
 
       // Add type-specific attributes
       if (characterTypes[characterType]) {
+        console.log('🎨 Adding type-specific attributes for:', characterType);
         characterTypes[characterType].attributes.forEach((attr: string) => {
           if (formData[attr]) {
             promptParts.push(`${getFieldLabel(attr)}: ${formData[attr]}`);
+            console.log(`  ✓ ${getFieldLabel(attr)}: ${formData[attr]}`);
           }
         });
       }
@@ -249,39 +271,82 @@ Be creative and specific! Make this character memorable and visually distinctive
       // Add universal fields
       if (formData.distinctive_features) {
         promptParts.push(`Features: ${formData.distinctive_features}`);
+        console.log('✨ Distinctive features:', formData.distinctive_features);
       }
       if (generationPrompt) {
         promptParts.push(`Additional: ${generationPrompt}`);
+        console.log('➕ Additional refinement:', generationPrompt);
       }
 
       const finalPrompt = promptParts.filter(Boolean).join(', ');
 
-      const response = await fetch(apiUrl('/api/characters/generate-image'), {
+      const requestPayload = {
+        prompt: finalPrompt,
+        model: selectedModel,
+        num_images: numVariations,
+        seed: generationSeed,
+        add_to_character: false
+      };
+
+      console.log('📤 Sending generation request:');
+      console.log('  Model:', selectedModel);
+      console.log('  Images:', numVariations);
+      console.log('  Seed:', generationSeed);
+      console.log('  Prompt length:', finalPrompt.length, 'chars');
+      console.log('  Full prompt:', finalPrompt);
+      console.log('  Request payload:', requestPayload);
+
+      const url = apiUrl('/api/characters/generate-image');
+      console.log('🌐 API URL:', url);
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: finalPrompt,
-          model: selectedModel,
-          num_images: numVariations,
-          seed: generationSeed,
-          add_to_character: false
-        })
+        body: JSON.stringify(requestPayload)
       });
+
+      console.log('📥 Response status:', response.status, response.statusText);
 
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Generation successful!');
+        console.log('  Generated images:', data.images?.length || 0);
+        console.log('  Cost: $' + data.cost?.toFixed(4));
+        console.log('  Model used:', data.model_used);
+        console.log('  Generation time:', data.generation_time, 's');
+        console.log('  Image URLs:', data.images);
+
         setGeneratedImages([...generatedImages, ...data.images]);
         setLastCost(data.cost);
         setGenerationSeed(Math.floor(Math.random() * 1000000)); // New seed for next iteration
+
+        console.log('🎉 Images added to gallery. Total images now:', generatedImages.length + data.images.length);
       } else {
-        const error = await response.json();
+        const errorText = await response.text();
+        console.error('❌ Generation failed!');
+        console.error('  Status:', response.status);
+        console.error('  Response:', errorText);
+
+        let error;
+        try {
+          error = JSON.parse(errorText);
+        } catch {
+          error = { detail: errorText };
+        }
+
         alert(`Generation failed: ${error.detail || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Image generation error:', error);
+      console.error('💥 Image generation error:', error);
+      console.error('  Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('  Error message:', error instanceof Error ? error.message : String(error));
+      console.error('  Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       alert('Failed to generate images. Please try again.');
     } finally {
       setIsGenerating(false);
+      console.log('🖼️ ========================================');
+      console.log('🖼️ CHARACTER IMAGE GENERATION ENDED');
+      console.log('🖼️ ========================================');
     }
   };
 
