@@ -73,8 +73,10 @@ class GenerateShotRequest(BaseModel):
     emotion: Optional[str] = Field(None, description="Emotional tone")
     style: Optional[str] = Field("cinematic", description="Visual style")
     duration_seconds: Optional[float] = Field(3.0, description="Shot duration in seconds")
+    workspace_id: Optional[str] = Field(None, description="Workspace for organizing shots")
     project_id: Optional[str] = Field(None, description="Project to associate with")
     film_id: Optional[str] = Field(None, description="Film/project ID for shot context")
+    sequence_order: Optional[int] = Field(None, description="Order in storyboard sequence")
     ai_feedback: Optional[str] = Field(None, description="Additional AI instructions for generation")
 
 
@@ -683,9 +685,11 @@ async def generate_shot(
 
         shot = ShotGeneration(
             id=shot_id,
+            workspace_id=request.workspace_id,  # Workspace organization
             scene_id=None,  # Standalone shot (not part of scene)
             film_id=request.film_id,  # Film/project association
             shot_number=1,
+            sequence_order=request.sequence_order,  # Storyboard ordering
             version=1,
             parent_id=None,
             prompt=base_prompt,

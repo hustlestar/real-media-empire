@@ -427,11 +427,13 @@ class ShotGeneration(Base):
     __tablename__ = "shot_generations"
 
     id = Column(String, primary_key=True)  # UUID
+    workspace_id = Column(String, nullable=True, index=True)  # Workspace organization
     scene_id = Column(String, ForeignKey("scenes.id"), nullable=True)  # Nullable for standalone shots
     film_id = Column(String, nullable=True, index=True)  # Film/project association
 
-    # Shot identification
+    # Shot identification and sequencing
     shot_number = Column(Integer, nullable=False)
+    sequence_order = Column(Integer, nullable=True, index=True)  # For storyboard ordering
     version = Column(Integer, nullable=False, default=1)
     parent_id = Column(String, ForeignKey("shot_generations.id"), nullable=True)
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../config/api';
 import AIEnhancer from '../components/AIEnhancer';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import {
   Sparkles,
   Video,
@@ -13,7 +14,10 @@ import {
   Heart,
   Play,
   Wand2,
-  Users
+  Users,
+  Film,
+  Palette,
+  Briefcase
 } from 'lucide-react';
 
 interface Character {
@@ -62,11 +66,13 @@ interface ShotFormData {
   lighting: string;
   emotion: string;
   style: string;
+  custom_style: string;
   duration_seconds: number;
   ai_feedback: string;
 }
 
 export default function ShotStudioPage() {
+  const { currentWorkspace } = useWorkspace();
   const [formData, setFormData] = useState<ShotFormData>({
     subject: '',
     action: '',
@@ -76,6 +82,7 @@ export default function ShotStudioPage() {
     lighting: 'natural',
     emotion: 'neutral',
     style: 'cinematic',
+    custom_style: '',
     duration_seconds: 3.0,
     ai_feedback: ''
   });
@@ -179,6 +186,9 @@ export default function ShotStudioPage() {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
+      // Use custom style if provided, otherwise use preset style
+      const finalStyle = formData.custom_style.trim() || formData.style;
+
       const response = await fetch(apiUrl('/api/script/shot/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -190,8 +200,9 @@ export default function ShotStudioPage() {
           shot_type: formData.shot_type,
           lighting: formData.lighting,
           emotion: formData.emotion,
-          style: formData.style,
+          style: finalStyle,
           duration_seconds: formData.duration_seconds,
+          workspace_id: currentWorkspace?.id || null,
           film_id: selectedFilmId || null,
           ai_feedback: formData.ai_feedback || null
         })
@@ -317,6 +328,24 @@ export default function ShotStudioPage() {
     'contemplative', 'energetic', 'serene', 'tense', 'mysterious', 'hopeful'
   ];
 
+  const styleOptions = [
+    { value: 'cinematic', label: 'Cinematic (Film-like)', description: 'Professional film quality' },
+    { value: 'cctv', label: 'CCTV Camera', description: 'Security camera footage (popular for pets!)' },
+    { value: 'vhs-tape', label: 'VHS Tape', description: 'Retro 80s/90s home video' },
+    { value: 'drone', label: 'Drone Footage', description: 'Aerial drone perspective' },
+    { value: 'gopro-pov', label: 'GoPro POV', description: 'First-person action camera' },
+    { value: 'dashcam', label: 'Dashcam', description: 'Car dashboard camera' },
+    { value: 'vintage-film', label: 'Vintage Film', description: 'Classic film grain and color' },
+    { value: 'bodycam', label: 'Body Camera', description: 'Police/military body camera' },
+    { value: 'webcam', label: 'Webcam', description: 'Low-quality webcam aesthetic' },
+    { value: 'super-8', label: 'Super 8', description: 'Classic home movie film' },
+    { value: 'infrared', label: 'Infrared/Night Vision', description: 'Thermal or night vision' },
+    { value: 'surveillance', label: 'Surveillance', description: 'Multi-angle security monitoring' },
+    { value: 'documentary', label: 'Documentary', description: 'Raw documentary style' },
+    { value: 'found-footage', label: 'Found Footage', description: 'Horror found footage aesthetic' },
+    { value: 'custom', label: 'Custom Style...', description: 'Enter your own style' }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 text-white">
       <div className="container mx-auto px-4 py-8">
@@ -333,6 +362,12 @@ export default function ShotStudioPage() {
           <p className="text-gray-400">
             AI-powered shot generation with version control
           </p>
+          {currentWorkspace && (
+            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-purple-900/30 border border-purple-700 rounded-full text-sm">
+              <Briefcase className="w-4 h-4 text-purple-400" />
+              <span className="text-purple-300">Workspace: {currentWorkspace.name}</span>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -559,6 +594,47 @@ export default function ShotStudioPage() {
                     className="w-full px-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
+
+                {/* Visual Style */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    <Palette className="w-4 h-4 inline mr-1" />
+                    Visual Style
+                  </label>
+                  <select
+                    value={formData.style}
+                    onChange={(e) => handleChange('style', e.target.value)}
+                    className="w-full px-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    {styleOptions.map(style => (
+                      <option key={style.value} value={style.value}>
+                        {style.label} - {style.description}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Choose a visual style or enter your own custom style below
+                  </p>
+                </div>
+
+                {/* Custom Style Input */}
+                {formData.style === 'custom' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Custom Style Description
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.custom_style}
+                      onChange={(e) => handleChange('custom_style', e.target.value)}
+                      placeholder="e.g., 1920s silent film with sepia tones"
+                      className="w-full px-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Describe your unique visual style
+                    </p>
+                  </div>
+                )}
 
                 {/* Generate Button */}
                 <button
