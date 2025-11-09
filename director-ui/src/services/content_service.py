@@ -63,10 +63,14 @@ class ContentService:
             return existing, False
 
         # Extract content
+        logger.info(f"Extracting content from URL {url} with source_type {source_type}")
         extracted_text, metadata = await self._extract_from_url(url, source_type)
 
         if not extracted_text:
+            logger.error(f"Failed to extract text from URL {url}")
             raise ValueError(f"Failed to extract content from {url}")
+
+        logger.info(f"Extracted {len(extracted_text)} characters from {url}")
 
         # Detect language and generate tags using AI
         detected_language = target_language  # Use target if provided
@@ -129,6 +133,9 @@ class ContentService:
                     logger.error(f"Error updating tags for content: {e}")
 
             content = await self._get_by_id(content_id)
+            if not content:
+                logger.error(f"Failed to retrieve reprocessed content {content_id}")
+                raise ValueError(f"Failed to retrieve content after reprocessing")
             logger.info(f"Reprocessed existing content {content_id} for hash {content_hash}")
             return content, False
 
@@ -156,6 +163,9 @@ class ContentService:
                 logger.error(f"Error linking tags to content: {e}")
 
         content = await self._get_by_id(content_id)
+        if not content:
+            logger.error(f"Failed to retrieve newly created content {content_id}")
+            raise ValueError(f"Failed to retrieve content after creation")
         logger.info(f"Created new content {content_id} for hash {content_hash}")
         return content, True
 
@@ -362,6 +372,8 @@ class ContentService:
                 "SELECT * FROM content_items WHERE id = $1",
                 content_id
             )
+            if not row:
+                logger.warning(f"No row found for content_id {content_id}")
             return self._parse_content_row(row)
 
     async def _create_content_item(
@@ -407,7 +419,12 @@ class ContentService:
                 detected_language,
                 datetime.utcnow()
             )
-            return row['id']
+            if not row:
+                logger.error("INSERT did not return a row with id")
+                raise ValueError("Failed to create content item - no ID returned")
+            content_id = row['id']
+            logger.info(f"Created content item with ID {content_id}")
+            return content_id
 
     async def _update_content_item(
         self,
