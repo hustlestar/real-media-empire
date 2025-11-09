@@ -53,18 +53,62 @@ CHARACTER_GENERATION_MODELS = {
 }
 
 
+class CharacterType(str):
+    """Character type enum."""
+    HUMAN = "human"
+    ANIMAL = "animal"
+    ROBOT = "robot"
+    CREATURE = "creature"
+    ALIEN = "alien"
+    FANTASY = "fantasy"
+    OBJECT = "object"
+
+
 class CharacterAttributes(BaseModel):
-    """Character attributes schema."""
-    age: str
-    gender: str
-    ethnicity: str
-    hair_color: str
-    hair_style: str
-    eye_color: str
-    height: str
-    build: str
-    clothing_style: str
-    distinctive_features: List[str]
+    """Flexible character attributes schema - adapts to character type."""
+    # Universal fields
+    character_type: str = "human"
+
+    # Human-specific
+    age: Optional[str] = None
+    gender: Optional[str] = None
+    ethnicity: Optional[str] = None
+    hair_color: Optional[str] = None
+    hair_style: Optional[str] = None
+    eye_color: Optional[str] = None
+    height: Optional[str] = None
+    build: Optional[str] = None
+    clothing_style: Optional[str] = None
+
+    # Animal-specific
+    species: Optional[str] = None
+    breed: Optional[str] = None
+    fur_color: Optional[str] = None
+    fur_texture: Optional[str] = None
+    size: Optional[str] = None
+    temperament: Optional[str] = None
+
+    # Robot-specific
+    model_type: Optional[str] = None
+    material: Optional[str] = None
+    power_source: Optional[str] = None
+    capabilities: Optional[str] = None
+
+    # Creature/Fantasy-specific
+    creature_type: Optional[str] = None
+    abilities: Optional[str] = None
+    habitat: Optional[str] = None
+    magic_type: Optional[str] = None
+
+    # Alien-specific
+    alien_species: Optional[str] = None
+    home_planet: Optional[str] = None
+    physiology: Optional[str] = None
+
+    # Universal
+    color_scheme: Optional[str] = None
+    texture: Optional[str] = None
+    distinctive_features: List[str] = []
 
 
 class CharacterCreate(BaseModel):
@@ -104,22 +148,105 @@ class CharacterResponse(BaseModel):
 
 
 def generate_consistency_prompt(name: str, attributes: CharacterAttributes) -> str:
-    """Generate AI consistency prompt from character attributes."""
+    """Generate AI consistency prompt from character attributes based on type."""
+    char_type = attributes.character_type or "human"
     features = ", ".join(attributes.distinctive_features) if attributes.distinctive_features else "none"
 
-    prompt = f"""Character: {name}
-Physical Attributes:
-- Age: {attributes.age}
-- Gender: {attributes.gender}
-- Ethnicity: {attributes.ethnicity}
-- Hair: {attributes.hair_color}, {attributes.hair_style}
-- Eyes: {attributes.eye_color}
-- Height: {attributes.height}
-- Build: {attributes.build}
-- Clothing Style: {attributes.clothing_style}
-- Distinctive Features: {features}
+    # Build prompt based on character type
+    if char_type == "human":
+        parts = [
+            f"Character: {name} (Human)",
+            f"Physical Attributes:",
+            attributes.age and f"- Age: {attributes.age}",
+            attributes.gender and f"- Gender: {attributes.gender}",
+            attributes.ethnicity and f"- Ethnicity: {attributes.ethnicity}",
+            attributes.hair_color and attributes.hair_style and f"- Hair: {attributes.hair_color}, {attributes.hair_style}",
+            attributes.eye_color and f"- Eyes: {attributes.eye_color}",
+            attributes.height and f"- Height: {attributes.height}",
+            attributes.build and f"- Build: {attributes.build}",
+            attributes.clothing_style and f"- Clothing Style: {attributes.clothing_style}",
+            f"- Distinctive Features: {features}",
+        ]
 
-Maintain consistent appearance across all generated images."""
+    elif char_type == "animal":
+        parts = [
+            f"Character: {name} ({attributes.species or 'Animal'})",
+            f"Animal Characteristics:",
+            attributes.species and f"- Species: {attributes.species}",
+            attributes.breed and f"- Breed: {attributes.breed}",
+            attributes.fur_color and f"- Fur/Coat Color: {attributes.fur_color}",
+            attributes.fur_texture and f"- Fur Texture: {attributes.fur_texture}",
+            attributes.size and f"- Size: {attributes.size}",
+            attributes.temperament and f"- Temperament: {attributes.temperament}",
+            attributes.color_scheme and f"- Color Scheme: {attributes.color_scheme}",
+            f"- Distinctive Features: {features}",
+        ]
+
+    elif char_type == "robot":
+        parts = [
+            f"Character: {name} (Robot/Android)",
+            f"Robot Specifications:",
+            attributes.model_type and f"- Model Type: {attributes.model_type}",
+            attributes.material and f"- Material: {attributes.material}",
+            attributes.power_source and f"- Power Source: {attributes.power_source}",
+            attributes.capabilities and f"- Capabilities: {attributes.capabilities}",
+            attributes.color_scheme and f"- Color Scheme: {attributes.color_scheme}",
+            attributes.build and f"- Build/Form Factor: {attributes.build}",
+            f"- Distinctive Features: {features}",
+        ]
+
+    elif char_type == "creature" or char_type == "fantasy":
+        parts = [
+            f"Character: {name} ({attributes.creature_type or 'Fantasy Creature'})",
+            f"Creature Characteristics:",
+            attributes.creature_type and f"- Type: {attributes.creature_type}",
+            attributes.abilities and f"- Abilities: {attributes.abilities}",
+            attributes.magic_type and f"- Magic Type: {attributes.magic_type}",
+            attributes.habitat and f"- Habitat: {attributes.habitat}",
+            attributes.size and f"- Size: {attributes.size}",
+            attributes.color_scheme and f"- Color Scheme: {attributes.color_scheme}",
+            attributes.texture and f"- Texture: {attributes.texture}",
+            f"- Distinctive Features: {features}",
+        ]
+
+    elif char_type == "alien":
+        parts = [
+            f"Character: {name} ({attributes.alien_species or 'Alien Being'})",
+            f"Alien Characteristics:",
+            attributes.alien_species and f"- Species: {attributes.alien_species}",
+            attributes.home_planet and f"- Home Planet: {attributes.home_planet}",
+            attributes.physiology and f"- Physiology: {attributes.physiology}",
+            attributes.abilities and f"- Abilities: {attributes.abilities}",
+            attributes.color_scheme and f"- Color Scheme: {attributes.color_scheme}",
+            attributes.height and f"- Height: {attributes.height}",
+            f"- Distinctive Features: {features}",
+        ]
+
+    elif char_type == "object":
+        parts = [
+            f"Character: {name} (Animated Object)",
+            f"Object Characteristics:",
+            attributes.model_type and f"- Type: {attributes.model_type}",
+            attributes.material and f"- Material: {attributes.material}",
+            attributes.color_scheme and f"- Color Scheme: {attributes.color_scheme}",
+            attributes.texture and f"- Texture: {attributes.texture}",
+            attributes.size and f"- Size: {attributes.size}",
+            f"- Distinctive Features: {features}",
+        ]
+
+    else:
+        # Fallback for unknown types
+        parts = [
+            f"Character: {name}",
+            f"Description: {char_type}",
+            attributes.color_scheme and f"- Color Scheme: {attributes.color_scheme}",
+            f"- Distinctive Features: {features}",
+        ]
+
+    # Filter out None values and join
+    prompt_lines = [part for part in parts if part]
+    prompt = "\n".join(prompt_lines)
+    prompt += "\n\nMaintain consistent appearance across all generated images."
 
     return prompt
 
@@ -312,6 +439,58 @@ async def add_character_to_project(
         await db.flush()
 
     return {"message": "Character added to project", "character_id": character_id, "project_id": project_id}
+
+
+@router.get("/types/available")
+async def get_available_character_types():
+    """Get list of available character types with their attributes."""
+    return {
+        "types": {
+            "human": {
+                "name": "Human",
+                "description": "Human characters with realistic attributes",
+                "icon": "👤",
+                "attributes": ["age", "gender", "ethnicity", "hair_color", "hair_style", "eye_color", "height", "build", "clothing_style"]
+            },
+            "animal": {
+                "name": "Animal",
+                "description": "Pets, wildlife, and animal characters",
+                "icon": "🐾",
+                "attributes": ["species", "breed", "fur_color", "fur_texture", "size", "temperament", "color_scheme"]
+            },
+            "robot": {
+                "name": "Robot/Android",
+                "description": "Mechanical and robotic characters",
+                "icon": "🤖",
+                "attributes": ["model_type", "material", "power_source", "capabilities", "color_scheme", "build"]
+            },
+            "creature": {
+                "name": "Creature",
+                "description": "Fantasy creatures and monsters",
+                "icon": "🐉",
+                "attributes": ["creature_type", "abilities", "habitat", "size", "color_scheme", "texture"]
+            },
+            "fantasy": {
+                "name": "Fantasy",
+                "description": "Fantasy beings with magical properties",
+                "icon": "✨",
+                "attributes": ["creature_type", "magic_type", "abilities", "habitat", "color_scheme"]
+            },
+            "alien": {
+                "name": "Alien",
+                "description": "Extraterrestrial beings",
+                "icon": "👽",
+                "attributes": ["alien_species", "home_planet", "physiology", "abilities", "color_scheme", "height"]
+            },
+            "object": {
+                "name": "Animated Object",
+                "description": "Inanimate objects with personality",
+                "icon": "📦",
+                "attributes": ["model_type", "material", "color_scheme", "texture", "size"]
+            }
+        },
+        "default": "human"
+    }
 
 
 @router.get("/models/available")

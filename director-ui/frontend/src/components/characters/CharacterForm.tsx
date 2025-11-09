@@ -5,9 +5,16 @@ import { useWorkspace } from '../../contexts/WorkspaceContext';
 
 const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
   const { currentWorkspace } = useWorkspace();
-  const [formData, setFormData] = useState({
+  const [characterType, setCharacterType] = useState('human');
+  const [characterTypes, setCharacterTypes] = useState<any>({});
+  const [formData, setFormData] = useState<any>({
     name: '',
     description: '',
+    // Universal
+    distinctive_features: '',
+    color_scheme: '',
+    texture: '',
+    // Human
     age: '',
     gender: '',
     ethnicity: '',
@@ -17,7 +24,27 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
     height: '',
     build: '',
     clothing_style: '',
-    distinctive_features: ''
+    // Animal
+    species: '',
+    breed: '',
+    fur_color: '',
+    fur_texture: '',
+    size: '',
+    temperament: '',
+    // Robot
+    model_type: '',
+    material: '',
+    power_source: '',
+    capabilities: '',
+    // Creature/Fantasy
+    creature_type: '',
+    abilities: '',
+    habitat: '',
+    magic_type: '',
+    // Alien
+    alien_species: '',
+    home_planet: '',
+    physiology: ''
   });
 
   // Image generation state
@@ -32,9 +59,10 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
   const [lastCost, setLastCost] = useState(0);
   const [showImageGen, setShowImageGen] = useState(false);
 
-  // Load available models
+  // Load available models and types
   useEffect(() => {
     loadAvailableModels();
+    loadCharacterTypes();
   }, []);
 
   const loadAvailableModels = async () => {
@@ -50,6 +78,19 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
     }
   };
 
+  const loadCharacterTypes = async () => {
+    try {
+      const response = await fetch(apiUrl('/api/characters/types/available'));
+      if (response.ok) {
+        const data = await response.json();
+        setCharacterTypes(data.types);
+        setCharacterType(data.default);
+      }
+    } catch (error) {
+      console.error('Failed to load character types:', error);
+    }
+  };
+
   const handleGenerateImages = async () => {
     if (!formData.name || !formData.description) {
       alert('Please fill in character name and description first');
@@ -58,21 +99,30 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
 
     setIsGenerating(true);
     try {
-      // Build prompt from character attributes
+      // Build prompt from character attributes based on type
       const promptParts = [
         `${formData.description}`,
-        formData.age && `Age: ${formData.age}`,
-        formData.gender && `Gender: ${formData.gender}`,
-        formData.ethnicity && `Ethnicity: ${formData.ethnicity}`,
-        formData.hair_color && formData.hair_style && `Hair: ${formData.hair_color}, ${formData.hair_style}`,
-        formData.eye_color && `Eyes: ${formData.eye_color}`,
-        formData.build && `Build: ${formData.build}`,
-        formData.clothing_style && `Clothing: ${formData.clothing_style}`,
-        formData.distinctive_features && `Features: ${formData.distinctive_features}`,
-        generationPrompt && `Additional: ${generationPrompt}`
-      ].filter(Boolean);
+        characterType && characterType !== 'human' && `${characterTypes[characterType]?.name || characterType}`
+      ];
 
-      const finalPrompt = promptParts.join(', ');
+      // Add type-specific attributes
+      if (characterTypes[characterType]) {
+        characterTypes[characterType].attributes.forEach((attr: string) => {
+          if (formData[attr]) {
+            promptParts.push(`${getFieldLabel(attr)}: ${formData[attr]}`);
+          }
+        });
+      }
+
+      // Add universal fields
+      if (formData.distinctive_features) {
+        promptParts.push(`Features: ${formData.distinctive_features}`);
+      }
+      if (generationPrompt) {
+        promptParts.push(`Additional: ${generationPrompt}`);
+      }
+
+      const finalPrompt = promptParts.filter(Boolean).join(', ');
 
       const response = await fetch(apiUrl('/api/characters/generate-image'), {
         method: 'POST',
@@ -118,23 +168,25 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
     }
 
     try {
+      // Build attributes object with all filled fields
+      const attributes: any = {
+        character_type: characterType,
+        distinctive_features: formData.distinctive_features ? formData.distinctive_features.split(',').map((f: string) => f.trim()) : []
+      };
+
+      // Add type-specific attributes if they have values
+      Object.keys(formData).forEach(key => {
+        if (key !== 'name' && key !== 'description' && key !== 'distinctive_features' && formData[key]) {
+          attributes[key] = formData[key];
+        }
+      });
+
       const characterData = {
         workspace_id: currentWorkspace.id,
         name: formData.name,
         description: formData.description,
         reference_images: selectedImages,
-        attributes: {
-          age: formData.age,
-          gender: formData.gender,
-          ethnicity: formData.ethnicity,
-          hair_color: formData.hair_color,
-          hair_style: formData.hair_style,
-          eye_color: formData.eye_color,
-          height: formData.height,
-          build: formData.build,
-          clothing_style: formData.clothing_style,
-          distinctive_features: formData.distinctive_features ? formData.distinctive_features.split(',').map(f => f.trim()) : []
-        },
+        attributes: attributes,
         projects_used: []
       };
 
@@ -149,6 +201,41 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
       console.error('Error saving character:', error);
       alert('Failed to save character. Please try again.');
     }
+  };
+
+  // Helper function to get field label
+  const getFieldLabel = (fieldName: string): string => {
+    const labels: Record<string, string> = {
+      species: 'Species/Type',
+      breed: 'Breed',
+      fur_color: 'Fur/Coat Color',
+      fur_texture: 'Fur Texture',
+      size: 'Size',
+      temperament: 'Temperament',
+      model_type: 'Model/Type',
+      material: 'Material',
+      power_source: 'Power Source',
+      capabilities: 'Capabilities',
+      creature_type: 'Creature Type',
+      abilities: 'Abilities',
+      habitat: 'Habitat',
+      magic_type: 'Magic Type',
+      alien_species: 'Species',
+      home_planet: 'Home Planet',
+      physiology: 'Physiology',
+      color_scheme: 'Color Scheme',
+      texture: 'Texture/Surface',
+      age: 'Age',
+      gender: 'Gender',
+      ethnicity: 'Ethnicity',
+      hair_color: 'Hair Color',
+      hair_style: 'Hair Style',
+      eye_color: 'Eye Color',
+      height: 'Height',
+      build: 'Build',
+      clothing_style: 'Clothing Style'
+    };
+    return labels[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   return (
@@ -184,46 +271,59 @@ const CharacterForm: React.FC<any> = ({ onClose, onSave }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold mb-2">Age</label>
-              <input type="text" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg" placeholder="e.g., 30s, Mid-40s" />
+          {/* Character Type Selector */}
+          <div>
+            <label className="block text-sm font-semibold mb-3">Character Type *</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {Object.entries(characterTypes).map(([key, type]: [string, any]) => (
+                <button
+                  key={key}
+                  onClick={() => setCharacterType(key)}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    characterType === key
+                      ? 'border-purple-500 bg-purple-900 bg-opacity-30'
+                      : 'border-gray-700 bg-gray-900 hover:border-purple-400'
+                  }`}
+                >
+                  <div className="text-3xl mb-2">{type.icon}</div>
+                  <div className="text-sm font-semibold">{type.name}</div>
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2">Gender</label>
-              <input type="text" value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2">Ethnicity</label>
-              <input type="text" value={formData.ethnicity} onChange={(e) => setFormData({...formData, ethnicity: e.target.value})} className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2">Hair Color</label>
-              <input type="text" value={formData.hair_color} onChange={(e) => setFormData({...formData, hair_color: e.target.value})} className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2">Eye Color</label>
-              <input type="text" value={formData.eye_color} onChange={(e) => setFormData({...formData, eye_color: e.target.value})} className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2">Build</label>
-              <input type="text" value={formData.build} onChange={(e) => setFormData({...formData, build: e.target.value})} className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg" placeholder="e.g., Athletic, Slim" />
-            </div>
+            {characterTypes[characterType] && (
+              <p className="text-xs text-gray-400 mt-2">
+                {characterTypes[characterType].description}
+              </p>
+            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold mb-2">Clothing Style</label>
-            <input type="text" value={formData.clothing_style} onChange={(e) => setFormData({...formData, clothing_style: e.target.value})} className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg" placeholder="e.g., Business casual, Street wear" />
-          </div>
+          {/* Type-Specific Attributes */}
+          {characterTypes[characterType] && (
+            <div className="grid grid-cols-2 gap-4">
+              {characterTypes[characterType].attributes.map((attrKey: string) => (
+                <div key={attrKey}>
+                  <label className="block text-sm font-semibold mb-2">{getFieldLabel(attrKey)}</label>
+                  <input
+                    type="text"
+                    value={formData[attrKey] || ''}
+                    onChange={(e) => setFormData({...formData, [attrKey]: e.target.value})}
+                    className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg"
+                    placeholder={`Enter ${getFieldLabel(attrKey).toLowerCase()}`}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
+          {/* Universal Fields */}
           <div>
-            <label className="block text-sm font-semibold mb-2">Distinctive Features</label>
+            <label className="block text-sm font-semibold mb-2">Distinctive Features (comma-separated)</label>
             <textarea
               value={formData.distinctive_features}
               onChange={(e) => setFormData({...formData, distinctive_features: e.target.value})}
               rows={2}
               className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg resize-none"
-              placeholder="e.g., Small scar above left eyebrow, wears glasses"
+              placeholder="e.g., Glowing eyes, metal plates on chest, long whiskers"
             />
           </div>
 
