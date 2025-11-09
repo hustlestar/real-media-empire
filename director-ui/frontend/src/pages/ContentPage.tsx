@@ -1,14 +1,16 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useContentList, useDeleteContent } from '@/hooks/useContent'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import ContentCard from '@/components/ContentCard'
 import TagFilter from '@/components/TagFilter'
+import AddContentModal from '@/components/AddContentModal'
 import toast from 'react-hot-toast'
 
 export default function ContentPage() {
   const [page, setPage] = useState(1)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const { data, isLoading, error } = useContentList(page, 20)
   const deleteContent = useDeleteContent()
 
@@ -98,11 +100,20 @@ export default function ContentPage() {
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold">Content Library</h1>
-          <p className="text-muted-foreground mt-2">
-            {data?.total || 0} items • Browse and process your content
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-bold">Content Library</h1>
+            <p className="text-muted-foreground mt-2">
+              {data?.total || 0} items • Browse and process your content
+            </p>
+          </div>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md transition-all duration-200 font-medium"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add Content</span>
+          </button>
         </div>
 
         {/* Tag Filter */}
@@ -164,6 +175,8 @@ export default function ContentPage() {
           </>
         )}
       </div>
+
+      <AddContentModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
     </div>
   )
 }
