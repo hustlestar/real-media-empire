@@ -62,7 +62,7 @@ class FALClient:
         payload = {
             "prompt": prompt,
             "image_size": {"width": width, "height": height},
-            "num_inference_steps": 28,
+            "num_inference_steps": 12,  # FAL API max is 12 for flux models
             "guidance_scale": 3.5,
             "num_images": 1,
             "enable_safety_checker": False,
