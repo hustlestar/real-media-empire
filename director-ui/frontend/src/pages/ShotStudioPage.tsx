@@ -121,7 +121,7 @@ export default function ShotStudioPage() {
 
   const loadFilms = async () => {
     try {
-      const response = await fetch(apiUrl('/api/workspaces/projects'));
+      const response = await fetch(apiUrl('/api/projects'));
       if (response.ok) {
         const data = await response.json();
         // API returns {projects: [...]}
