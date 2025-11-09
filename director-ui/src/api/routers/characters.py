@@ -603,22 +603,20 @@ async def generate_character_image(
         raise HTTPException(status_code=500, detail=f"Image generation failed: {str(e)}")
 
     # Save all generated images to assets table for reusability and cost tracking
+    from api.helpers.asset_saver import save_generation_as_asset
+
     character = None
     if request.character_id:
         result = await db.execute(select(Character).filter(Character.id == request.character_id))
         character = result.scalar_one_or_none()
 
     for idx, image_url in enumerate(generated_images):
-        from data.models import Asset
-        import uuid
-
-        # Create asset record for each generated image
-        asset = Asset(
-            id=str(uuid.uuid4()),
+        await save_generation_as_asset(
+            db=db,
             workspace_id=character.workspace_id if character else None,
             character_id=character.id if character else None,
             name=f"{character.name if character else 'Character'}_{model_config['name']}_generation_{idx+1}",
-            type="image",
+            asset_type="image",
             url=image_url,
             source="generation",
             generation_cost=model_config["cost_per_image"],
@@ -633,13 +631,8 @@ async def generate_character_image(
                 "character_name": character.name if character else None,
                 "generated_at": datetime.utcnow().isoformat()
             },
-            tags=["ai-generated", "character-image", model_config["name"].lower().replace(" ", "-")],
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            tags=["ai-generated", "character-image", model_config["name"].lower().replace(" ", "-")]
         )
-        db.add(asset)
-
-    await db.flush()
 
     # Add to character reference images if requested
     if request.add_to_character and character:
