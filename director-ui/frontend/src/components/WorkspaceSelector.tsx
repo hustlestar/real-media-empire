@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { Briefcase, ChevronDown, Plus, BarChart3 } from 'lucide-react';
 import { useWorkspace } from '../contexts/WorkspaceContext';
+import CreateWorkspaceModal from './CreateWorkspaceModal';
 
 const WorkspaceSelector: React.FC = () => {
-  const { currentWorkspace, workspaces, stats, setCurrentWorkspace, loading } = useWorkspace();
+  const { currentWorkspace, workspaces, stats, setCurrentWorkspace, loading, refreshWorkspaces } = useWorkspace();
   const [isOpen, setIsOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  const handleCreateSuccess = async () => {
+    // Refresh workspace list
+    await refreshWorkspaces();
+  };
 
   if (loading) {
     return (
@@ -17,13 +24,23 @@ const WorkspaceSelector: React.FC = () => {
 
   if (workspaces.length === 0) {
     return (
-      <div className="flex items-center space-x-2 px-4 py-2 bg-yellow-900 bg-opacity-20 border border-yellow-600 rounded-lg">
-        <Briefcase className="w-5 h-5 text-yellow-400" />
-        <span className="text-sm text-yellow-300">No workspaces</span>
-        <button className="ml-2 px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-xs transition">
-          Create One
-        </button>
-      </div>
+      <>
+        <div className="flex items-center space-x-2 px-4 py-2 bg-yellow-900 bg-opacity-20 border border-yellow-600 rounded-lg">
+          <Briefcase className="w-5 h-5 text-yellow-400" />
+          <span className="text-sm text-yellow-300">No workspaces</span>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="ml-2 px-2 py-1 bg-yellow-600 hover:bg-yellow-500 rounded text-xs transition"
+          >
+            Create One
+          </button>
+        </div>
+        <CreateWorkspaceModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={handleCreateSuccess}
+        />
+      </>
     );
   }
 
@@ -108,7 +125,13 @@ const WorkspaceSelector: React.FC = () => {
 
             {/* Footer */}
             <div className="px-4 py-3 bg-gray-900 border-t border-gray-700 space-y-2">
-              <button className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg transition">
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsCreateModalOpen(true);
+                }}
+                className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg transition"
+              >
                 <Plus className="w-4 h-4" />
                 <span className="text-sm font-medium">Create Workspace</span>
               </button>
@@ -123,6 +146,13 @@ const WorkspaceSelector: React.FC = () => {
           </div>
         </>
       )}
+
+      {/* Create Workspace Modal */}
+      <CreateWorkspaceModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   );
 };

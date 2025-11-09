@@ -74,6 +74,7 @@ class GenerateShotRequest(BaseModel):
     style: Optional[str] = Field("cinematic", description="Visual style")
     duration_seconds: Optional[float] = Field(3.0, description="Shot duration in seconds")
     project_id: Optional[str] = Field(None, description="Project to associate with")
+    film_id: Optional[str] = Field(None, description="Film/project ID for shot context")
     ai_feedback: Optional[str] = Field(None, description="Additional AI instructions for generation")
 
 
@@ -683,6 +684,7 @@ async def generate_shot(
         shot = ShotGeneration(
             id=shot_id,
             scene_id=None,  # Standalone shot (not part of scene)
+            film_id=request.film_id,  # Film/project association
             shot_number=1,
             version=1,
             parent_id=None,

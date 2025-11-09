@@ -25,6 +25,13 @@ interface Character {
   attributes: any;
 }
 
+interface Film {
+  id: string;
+  name: string;
+  description: string;
+  workspace_id: string;
+}
+
 interface ShotVersion {
   id: string;
   version: number;
@@ -81,11 +88,14 @@ export default function ShotStudioPage() {
   const [refinementFeedback, setRefinementFeedback] = useState('');
   const [characters, setCharacters] = useState<Character[]>([]);
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>('');
+  const [films, setFilms] = useState<Film[]>([]);
+  const [selectedFilmId, setSelectedFilmId] = useState<string>('');
 
-  // Load all versions and characters on mount
+  // Load all versions, characters, and films on mount
   useEffect(() => {
     loadVersions();
     loadCharacters();
+    loadFilms();
   }, []);
 
   const loadCharacters = async () => {
@@ -99,6 +109,19 @@ export default function ShotStudioPage() {
       }
     } catch (error) {
       console.error('Failed to load characters:', error);
+    }
+  };
+
+  const loadFilms = async () => {
+    try {
+      const response = await fetch(apiUrl('/api/workspaces/projects'));
+      if (response.ok) {
+        const data = await response.json();
+        // API returns {projects: [...]}
+        setFilms(data.projects || []);
+      }
+    } catch (error) {
+      console.error('Failed to load films:', error);
     }
   };
 
@@ -169,6 +192,7 @@ export default function ShotStudioPage() {
           emotion: formData.emotion,
           style: formData.style,
           duration_seconds: formData.duration_seconds,
+          film_id: selectedFilmId || null,
           ai_feedback: formData.ai_feedback || null
         })
       });
@@ -322,6 +346,31 @@ export default function ShotStudioPage() {
               </div>
 
               <div className="space-y-4">
+                {/* Film/Project Selector */}
+                {films.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                      <Film className="w-4 h-4 text-purple-400" />
+                      Associate with Film/Project (Optional)
+                    </label>
+                    <select
+                      value={selectedFilmId}
+                      onChange={(e) => setSelectedFilmId(e.target.value)}
+                      className="w-full px-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="">-- Standalone Shot --</option>
+                      {films.map(film => (
+                        <option key={film.id} value={film.id}>
+                          {film.name} {film.description && `- ${film.description.substring(0, 40)}...`}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Link this shot to a film/project for better organization and context
+                    </p>
+                  </div>
+                )}
+
                 {/* Character Picker */}
                 {characters.length > 0 && (
                   <div>

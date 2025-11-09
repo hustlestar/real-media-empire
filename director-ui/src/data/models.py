@@ -427,7 +427,8 @@ class ShotGeneration(Base):
     __tablename__ = "shot_generations"
 
     id = Column(String, primary_key=True)  # UUID
-    scene_id = Column(String, ForeignKey("scenes.id"), nullable=False)
+    scene_id = Column(String, ForeignKey("scenes.id"), nullable=True)  # Nullable for standalone shots
+    film_id = Column(String, nullable=True, index=True)  # Film/project association
 
     # Shot identification
     shot_number = Column(Integer, nullable=False)
