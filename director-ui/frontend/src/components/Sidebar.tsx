@@ -6,7 +6,7 @@ import CreateWorkspaceModal from './CreateWorkspaceModal'
 
 export default function Sidebar() {
   const location = useLocation()
-  const { currentWorkspace, workspaces, setCurrentWorkspace } = useWorkspace()
+  const { currentWorkspace, workspaces, setCurrentWorkspace, refreshWorkspaces } = useWorkspace()
   const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState(false)
   const [isCreateWorkspaceModalOpen, setIsCreateWorkspaceModalOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -158,6 +158,7 @@ export default function Sidebar() {
       <CreateWorkspaceModal
         isOpen={isCreateWorkspaceModalOpen}
         onClose={() => setIsCreateWorkspaceModalOpen(false)}
+        onSuccess={refreshWorkspaces}
       />
     </aside>
   )

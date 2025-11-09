@@ -64,7 +64,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
       setLoading(true);
       setError(null);
 
-      const response = await fetch(apiUrl('/api/workspaces/workspaces'));
+      const response = await fetch(apiUrl('/api/workspaces'));
       if (!response.ok) {
         throw new Error('Failed to fetch workspaces');
       }
@@ -97,7 +97,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     if (!currentWorkspace) return;
 
     try {
-      const response = await fetch(apiUrl(`/api/workspaces/workspaces/${currentWorkspace.id}/stats`));
+      const response = await fetch(apiUrl(`/api/workspaces/${currentWorkspace.id}/stats`));
       if (!response.ok) {
         throw new Error('Failed to fetch workspace stats');
       }

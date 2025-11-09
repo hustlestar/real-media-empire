@@ -31,7 +31,7 @@ export default function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: Cre
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
 
-      const response = await fetch(apiUrl('/api/workspaces/workspaces'), {
+      const response = await fetch(apiUrl('/api/workspaces'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -46,7 +46,8 @@ export default function CreateWorkspaceModal({ isOpen, onClose, onSuccess }: Cre
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to create workspace');
+        console.error('Workspace creation failed:', errorData);
+        throw new Error(errorData.detail || JSON.stringify(errorData) || 'Failed to create workspace');
       }
 
       // Reset form
