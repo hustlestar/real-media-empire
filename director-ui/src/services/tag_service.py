@@ -84,17 +84,18 @@ class TagService:
 
         return tag_ids
 
-    async def link_tags_to_content(self, content_id: UUID, tag_ids: List[UUID]) -> None:
+    async def link_tags_to_content(self, content_id: UUID, tag_ids: List[UUID], conn=None) -> None:
         """Link tags to content item.
 
         Args:
             content_id: Content UUID
             tag_ids: List of tag UUIDs to link
+            conn: Optional database connection (for transaction support)
         """
         if not tag_ids:
             return
 
-        async with self.db._pool.acquire() as conn:
+        async def _do_link(conn):
             # Delete existing tags for this content
             await conn.execute(
                 "DELETE FROM content_tags WHERE content_id = $1",
@@ -112,6 +113,14 @@ class TagService:
                     content_id,
                     tag_id
                 )
+
+        if conn:
+            # Use provided connection (transaction support)
+            await _do_link(conn)
+        else:
+            # Acquire own connection
+            async with self.db._pool.acquire() as conn:
+                await _do_link(conn)
 
         logger.info(f"Linked {len(tag_ids)} tags to content {content_id}")
 

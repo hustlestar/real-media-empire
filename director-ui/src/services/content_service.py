@@ -163,7 +163,7 @@ class ContentService:
                 if tag_names:
                     try:
                         tag_ids = await self.tag_service.get_or_create_tags(tag_names)
-                        await self.tag_service.link_tags_to_content(content_id, tag_ids)
+                        await self.tag_service.link_tags_to_content(content_id, tag_ids, conn=conn)
                     except Exception as e:
                         logger.error(f"Error linking tags to content: {e}")
                         raise  # Re-raise to rollback transaction
