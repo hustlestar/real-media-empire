@@ -88,36 +88,68 @@ class Character(Base):
 
     # Relationships
     workspace = relationship("Workspace", back_populates="characters")
-    assets = relationship("Asset", back_populates="character", foreign_keys="Asset.character_id")
+    # Note: Character → Asset relationships now use asset_relationships table
 
 
 class Asset(Base):
-    """Asset model for media file tracking."""
+    """Universal asset model - everything is an asset.
+
+    Asset types: script, text, audio, video, image, shot, shot_take, film, character_ref, scene
+
+    This model stores all content with a minimal universal schema. Type-specific data
+    is stored in the metadata JSONB field for maximum flexibility.
+
+    Relationships between assets (e.g., shot → character, film → shot) are stored
+    in the asset_relationships table, not as foreign keys here.
+    """
     __tablename__ = "assets"
 
     id = Column(String, primary_key=True)
     workspace_id = Column(String, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True)
-    character_id = Column(String, ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)
 
-    name = Column(String, nullable=False)
-    type = Column(String, nullable=False)  # image, video, audio
-    url = Column(String, nullable=False)
-    file_path = Column(String)  # Local file path
-    size = Column(Integer)  # File size in bytes
-    duration = Column(Float, nullable=True)  # For video/audio assets
-    thumbnail_url = Column(String, nullable=True)
-    source = Column(String, nullable=True)  # Source of asset (upload, generation, import)
+    # Core universal fields
+    type = Column(String(50), nullable=False)  # Asset type
+    name = Column(String(255), nullable=False)
+
+    # Storage
+    url = Column(Text, nullable=True)  # Public CDN URL
+    file_path = Column(Text, nullable=True)  # Local filesystem path
+    size = Column(Integer, nullable=True)  # File size in bytes
+    duration = Column(Float, nullable=True)  # Duration for audio/video (seconds)
+
+    # Flexible metadata (type-specific data stored as JSONB)
+    metadata = Column(JSON, nullable=False, default=dict)  # Type-specific metadata
+    tags = Column(JSON, nullable=False, default=list)  # Asset tags array
+
+    # Generation tracking
+    source = Column(String(50), nullable=True)  # Source: upload, generation, import, derivative
     generation_cost = Column(Float, nullable=True)  # Cost to generate this asset
-    generation_metadata = Column(JSON, nullable=True)  # Generation details (model, prompt, seed)
-    tags = Column(JSON)  # Array of tags
-    asset_metadata = Column(JSON)  # Additional metadata (dimensions, codec, etc.)
-    is_favorite = Column(Boolean, default=False)
+    generation_metadata = Column(JSON, nullable=True)  # Provider, model, prompt, seed
+
+    # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     workspace = relationship("Workspace", back_populates="assets")
-    character = relationship("Character", back_populates="assets", foreign_keys=[character_id])
+    # Note: Character relationships now use asset_relationships table
+    parent_relationships = relationship(
+        "AssetRelationship",
+        foreign_keys="AssetRelationship.parent_asset_id",
+        back_populates="parent_asset",
+        cascade="all, delete-orphan"
+    )
+    child_relationships = relationship(
+        "AssetRelationship",
+        foreign_keys="AssetRelationship.child_asset_id",
+        back_populates="child_asset",
+        cascade="all, delete-orphan"
+    )
+    collection_memberships = relationship(
+        "AssetCollectionMember",
+        back_populates="asset",
+        cascade="all, delete-orphan"
+    )
 
 
 class FilmProject(Base):
@@ -531,3 +563,122 @@ class GenerationNote(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
+
+# ============================================================================
+# Universal Asset System - Relationships & Collections
+# ============================================================================
+
+
+class AssetRelationship(Base):
+    """Universal asset relationships - defines how assets connect.
+
+    Examples:
+    - Film (parent) → Shot (child): relationship_type='contains_shot', sequence=1
+    - Shot (parent) → Character (child): relationship_type='uses_character'
+    - Shot (parent) → Take (child): relationship_type='generation_attempt', sequence=1
+    - Take (parent) → Video (child): relationship_type='generated_video'
+    """
+    __tablename__ = "asset_relationships"
+
+    id = Column(String, primary_key=True)
+    parent_asset_id = Column(String, ForeignKey("assets.id", ondelete="CASCADE"), nullable=False)
+    child_asset_id = Column(String, ForeignKey("assets.id", ondelete="CASCADE"), nullable=False)
+
+    relationship_type = Column(String(50), nullable=False)  # contains_shot, uses_character, generation_attempt, etc.
+    sequence = Column(Integer, nullable=True)  # Order when relationship implies sequence
+    metadata = Column(JSON, nullable=False, default=dict)  # Relationship-specific data
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    parent_asset = relationship(
+        "Asset",
+        foreign_keys=[parent_asset_id],
+        back_populates="parent_relationships"
+    )
+    child_asset = relationship(
+        "Asset",
+        foreign_keys=[child_asset_id],
+        back_populates="child_relationships"
+    )
+
+
+class AssetCollection(Base):
+    """Asset collections for grouping and organization.
+
+    Examples:
+    - type='project': A film project containing all related assets
+    - type='character': Character definition with reference images
+    - type='storyboard': Collection of shots in sequence
+    - type='library': Reusable asset library (music, sound effects, etc.)
+    """
+    __tablename__ = "asset_collections"
+
+    id = Column(String, primary_key=True)
+    workspace_id = Column(String, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+
+    name = Column(String(255), nullable=False)
+    type = Column(String(50), nullable=False)  # project, character, storyboard, library
+    description = Column(Text, nullable=True)
+    metadata = Column(JSON, nullable=False, default=dict)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    members = relationship(
+        "AssetCollectionMember",
+        back_populates="collection",
+        cascade="all, delete-orphan"
+    )
+
+
+class AssetCollectionMember(Base):
+    """Membership relationship between assets and collections."""
+    __tablename__ = "asset_collection_members"
+
+    id = Column(String, primary_key=True)
+    collection_id = Column(String, ForeignKey("asset_collections.id", ondelete="CASCADE"), nullable=False)
+    asset_id = Column(String, ForeignKey("assets.id", ondelete="CASCADE"), nullable=False)
+
+    sequence = Column(Integer, nullable=True)  # Order within collection
+    metadata = Column(JSON, nullable=False, default=dict)  # Member-specific data
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    collection = relationship(
+        "AssetCollection",
+        back_populates="members"
+    )
+    asset = relationship(
+        "Asset",
+        back_populates="collection_memberships"
+    )
+
+
+class Tag(Base):
+    """Universal tags for assets and content."""
+    __tablename__ = "tags"
+
+    id = Column(String, primary_key=True)
+    name = Column(String(100), nullable=False, unique=True)
+    category = Column(String(50), nullable=True)  # Optional tag category
+    color = Column(String(7), nullable=True)  # Hex color for UI
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class User(Base):
+    """User model for authentication."""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String(255), nullable=False, unique=True)
+    username = Column(String(100), nullable=False, unique=True)
+    password_hash = Column(String(255), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    is_superuser = Column(Boolean, nullable=False, default=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
