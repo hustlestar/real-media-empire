@@ -1,19 +1,22 @@
 """
-Asset Saver Helper - Automatically save all generated content as assets.
+Asset Saver Helper - Save all generated content using unified AssetService.
 
 This module ensures that all AI-generated content (images, videos, scripts, audio, etc.)
-is saved to the assets table for reusability, cost tracking, and audit trail.
+is saved as assets with proper relationships for reusability, cost tracking, and audit trail.
 
-Per user requirement: "shot, script, text, audio, image, video - everything is asset
-and must be preserved and have a way to be reused"
+Uses the new asset-centric architecture with proper relationship management.
 """
 
 import uuid
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, TYPE_CHECKING
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.models import Asset
+from services.asset_service import AssetService
+from core.database import DatabaseConnection
+
+if TYPE_CHECKING:
+    from uuid import UUID
 
 
 async def save_generation_as_asset(
@@ -30,11 +33,11 @@ async def save_generation_as_asset(
     file_path: Optional[str] = None,
     size: Optional[int] = None,
     duration: Optional[float] = None,
-    thumbnail_url: Optional[str] = None,
+    thumbnail_url: Optional[str] = None,  # Deprecated - use asset_metadata
     asset_metadata: Optional[Dict[str, Any]] = None
-) -> Asset:
+) -> "UUID":
     """
-    Save a generated asset to the assets table.
+    Save a generated asset using AssetService with proper relationships.
 
     Args:
         db: Database session
@@ -43,45 +46,54 @@ async def save_generation_as_asset(
         asset_type: Type of asset (image, video, audio, text, script)
         url: URL or path to the asset
         source: Source of asset (default: 'generation', can be 'upload', 'import')
-        character_id: Optional character this asset is related to
+        character_id: Optional character this asset is related to (creates relationship)
         generation_cost: Cost in USD to generate this asset
         generation_metadata: Generation details (model, prompt, provider, etc.)
         tags: List of tags for categorization
         file_path: Local file path if applicable
         size: File size in bytes
         duration: Duration for video/audio assets in seconds
-        thumbnail_url: Thumbnail URL for video/image assets
-        asset_metadata: Additional metadata (dimensions, codec, etc.)
+        thumbnail_url: DEPRECATED - use asset_metadata instead
+        asset_metadata: Additional metadata (dimensions, codec, thumbnail_url, etc.)
 
     Returns:
-        Created Asset object
+        Created Asset UUID
     """
-    asset = Asset(
-        id=str(uuid.uuid4()),
+    # Handle deprecated thumbnail_url
+    if thumbnail_url and asset_metadata is None:
+        asset_metadata = {"thumbnail_url": thumbnail_url}
+    elif thumbnail_url and "thumbnail_url" not in asset_metadata:
+        asset_metadata["thumbnail_url"] = thumbnail_url
+
+    # Get database connection wrapper
+    db_wrapper = DatabaseConnection(db.bind.url)
+    asset_service = AssetService(db_wrapper)
+
+    # Create asset
+    asset_id = await asset_service.create_asset(
         workspace_id=workspace_id,
-        character_id=character_id,
+        asset_type=asset_type,
         name=name,
-        type=asset_type,
         url=url,
         file_path=file_path,
         size=size,
         duration=duration,
-        thumbnail_url=thumbnail_url,
+        asset_metadata=asset_metadata or {},
+        tags=tags or [],
         source=source,
         generation_cost=generation_cost,
-        generation_metadata=generation_metadata or {},
-        tags=tags or [],
-        asset_metadata=asset_metadata or {},
-        is_favorite=False,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        generation_metadata=generation_metadata,
     )
 
-    db.add(asset)
-    await db.flush()
-    await db.refresh(asset)
+    # Create relationship to character if provided
+    if character_id:
+        await asset_service.create_relationship(
+            parent_asset_id=uuid.UUID(character_id),
+            child_asset_id=asset_id,
+            relationship_type="reference_for",
+        )
 
-    return asset
+    return asset_id
 
 
 async def save_script_as_asset(
