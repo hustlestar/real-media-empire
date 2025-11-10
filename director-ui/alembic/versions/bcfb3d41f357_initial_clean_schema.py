@@ -31,12 +31,17 @@ def upgrade() -> None:
         'workspaces',
         sa.Column('id', sa.String(), primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
+        sa.Column('slug', sa.String(255), unique=True, nullable=False),
+        sa.Column('owner_id', sa.Integer(), nullable=False),
+        sa.Column('storage_quota_gb', sa.Integer(), nullable=False, server_default='100'),
+        sa.Column('monthly_budget_usd', sa.Float(), nullable=False, server_default='1000.0'),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('settings', sa.JSON(), nullable=False, server_default='{}'),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
     )
     op.create_index('idx_workspaces_name', 'workspaces', ['name'])
+    op.create_index('idx_workspaces_slug', 'workspaces', ['slug'])
 
     # 2. Users - Authentication
     op.create_table(
@@ -53,11 +58,30 @@ def upgrade() -> None:
     op.create_index('idx_users_email', 'users', ['email'])
     op.create_index('idx_users_username', 'users', ['username'])
 
+    # 3. Projects - Workspace organization
+    op.create_table(
+        'projects',
+        sa.Column('id', sa.String(), primary_key=True),
+        sa.Column('workspace_id', sa.String(), sa.ForeignKey('workspaces.id', ondelete='CASCADE'), nullable=False),
+        sa.Column('name', sa.String(255), nullable=False),
+        sa.Column('slug', sa.String(255), nullable=False),
+        sa.Column('type', sa.String(50), nullable=False, server_default='campaign', comment='campaign, brand, series, folder'),
+        sa.Column('parent_project_id', sa.String(), sa.ForeignKey('projects.id', ondelete='CASCADE'), nullable=True),
+        sa.Column('status', sa.String(50), nullable=False, server_default='active', comment='active, archived, deleted'),
+        sa.Column('description', sa.Text(), nullable=True),
+        sa.Column('project_metadata', sa.JSON(), nullable=False, server_default='{}'),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+    )
+    op.create_index('idx_projects_workspace', 'projects', ['workspace_id'])
+    op.create_index('idx_projects_slug', 'projects', ['slug'])
+    op.create_index('idx_projects_parent', 'projects', ['parent_project_id'])
+
     # ========================================================================
     # UNIVERSAL ASSET MODEL
     # ========================================================================
 
-    # 3. Assets - Universal content storage (everything is an asset)
+    # 4. Assets - Universal content storage (everything is an asset)
     op.create_table(
         'assets',
         sa.Column('id', sa.String(), primary_key=True),
@@ -96,7 +120,7 @@ def upgrade() -> None:
     op.create_index('idx_assets_tags', 'assets', ['tags'], postgresql_using='gin')
     op.create_index('idx_assets_created_at', 'assets', ['created_at'])
 
-    # 4. Asset Relationships - Universal linking (graph structure)
+    # 5. Asset Relationships - Universal linking (graph structure)
     op.create_table(
         'asset_relationships',
         sa.Column('id', sa.String(), primary_key=True),
@@ -121,7 +145,7 @@ def upgrade() -> None:
     op.create_index('idx_asset_rel_type', 'asset_relationships', ['relationship_type'])
     op.create_index('idx_asset_rel_parent_type', 'asset_relationships', ['parent_asset_id', 'relationship_type'])
 
-    # 5. Asset Collections - Grouping & organization
+    # 6. Asset Collections - Grouping & organization
     op.create_table(
         'asset_collections',
         sa.Column('id', sa.String(), primary_key=True),
@@ -140,7 +164,7 @@ def upgrade() -> None:
     op.create_index('idx_collections_workspace', 'asset_collections', ['workspace_id'])
     op.create_index('idx_collections_type', 'asset_collections', ['type'])
 
-    # 6. Asset Collection Members - Collection membership
+    # 7. Asset Collection Members - Collection membership
     op.create_table(
         'asset_collection_members',
         sa.Column('id', sa.String(), primary_key=True),
@@ -166,7 +190,7 @@ def upgrade() -> None:
     # TAGGING SYSTEM
     # ========================================================================
 
-    # 7. Tags - Universal tags
+    # 8. Tags - Universal tags
     op.create_table(
         'tags',
         sa.Column('id', sa.String(), primary_key=True),
@@ -178,7 +202,7 @@ def upgrade() -> None:
     op.create_index('idx_tags_name', 'tags', ['name'])
     op.create_index('idx_tags_category', 'tags', ['category'])
 
-    # 8. Asset Tags - Many-to-many asset tagging
+    # 9. Asset Tags - Many-to-many asset tagging
     op.create_table(
         'asset_tags',
         sa.Column('asset_id', sa.String(), sa.ForeignKey('assets.id', ondelete='CASCADE'), nullable=False),
@@ -193,7 +217,7 @@ def upgrade() -> None:
     # LEGACY CONTENT SYSTEM (for backward compatibility)
     # ========================================================================
 
-    # 9. Content Items - Legacy content storage (will migrate to assets later)
+    # 10. Content Items - Legacy content storage (will migrate to assets later)
     op.create_table(
         'content_items',
         sa.Column('id', sa.String(), primary_key=True),
@@ -215,7 +239,7 @@ def upgrade() -> None:
     op.create_index('idx_content_items_user', 'content_items', ['user_id'])
     op.create_index('idx_content_items_status', 'content_items', ['processing_status'])
 
-    # 10. Content Tags - Legacy content tagging (many-to-many)
+    # 11. Content Tags - Legacy content tagging (many-to-many)
     op.create_table(
         'content_tags',
         sa.Column('content_id', sa.String(), sa.ForeignKey('content_items.id', ondelete='CASCADE'), nullable=False),
@@ -239,5 +263,6 @@ def downgrade() -> None:
     op.drop_table('asset_collections')
     op.drop_table('asset_relationships')
     op.drop_table('assets')
+    op.drop_table('projects')
     op.drop_table('users')
     op.drop_table('workspaces')
