@@ -30,6 +30,8 @@ class MigrationManager:
             alembic_ini_path: Path to alembic.ini file (defaults to project root)
         """
         self.database_url = database_url
+        # Store async version for async operations
+        self.async_database_url = self._convert_to_async_url(database_url)
 
         # Determine alembic.ini path
         if alembic_ini_path is None:
@@ -45,12 +47,59 @@ class MigrationManager:
 
         self.alembic_cfg = Config(self.alembic_ini_path)
 
+        # Convert async URL to sync URL for Alembic
+        sync_url = self._convert_to_sync_url(self.database_url)
+
         # Override database URL in configuration
-        self.alembic_cfg.set_main_option("sqlalchemy.url", self.database_url)
+        self.alembic_cfg.set_main_option("sqlalchemy.url", sync_url)
+
+    def _convert_to_async_url(self, database_url: str) -> str:
+        """Convert database URL to async driver format.
+
+        Mirrors the logic from database.py to ensure consistency.
+        """
+        # Handle SQLite
+        if database_url.startswith("sqlite:///"):
+            return database_url.replace("sqlite:///", "sqlite+aiosqlite:///")
+
+        # Handle PostgreSQL
+        if database_url.startswith("postgresql://") or database_url.startswith("postgres://"):
+            return database_url.replace("postgresql://", "postgresql+asyncpg://", 1).replace("postgres://", "postgresql+asyncpg://", 1)
+
+        # Already has async driver
+        if "postgresql+asyncpg://" in database_url or "sqlite+aiosqlite://" in database_url:
+            return database_url
+
+        # Strip sync drivers and replace with async
+        if "postgresql+psycopg2://" in database_url or "postgresql+psycopg://" in database_url:
+            import re
+            return re.sub(r'postgresql\+\w+://', 'postgresql+asyncpg://', database_url)
+
+        return database_url
+
+    def _convert_to_sync_url(self, database_url: str) -> str:
+        """Convert async database URL to sync format for Alembic.
+
+        Alembic requires synchronous database drivers:
+        - postgresql+asyncpg:// -> postgresql+psycopg2://
+        - sqlite+aiosqlite:/// -> sqlite:///
+        - postgresql:// -> postgresql:// (already sync)
+        - sqlite:/// -> sqlite:/// (already sync)
+        """
+        # Convert async PostgreSQL to sync
+        if "postgresql+asyncpg://" in database_url:
+            return database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+
+        # Convert async SQLite to sync
+        if "sqlite+aiosqlite:///" in database_url:
+            return database_url.replace("sqlite+aiosqlite:///", "sqlite:///")
+
+        # Already sync or generic format
+        return database_url
 
     async def get_current_revision(self) -> Optional[str]: # Changed to async
         """Get the current database revision asynchronously."""
-        engine = create_async_engine(self.database_url)
+        engine = create_async_engine(self.async_database_url)
         try:
             async with engine.connect() as connection:
                 # Alembic context operations are synchronous, run them in a sync manner

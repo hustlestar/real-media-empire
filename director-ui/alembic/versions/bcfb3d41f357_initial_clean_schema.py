@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 
 
 # revision identifiers, used by Alembic.
@@ -73,8 +74,8 @@ def upgrade() -> None:
         sa.Column('duration', sa.Float(), nullable=True, comment='Duration for audio/video in seconds'),
 
         # Flexible metadata (type-specific data stored as JSONB)
-        sa.Column('asset_metadata', sa.JSON(), nullable=False, server_default='{}', comment='Type-specific metadata'),
-        sa.Column('tags', sa.ARRAY(sa.String()), nullable=False, server_default='{}', comment='Asset tags'),
+        sa.Column('asset_metadata', JSONB(), nullable=False, server_default='{}', comment='Type-specific metadata'),
+        sa.Column('tags', ARRAY(sa.String()), nullable=False, server_default='{}', comment='Asset tags'),
 
         # Generation tracking
         sa.Column('source', sa.String(50), nullable=True, comment='Source: upload, generation, import, derivative'),
@@ -90,7 +91,8 @@ def upgrade() -> None:
     op.create_index('idx_assets_workspace_id', 'assets', ['workspace_id'])
     op.create_index('idx_assets_type', 'assets', ['type'])
     op.create_index('idx_assets_source', 'assets', ['source'])
-    op.create_index('idx_assets_asset_metadata', 'assets', ['asset_metadata'], postgresql_using='gin')
+    op.create_index('idx_assets_asset_metadata', 'assets', ['asset_metadata'],
+                    postgresql_using='gin', postgresql_ops={'asset_metadata': 'jsonb_path_ops'})
     op.create_index('idx_assets_tags', 'assets', ['tags'], postgresql_using='gin')
     op.create_index('idx_assets_created_at', 'assets', ['created_at'])
 
