@@ -9,7 +9,7 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID, uuid4
 from datetime import datetime
 
-from core.database import DatabaseConnection
+from core.database import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class AssetService:
     - Type-specific helpers: for common operations on specific asset types
     """
 
-    def __init__(self, db: DatabaseConnection):
+    def __init__(self, db: DatabaseManager):
         self.db = db
 
     # ========================================================================

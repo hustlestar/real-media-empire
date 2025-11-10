@@ -652,7 +652,7 @@ async def generate_character_image(
         asset_name = f"{character.name if character else 'Character'}_{model_config['name']}_generation_{idx+1}"
         logger.info(f"Saving asset {idx+1}/{len(generated_images)}: {asset_name}")
 
-        asset = await save_generation_as_asset(
+        asset_id = await save_generation_as_asset(
             db=db,
             workspace_id=character.workspace_id if character else None,
             character_id=character.id if character else None,
@@ -674,7 +674,7 @@ async def generate_character_image(
             },
             tags=["ai-generated", "character-image", model_config["name"].lower().replace(" ", "-")]
         )
-        logger.info(f"✓ Asset saved - ID: {asset.id}, URL: {image_url}, Cost: ${model_config['cost_per_image']:.4f}")
+        logger.info(f"✓ Asset saved - ID: {asset_id}, URL: {image_url}, Cost: ${model_config['cost_per_image']:.4f}")
 
     # Add to character reference images if requested
     if request.add_to_character and character:

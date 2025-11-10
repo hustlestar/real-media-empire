@@ -1,10 +1,10 @@
 """
-Asset Saver Helper - Save all generated content using unified AssetService.
+Asset Saver Helper - Save all generated content using unified Asset model.
 
 This module ensures that all AI-generated content (images, videos, scripts, audio, etc.)
 is saved as assets with proper relationships for reusability, cost tracking, and audit trail.
 
-Uses the new asset-centric architecture with proper relationship management.
+Uses SQLAlchemy ORM directly for database operations.
 """
 
 import uuid
@@ -12,8 +12,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List, TYPE_CHECKING
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.asset_service import AssetService
-from core.database import DatabaseConnection
+from data.models import Asset, AssetRelationship
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -37,7 +36,7 @@ async def save_generation_as_asset(
     asset_metadata: Optional[Dict[str, Any]] = None
 ) -> "UUID":
     """
-    Save a generated asset using AssetService with proper relationships.
+    Save a generated asset using SQLAlchemy ORM with proper relationships.
 
     Args:
         db: Database session
@@ -62,38 +61,53 @@ async def save_generation_as_asset(
     # Handle deprecated thumbnail_url
     if thumbnail_url and asset_metadata is None:
         asset_metadata = {"thumbnail_url": thumbnail_url}
-    elif thumbnail_url and "thumbnail_url" not in asset_metadata:
+    elif thumbnail_url and asset_metadata and "thumbnail_url" not in asset_metadata:
         asset_metadata["thumbnail_url"] = thumbnail_url
 
-    # Get database connection wrapper
-    db_wrapper = DatabaseConnection(db.bind.url)
-    asset_service = AssetService(db_wrapper)
+    # Initialize metadata if not provided
+    if asset_metadata is None:
+        asset_metadata = {}
+    if generation_metadata is None:
+        generation_metadata = {}
+    if tags is None:
+        tags = []
 
     # Create asset
-    asset_id = await asset_service.create_asset(
+    asset_id = str(uuid.uuid4())
+    asset = Asset(
+        id=asset_id,
         workspace_id=workspace_id,
-        asset_type=asset_type,
+        type=asset_type,
         name=name,
         url=url,
         file_path=file_path,
         size=size,
         duration=duration,
-        asset_metadata=asset_metadata or {},
-        tags=tags or [],
+        asset_metadata=asset_metadata,
+        tags=tags,
         source=source,
         generation_cost=generation_cost,
         generation_metadata=generation_metadata,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
     )
+    db.add(asset)
+    await db.flush()  # Flush to ensure the asset is persisted before creating relationships
 
     # Create relationship to character if provided
     if character_id:
-        await asset_service.create_relationship(
-            parent_asset_id=uuid.UUID(character_id),
+        relationship = AssetRelationship(
+            id=str(uuid.uuid4()),
+            parent_asset_id=character_id,
             child_asset_id=asset_id,
             relationship_type="reference_for",
+            relationship_metadata={},
+            created_at=datetime.utcnow()
         )
+        db.add(relationship)
+        await db.flush()
 
-    return asset_id
+    return uuid.UUID(asset_id)
 
 
 async def save_script_as_asset(
@@ -107,7 +121,7 @@ async def save_script_as_asset(
     prompt: Optional[str] = None,
     genre: Optional[str] = None,
     style: Optional[str] = None
-) -> Asset:
+) -> "UUID":
     """
     Save a generated script as a text asset.
 
@@ -124,7 +138,7 @@ async def save_script_as_asset(
         style: Script style
 
     Returns:
-        Created Asset object
+        Created Asset UUID
     """
     return await save_generation_as_asset(
         db=db,
@@ -167,7 +181,7 @@ async def save_shot_as_asset(
     duration: Optional[float] = None,
     thumbnail_url: Optional[str] = None,
     character_ids: Optional[List[str]] = None
-) -> List[Asset]:
+) -> List["UUID"]:
     """
     Save a generated shot's outputs (video, image, audio) as assets.
 
@@ -191,7 +205,7 @@ async def save_shot_as_asset(
         character_ids: List of character IDs appearing in this shot
 
     Returns:
-        List of created Asset objects
+        List of created Asset UUIDs
     """
     assets = []
 
@@ -272,7 +286,7 @@ async def save_film_as_asset(
     provider: Optional[str] = None,
     shots_count: Optional[int] = None,
     character_ids: Optional[List[str]] = None
-) -> Asset:
+) -> "UUID":
     """
     Save a complete generated film as a video asset.
 
@@ -290,7 +304,7 @@ async def save_film_as_asset(
         character_ids: List of character IDs appearing in the film
 
     Returns:
-        Created Asset object
+        Created Asset UUID
     """
     return await save_generation_as_asset(
         db=db,
@@ -330,7 +344,7 @@ async def save_audio_as_asset(
     voice_id: Optional[str] = None,
     duration: Optional[float] = None,
     character_id: Optional[str] = None
-) -> Asset:
+) -> "UUID":
     """
     Save generated audio (TTS, voice clone, etc.) as an audio asset.
 
@@ -348,7 +362,7 @@ async def save_audio_as_asset(
         character_id: Character this voice belongs to
 
     Returns:
-        Created Asset object
+        Created Asset UUID
     """
     return await save_generation_as_asset(
         db=db,
