@@ -60,7 +60,7 @@ def upgrade() -> None:
     op.create_table(
         'processing_jobs',
         sa.Column('id', postgresql.UUID(as_uuid=True) if is_postgresql else sa.String(), server_default=sa.text('gen_random_uuid()') if is_postgresql else None, nullable=False, comment='Unique job ID'),
-        sa.Column('content_id', postgresql.UUID(as_uuid=True) if is_postgresql else sa.String(), nullable=True, comment='Reference to content item (nullable for bundle jobs)'),
+        sa.Column('content_id', sa.String(), nullable=True, comment='Reference to content item (nullable for bundle jobs) - String to match content_items.id'),
         sa.Column('processing_type', postgresql.ENUM('summary', 'mvp_plan', 'content_ideas', 'blog_post', name='job_processing_type_enum', create_type=False) if is_postgresql else sa.String(50), nullable=False, comment='Type of AI processing'),
         sa.Column('status', postgresql.ENUM('pending', 'processing', 'completed', 'failed', name='job_status_enum', create_type=False) if is_postgresql else sa.String(50), server_default='pending', nullable=False, comment='Job execution status'),
         sa.Column('result_path', sa.Text(), nullable=True, comment='Path to file containing AI processing result'),
@@ -91,7 +91,7 @@ def upgrade() -> None:
         sa.Column('id', postgresql.UUID(as_uuid=True) if is_postgresql else sa.String(), server_default=sa.text('gen_random_uuid()') if is_postgresql else None, nullable=False, comment='Unique bundle ID'),
         sa.Column('user_id', sa.BigInteger(), nullable=False, comment='User who created this bundle'),
         sa.Column('name', sa.String(length=255), nullable=True, comment='Optional bundle name'),
-        sa.Column('content_ids', postgresql.ARRAY(postgresql.UUID(as_uuid=True)) if is_postgresql else sa.JSON(), nullable=False, comment='Array of content IDs in this bundle'),
+        sa.Column('content_ids', postgresql.ARRAY(sa.String()) if is_postgresql else sa.JSON(), nullable=False, comment='Array of content IDs in this bundle - String array to match content_items.id'),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False, comment='Bundle creation timestamp'),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False, comment='Last update timestamp'),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -130,7 +130,7 @@ def upgrade() -> None:
 
     # Add bundle-related columns to processing_jobs
     op.add_column('processing_jobs', sa.Column('bundle_id', postgresql.UUID(as_uuid=True) if is_postgresql else sa.String(), nullable=True, comment='Reference to bundle if job is from bundle'))
-    op.add_column('processing_jobs', sa.Column('content_ids', postgresql.ARRAY(postgresql.UUID(as_uuid=True)) if is_postgresql else sa.JSON(), nullable=True, comment='Array of content IDs for bundle jobs'))
+    op.add_column('processing_jobs', sa.Column('content_ids', postgresql.ARRAY(sa.String()) if is_postgresql else sa.JSON(), nullable=True, comment='Array of content IDs for bundle jobs - String array to match content_items.id'))
 
     # Create foreign key constraint and index for bundle_id
     op.create_foreign_key('fk_processing_jobs_bundle_id', 'processing_jobs', 'bundles', ['bundle_id'], ['id'], ondelete='CASCADE')
