@@ -73,7 +73,7 @@ def upgrade() -> None:
         sa.Column('duration', sa.Float(), nullable=True, comment='Duration for audio/video in seconds'),
 
         # Flexible metadata (type-specific data stored as JSONB)
-        sa.Column('metadata', sa.JSON(), nullable=False, server_default='{}', comment='Type-specific metadata'),
+        sa.Column('asset_metadata', sa.JSON(), nullable=False, server_default='{}', comment='Type-specific metadata'),
         sa.Column('tags', sa.ARRAY(sa.String()), nullable=False, server_default='{}', comment='Asset tags'),
 
         # Generation tracking
@@ -90,7 +90,7 @@ def upgrade() -> None:
     op.create_index('idx_assets_workspace_id', 'assets', ['workspace_id'])
     op.create_index('idx_assets_type', 'assets', ['type'])
     op.create_index('idx_assets_source', 'assets', ['source'])
-    op.create_index('idx_assets_metadata', 'assets', ['metadata'], postgresql_using='gin')
+    op.create_index('idx_assets_asset_metadata', 'assets', ['asset_metadata'], postgresql_using='gin')
     op.create_index('idx_assets_tags', 'assets', ['tags'], postgresql_using='gin')
     op.create_index('idx_assets_created_at', 'assets', ['created_at'])
 
@@ -103,7 +103,7 @@ def upgrade() -> None:
 
         sa.Column('relationship_type', sa.String(50), nullable=False, comment='contains_shot, uses_character, uses_audio, generation_attempt, generated_video, final_edit, derived_from, variant_of'),
         sa.Column('sequence', sa.Integer(), nullable=True, comment='Order when relationship implies sequence'),
-        sa.Column('metadata', sa.JSON(), nullable=False, server_default='{}', comment='Relationship-specific data'),
+        sa.Column('asset_metadata', sa.JSON(), nullable=False, server_default='{}', comment='Relationship-specific data'),
 
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
     )
@@ -128,7 +128,7 @@ def upgrade() -> None:
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('type', sa.String(50), nullable=False, comment='project, character, storyboard, library'),
         sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('metadata', sa.JSON(), nullable=False, server_default='{}'),
+        sa.Column('asset_metadata', sa.JSON(), nullable=False, server_default='{}'),
 
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
@@ -146,7 +146,7 @@ def upgrade() -> None:
         sa.Column('asset_id', sa.String(), sa.ForeignKey('assets.id', ondelete='CASCADE'), nullable=False),
 
         sa.Column('sequence', sa.Integer(), nullable=True, comment='Order within collection'),
-        sa.Column('metadata', sa.JSON(), nullable=False, server_default='{}', comment='Member-specific data'),
+        sa.Column('asset_metadata', sa.JSON(), nullable=False, server_default='{}', comment='Member-specific data'),
 
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
     )

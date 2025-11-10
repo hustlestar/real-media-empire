@@ -144,7 +144,7 @@ class Asset(Base):
     duration = Column(Float, nullable=True)  # Duration for audio/video (seconds)
 
     # Flexible metadata (type-specific data stored as JSONB)
-    metadata = Column(JSON, nullable=False, default=dict)  # Type-specific metadata
+    asset_metadata = Column(JSON, nullable=False, default=dict)  # Type-specific metadata
     tags = Column(JSON, nullable=False, default=list)  # Asset tags array
 
     # Generation tracking
@@ -612,7 +612,7 @@ class AssetRelationship(Base):
 
     relationship_type = Column(String(50), nullable=False)  # contains_shot, uses_character, generation_attempt, etc.
     sequence = Column(Integer, nullable=True)  # Order when relationship implies sequence
-    metadata = Column(JSON, nullable=False, default=dict)  # Relationship-specific data
+    relationship_metadata = Column(JSON, nullable=False, default=dict)  # Relationship-specific data
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -646,7 +646,7 @@ class AssetCollection(Base):
     name = Column(String(255), nullable=False)
     type = Column(String(50), nullable=False)  # project, character, storyboard, library
     description = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=False, default=dict)
+    collection_metadata = Column(JSON, nullable=False, default=dict)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -668,7 +668,7 @@ class AssetCollectionMember(Base):
     asset_id = Column(String, ForeignKey("assets.id", ondelete="CASCADE"), nullable=False)
 
     sequence = Column(Integer, nullable=True)  # Order within collection
-    metadata = Column(JSON, nullable=False, default=dict)  # Member-specific data
+    member_metadata = Column(JSON, nullable=False, default=dict)  # Member-specific data
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
