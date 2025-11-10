@@ -88,6 +88,7 @@ class Character(Base):
 
     # Relationships
     workspace = relationship("Workspace", back_populates="characters")
+    assets = relationship("Asset", back_populates="character", foreign_keys="Asset.character_id")
 
 
 class Asset(Base):
@@ -96,6 +97,7 @@ class Asset(Base):
 
     id = Column(String, primary_key=True)
     workspace_id = Column(String, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True)
+    character_id = Column(String, ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)
 
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)  # image, video, audio
@@ -104,6 +106,9 @@ class Asset(Base):
     size = Column(Integer)  # File size in bytes
     duration = Column(Float, nullable=True)  # For video/audio assets
     thumbnail_url = Column(String, nullable=True)
+    source = Column(String, nullable=True)  # Source of asset (upload, generation, import)
+    generation_cost = Column(Float, nullable=True)  # Cost to generate this asset
+    generation_metadata = Column(JSON, nullable=True)  # Generation details (model, prompt, seed)
     tags = Column(JSON)  # Array of tags
     asset_metadata = Column(JSON)  # Additional metadata (dimensions, codec, etc.)
     is_favorite = Column(Boolean, default=False)
@@ -112,6 +117,7 @@ class Asset(Base):
 
     # Relationships
     workspace = relationship("Workspace", back_populates="assets")
+    character = relationship("Character", back_populates="assets", foreign_keys=[character_id])
 
 
 class FilmProject(Base):
