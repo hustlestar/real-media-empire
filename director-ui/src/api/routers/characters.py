@@ -47,7 +47,8 @@ CHARACTER_GENERATION_MODELS = {
     "sdxl": {
         "name": "Stable Diffusion XL",
         "provider": "replicate",
-        "model_id": "stability-ai/sdxl",
+        # Replicate API requires version hash (not model name) for stability-ai/sdxl
+        "model_id": "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
         "description": "Reliable and cost-effective",
         "consistency_score": 8.0,
         "cost_per_image": 0.002
