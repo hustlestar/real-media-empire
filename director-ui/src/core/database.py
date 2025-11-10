@@ -72,11 +72,13 @@ class SQLAlchemyConnectionWrapper:
     def _convert_positional_to_named(self, query: str, args: tuple) -> tuple:
         """Convert $1, $2 positional parameters to :p1, :p2 named parameters."""
         import re
+        from uuid import UUID
         named_query = query
         params = {}
         for i, arg in enumerate(args, 1):
             named_query = re.sub(rf'\${i}(?!\d)', f':p{i}', named_query)
-            params[f'p{i}'] = arg
+            # Convert UUID objects to strings for asyncpg compatibility
+            params[f'p{i}'] = str(arg) if isinstance(arg, UUID) else arg
         return named_query, params
 
 
