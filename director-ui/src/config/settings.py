@@ -98,7 +98,7 @@ class BotConfig:
         # Database migration settings
         auto_migrate_str = os.getenv("AUTO_MIGRATE", "true").lower()
         auto_migrate = auto_migrate_str in ("true", "1", "yes", "on")
-        migration_timeout = int(os.getenv("MIGRATION_TIMEOUT", "300"))
+        migration_timeout = int(os.getenv("MIGRATION_TIMEOUT", "30"))
 
         # Localization
         default_language = os.getenv("DEFAULT_LANGUAGE", "en")
