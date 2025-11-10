@@ -52,6 +52,42 @@ The system follows a "data lake" pattern:
 - **LAKE**: Archive of published content
 - Videos move from generation → swamp → YouTube → lake
 
+### "Everything is an Asset" Philosophy
+
+**Core Principle**: All generated, imported, or processed media should be treated as unified **Assets** in the system.
+
+**Current Implementation** (`director-ui/src/data/models.py`):
+- `Asset` model serves as the central media tracking entity
+- All media types (images, videos, audio) stored as Assets with:
+  - `type`: Media type classification
+  - `source`: Origin (upload, generation, import)
+  - `character_id`: Optional link to Character for visual consistency
+  - `generation_cost`: Cost tracking for AI-generated assets
+  - `generation_metadata`: Provider, model, prompt, seed details
+  - `workspace_id`: Multi-tenant organization
+  - `tags`, `asset_metadata`: Flexible metadata storage
+
+**Asset Relationships**:
+- Characters → Assets (generated character images/videos)
+- Workspaces → Assets (multi-tenant isolation)
+- Future: FilmProjects → Assets, Shots → Assets
+
+**Future Consideration**:
+Could Asset become a **base class** or **mixin** for all content-bearing models? This would unify:
+- Storage location tracking
+- Cost attribution
+- Generation provenance
+- Version history
+- Workspace organization
+
+However, current discrete model approach provides:
+- ✅ Clear separation of concerns
+- ✅ Type-specific fields without bloat
+- ✅ Flexible querying and indexing
+- ✅ Easier migrations
+
+**Decision**: Maintain Asset as a discrete model with foreign key relationships. This balances flexibility with the "everything is an asset" principle while keeping models focused.
+
 ### Key Modules
 
 1. **Video Processing** (`src/video/`)
