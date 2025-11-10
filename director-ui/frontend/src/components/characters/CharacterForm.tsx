@@ -285,7 +285,9 @@ Be creative and specific! Make this character memorable and visually distinctive
         model: selectedModel,
         num_images: numVariations,
         seed: generationSeed,
-        add_to_character: false
+        add_to_character: false,
+        workspace_id: currentWorkspace?.id,
+        character_id: character?.id  // Include character_id if editing
       };
 
       console.log('📤 Sending generation request:');
@@ -547,7 +549,7 @@ Be creative and specific! Make this character memorable and visually distinctive
 
           {/* Type-Specific Attributes */}
           {characterTypes[characterType] && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {characterTypes[characterType].attributes.map((attrKey: string) => (
                 <div key={attrKey}>
                   <label className="block text-sm font-semibold mb-2">{getFieldLabel(attrKey)}</label>
@@ -626,7 +628,7 @@ Be creative and specific! Make this character memorable and visually distinctive
                 </div>
 
                 {/* Generation Options */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="block text-sm font-semibold mb-2">Variations</label>
                     <input
@@ -672,6 +674,42 @@ Be creative and specific! Make this character memorable and visually distinctive
                 {lastCost > 0 && (
                   <div className="text-xs text-gray-400 text-center">
                     Last generation cost: ${lastCost.toFixed(3)}
+                  </div>
+                )}
+
+                {/* Existing Reference Images (when editing) */}
+                {isEditing && character?.reference_images && character.reference_images.length > 0 && (
+                  <div className="mb-4 border-t border-gray-700 pt-4">
+                    <label className="block text-sm font-semibold mb-3">
+                      Existing Reference Images ({character.reference_images.length}) - Click to remove
+                    </label>
+                    <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                      {character.reference_images.map((imageUrl, idx) => (
+                        <div
+                          key={`existing-${idx}`}
+                          onClick={() => toggleImageSelection(imageUrl)}
+                          className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                            selectedImages.includes(imageUrl)
+                              ? 'border-purple-500 ring-2 ring-purple-400'
+                              : 'border-red-500 ring-2 ring-red-400 opacity-50'
+                          }`}
+                        >
+                          <img src={imageUrl} alt={`Existing ${idx + 1}`} className="w-full h-32 object-cover" />
+                          {selectedImages.includes(imageUrl) ? (
+                            <div className="absolute top-2 right-2 bg-purple-500 text-white rounded-full p-1">
+                              <Zap className="w-4 h-4" />
+                            </div>
+                          ) : (
+                            <div className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1">
+                              <X className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-2">
+                      {selectedImages.filter(img => character.reference_images?.includes(img)).length} existing image{selectedImages.filter(img => character.reference_images?.includes(img)).length !== 1 ? 's' : ''} still selected
+                    </div>
                   </div>
                 )}
 

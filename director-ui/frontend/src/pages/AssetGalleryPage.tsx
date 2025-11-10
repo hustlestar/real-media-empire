@@ -6,6 +6,7 @@ import AssetFilters from '../components/assets/AssetFilters';
 import AssetDetails from '../components/assets/AssetDetails';
 import AssetUpload from '../components/assets/AssetUpload';
 import { apiUrl } from '../config/api';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 
 type ViewMode = 'grid' | 'list';
 type AssetType = 'all' | 'image' | 'video' | 'audio' | 'document';
@@ -25,6 +26,7 @@ interface Asset {
 }
 
 const AssetGalleryPage: React.FC = () => {
+  const { currentWorkspace } = useWorkspace();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [assets, setAssets] = useState<Asset[]>([]);
   const [filteredAssets, setFilteredAssets] = useState<Asset[]>([]);
@@ -45,18 +47,28 @@ const AssetGalleryPage: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchAssets();
-  }, []);
+    if (currentWorkspace) {
+      fetchAssets();
+    }
+  }, [currentWorkspace]);
 
   useEffect(() => {
     applyFilters();
   }, [assets, searchQuery, filterType, filters]);
 
   const fetchAssets = async () => {
+    if (!currentWorkspace) {
+      console.warn('No workspace selected, skipping asset fetch');
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const response = await fetch(apiUrl('/api/assets'));
+      const url = apiUrl(`/api/assets?workspace_id=${currentWorkspace.id}`);
+      console.log('Fetching assets for workspace:', currentWorkspace.id, 'URL:', url);
+      const response = await fetch(url);
       const data = await response.json();
+      console.log('Assets fetched:', data.assets?.length || 0, 'assets');
       setAssets(data.assets || []);
     } catch (error) {
       console.error('Error fetching assets:', error);

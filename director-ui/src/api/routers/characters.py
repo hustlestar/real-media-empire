@@ -507,6 +507,7 @@ async def get_available_models():
 class GenerateCharacterImageRequest(BaseModel):
     """Request schema for generating character images."""
     character_id: Optional[str] = None  # If provided, use character's consistency prompt
+    workspace_id: Optional[str] = None  # Required when character_id is not provided
     prompt: Optional[str] = None  # Custom prompt or refinement instructions
     model: str = "flux-dev"  # Model to use for generation
     negative_prompt: Optional[str] = None
@@ -544,6 +545,7 @@ async def generate_character_image(
     logger.info("=" * 80)
     logger.info("CHARACTER IMAGE GENERATION REQUEST")
     logger.info(f"Character ID: {request.character_id}")
+    logger.info(f"Workspace ID: {request.workspace_id}")
     logger.info(f"Model: {request.model}")
     logger.info(f"Number of images: {request.num_images}")
     logger.info(f"Seed: {request.seed}")
@@ -555,6 +557,14 @@ async def generate_character_image(
         raise HTTPException(
             status_code=400,
             detail=f"Invalid model. Available: {list(CHARACTER_GENERATION_MODELS.keys())}"
+        )
+
+    # Validate workspace_id is provided when character_id is not
+    if not request.character_id and not request.workspace_id:
+        logger.error("Neither character_id nor workspace_id provided")
+        raise HTTPException(
+            status_code=400,
+            detail="Either character_id or workspace_id must be provided"
         )
 
     model_config = CHARACTER_GENERATION_MODELS[request.model]
@@ -648,13 +658,16 @@ async def generate_character_image(
         result = await db.execute(select(Character).filter(Character.id == request.character_id))
         character = result.scalar_one_or_none()
 
+    # Determine workspace_id: use character's workspace if available, otherwise use provided workspace_id
+    workspace_id = character.workspace_id if character else request.workspace_id
+
     for idx, image_url in enumerate(generated_images):
         asset_name = f"{character.name if character else 'Character'}_{model_config['name']}_generation_{idx+1}"
         logger.info(f"Saving asset {idx+1}/{len(generated_images)}: {asset_name}")
 
         asset_id = await save_generation_as_asset(
             db=db,
-            workspace_id=character.workspace_id if character else None,
+            workspace_id=workspace_id,
             character_id=character.id if character else None,
             name=asset_name,
             asset_type="image",
