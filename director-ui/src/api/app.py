@@ -129,7 +129,6 @@ app = FastAPI(
 async def log_requests(request, call_next):
     """Log all incoming requests."""
     logger.info(f"🔵 Incoming request: {request.method} {request.url.path}")
-    logger.info(f"   Headers: {dict(request.headers)}")
 
     # Get request body for POST/PUT requests
     if request.method in ["POST", "PUT", "PATCH"]:
