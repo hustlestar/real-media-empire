@@ -26,7 +26,22 @@ def upgrade() -> None:
     # CORE INFRASTRUCTURE TABLES
     # ========================================================================
 
-    # 1. Workspaces - Multi-tenancy
+    # 1. Users - Authentication (must come first for foreign key dependencies)
+    op.create_table(
+        'users',
+        sa.Column('id', sa.Integer(), primary_key=True, autoincrement=True),
+        sa.Column('email', sa.String(255), nullable=False, unique=True),
+        sa.Column('username', sa.String(100), nullable=False, unique=True),
+        sa.Column('password_hash', sa.String(255), nullable=False),
+        sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
+        sa.Column('is_superuser', sa.Boolean(), nullable=False, server_default='false'),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
+    )
+    op.create_index('idx_users_email', 'users', ['email'])
+    op.create_index('idx_users_username', 'users', ['username'])
+
+    # 2. Workspaces - Multi-tenancy
     op.create_table(
         'workspaces',
         sa.Column('id', sa.String(), primary_key=True),
@@ -42,21 +57,6 @@ def upgrade() -> None:
     )
     op.create_index('idx_workspaces_name', 'workspaces', ['name'])
     op.create_index('idx_workspaces_slug', 'workspaces', ['slug'])
-
-    # 2. Users - Authentication
-    op.create_table(
-        'users',
-        sa.Column('id', sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column('email', sa.String(255), nullable=False, unique=True),
-        sa.Column('username', sa.String(100), nullable=False, unique=True),
-        sa.Column('password_hash', sa.String(255), nullable=False),
-        sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
-        sa.Column('is_superuser', sa.Boolean(), nullable=False, server_default='false'),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('NOW()'), nullable=False),
-    )
-    op.create_index('idx_users_email', 'users', ['email'])
-    op.create_index('idx_users_username', 'users', ['username'])
 
     # 3. Projects - Workspace organization
     op.create_table(
@@ -76,6 +76,31 @@ def upgrade() -> None:
     op.create_index('idx_projects_workspace', 'projects', ['workspace_id'])
     op.create_index('idx_projects_slug', 'projects', ['slug'])
     op.create_index('idx_projects_parent', 'projects', ['parent_project_id'])
+
+    # ========================================================================
+    # LEGACY YOUTUBE SYSTEM (Channel & Authors)
+    # ========================================================================
+
+    # 4a. Channels - YouTube channels
+    op.create_table(
+        'channels',
+        sa.Column('id', sa.Integer(), primary_key=True, autoincrement=True),
+        sa.Column('name', sa.String(), unique=True, nullable=False),
+    )
+
+    # 4b. Authors - Content authors
+    op.create_table(
+        'authors',
+        sa.Column('id', sa.Integer(), primary_key=True, autoincrement=True),
+        sa.Column('name', sa.String(), unique=True, nullable=False),
+    )
+
+    # 4c. Channel-Authors junction table
+    op.create_table(
+        'channel_authors',
+        sa.Column('channel_id', sa.Integer(), sa.ForeignKey('channels.id'), nullable=False),
+        sa.Column('author_id', sa.Integer(), sa.ForeignKey('authors.id'), nullable=False),
+    )
 
     # ========================================================================
     # UNIVERSAL ASSET MODEL
@@ -645,6 +670,9 @@ def downgrade() -> None:
     op.drop_table('asset_collections')
     op.drop_table('asset_relationships')
     op.drop_table('assets')
+    op.drop_table('channel_authors')
+    op.drop_table('authors')
+    op.drop_table('channels')
     op.drop_table('projects')
     op.drop_table('users')
     op.drop_table('workspaces')

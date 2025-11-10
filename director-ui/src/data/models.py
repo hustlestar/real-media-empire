@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Table, ForeignKey, Text, JSON, DateTime, Float, Boolean
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, Text, JSON, DateTime, Float, Boolean, BigInteger
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -39,6 +39,7 @@ class Workspace(Base):
     owner_id = Column(Integer, nullable=False)
     storage_quota_gb = Column(Integer, default=100)
     monthly_budget_usd = Column(Float, default=1000.0)
+    description = Column(Text, nullable=True)  # Workspace description
     settings = Column(JSON, default=dict)  # Workspace settings
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -141,7 +142,7 @@ class Asset(Base):
     # Storage
     url = Column(Text, nullable=True)  # Public CDN URL
     file_path = Column(Text, nullable=True)  # Local filesystem path
-    size = Column(Integer, nullable=True)  # File size in bytes
+    size = Column(BigInteger, nullable=True)  # File size in bytes (BigInteger for files >2GB)
     duration = Column(Float, nullable=True)  # Duration for audio/video (seconds)
 
     # Flexible metadata (type-specific data stored as JSONB)
