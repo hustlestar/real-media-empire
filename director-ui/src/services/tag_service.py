@@ -1,6 +1,7 @@
 """Tag service for managing content tags."""
 
 import logging
+import uuid
 from typing import List, Dict, Any, Optional
 from uuid import UUID
 
@@ -69,18 +70,20 @@ class TagService:
                 if row:
                     tag_ids.append(row['id'])
                 else:
-                    # Create new tag
+                    # Create new tag with generated UUID
+                    tag_id = str(uuid.uuid4())
                     row = await conn.fetchrow(
                         """
-                        INSERT INTO tags (name, created_at)
-                        VALUES ($1, NOW())
+                        INSERT INTO tags (id, name, created_at)
+                        VALUES ($1, $2, NOW())
                         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
                         RETURNING id
                         """,
+                        tag_id,
                         name
                     )
                     tag_ids.append(row['id'])
-                    logger.info(f"Created new tag: {name}")
+                    logger.info(f"Created new tag: {name} with id: {tag_id}")
 
         return tag_ids
 
