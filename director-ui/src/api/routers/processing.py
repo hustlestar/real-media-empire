@@ -118,7 +118,7 @@ async def get_job_with_result(
 async def list_jobs(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
-    status: Optional[str] = Query(None, description="Filter by status"),
+    job_status: Optional[str] = Query(None, description="Filter by status"),
     content_id: Optional[UUID] = Query(None, description="Filter by content ID"),
     processing_service: ProcessingService = Depends(get_processing_service),
     user_id: int = Depends(get_current_user_id)
@@ -136,7 +136,7 @@ async def list_jobs(
             user_id=user_id,
             limit=page_size,
             offset=offset,
-            status=status,
+            status=job_status,
             content_id=content_id
         )
 

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Table, ForeignKey, Text, JSON, DateTime, Float, Boolean
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
@@ -145,7 +146,7 @@ class Asset(Base):
 
     # Flexible metadata (type-specific data stored as JSONB)
     asset_metadata = Column(JSON, nullable=False, default=dict)  # Type-specific metadata
-    tags = Column(JSON, nullable=False, default=list)  # Asset tags array
+    tags = Column(ARRAY(String), nullable=False, default=list)  # Asset tags array
 
     # Generation tracking
     source = Column(String(50), nullable=True)  # Source: upload, generation, import, derivative
