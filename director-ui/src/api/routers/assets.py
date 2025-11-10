@@ -21,48 +21,40 @@ class AssetCreate(BaseModel):
     """Asset creation schema."""
     workspace_id: str
     name: str
-    type: str  # image, video, audio
-    url: str
+    type: str  # image, video, audio, script, text, shot, shot_take, film, character_ref, scene
+    url: Optional[str] = None
     file_path: Optional[str] = None
     size: Optional[int] = None
     duration: Optional[float] = None
-    thumbnail_url: Optional[str] = None
     tags: List[str] = []
     asset_metadata: Optional[Dict[str, Any]] = {}
-    is_favorite: bool = False
-    source_asset_id: Optional[str] = None  # For lineage tracking
-    generation_params: Optional[Dict[str, Any]] = None
-    cache_key: Optional[str] = None
+    source: Optional[str] = None  # upload, generation, import, derivative
+    generation_cost: Optional[float] = None
+    generation_metadata: Optional[Dict[str, Any]] = None
 
 
 class AssetUpdate(BaseModel):
     """Asset update schema."""
     name: Optional[str] = None
     tags: Optional[List[str]] = None
-    is_favorite: Optional[bool] = None
     asset_metadata: Optional[Dict[str, Any]] = None
 
 
 class AssetResponse(BaseModel):
-    """Asset response schema."""
+    """Asset response schema - matches database model."""
     id: str
-    workspace_id: str
+    workspace_id: Optional[str]
     name: str
     type: str
-    url: str
+    url: Optional[str]
     file_path: Optional[str]
     size: Optional[int]
     duration: Optional[float]
-    thumbnail_url: Optional[str]
     tags: List[str]
     asset_metadata: Dict[str, Any]
-    is_favorite: bool
-    source_asset_id: Optional[str]
-    generation_params: Optional[Dict[str, Any]]
-    cache_key: Optional[str]
-    expires_at: Optional[datetime]
-    access_count: int
-    last_accessed_at: Optional[datetime]
+    source: Optional[str]
+    generation_cost: Optional[float]
+    generation_metadata: Optional[Dict[str, Any]]
     created_at: datetime
     updated_at: datetime
 
@@ -100,14 +92,11 @@ async def create_asset(
         file_path=asset.file_path,
         size=asset.size,
         duration=asset.duration,
-        thumbnail_url=asset.thumbnail_url,
         tags=asset.tags,
         asset_metadata=asset.asset_metadata or {},
-        is_favorite=asset.is_favorite,
-        source_asset_id=asset.source_asset_id,
-        generation_params=asset.generation_params,
-        cache_key=asset.cache_key,
-        access_count=0,
+        source=asset.source,
+        generation_cost=asset.generation_cost,
+        generation_metadata=asset.generation_metadata,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
     )
@@ -124,7 +113,6 @@ async def upload_asset(
     workspace_id: str = Query(..., description="Workspace ID"),
     file: UploadFile = File(...),
     tags: Optional[str] = Query(None),  # Comma-separated tags
-    is_favorite: bool = False,
     db: AsyncSession = Depends(get_async_db)
 ):
     """Upload a new asset file to a workspace."""
@@ -180,12 +168,11 @@ async def upload_asset(
         file_path=str(file_path),
         size=file_size,
         tags=tag_list,
-        metadata={
+        asset_metadata={
             "original_filename": file.filename,
             "content_type": file.content_type
         },
-        is_favorite=is_favorite,
-        access_count=0,
+        source="upload",
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow()
     )
@@ -205,7 +192,6 @@ async def list_assets(
     type: Optional[str] = None,
     search: Optional[str] = None,
     tags: Optional[str] = None,  # Comma-separated tags
-    favorite_only: bool = False,
     sort_by: str = Query("created_at", regex="^(created_at|name|size|updated_at)$"),
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
     db: AsyncSession = Depends(get_async_db)
@@ -236,9 +222,6 @@ async def list_assets(
         for tag in tag_list:
             query = query.filter(Asset.tags.contains([tag]))
 
-    if favorite_only:
-        query = query.filter(Asset.is_favorite == True)
-
     # Get total count
     count_query = select(func.count()).select_from(Asset)
     if workspace_id:
@@ -250,8 +233,6 @@ async def list_assets(
     if tags:
         for tag in tag_list:
             count_query = count_query.filter(Asset.tags.contains([tag]))
-    if favorite_only:
-        count_query = count_query.filter(Asset.is_favorite == True)
 
     count_result = await db.execute(count_query)
     total = count_result.scalar()
@@ -396,13 +377,16 @@ async def toggle_favorite(
     asset_id: str,
     db: AsyncSession = Depends(get_async_db)
 ):
-    """Toggle favorite status of an asset."""
+    """Toggle favorite status of an asset (stored in asset_metadata)."""
     result = await db.execute(select(Asset).filter(Asset.id == asset_id))
     asset = result.scalar_one_or_none()
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
 
-    asset.is_favorite = not asset.is_favorite
+    # Store favorite status in asset_metadata
+    metadata = asset.asset_metadata or {}
+    metadata['is_favorite'] = not metadata.get('is_favorite', False)
+    asset.asset_metadata = metadata
     asset.updated_at = datetime.utcnow()
 
     await db.flush()
@@ -424,8 +408,6 @@ async def get_assets_stats(
     total_videos = result.scalar()
     result = await db.execute(select(func.count()).select_from(Asset).filter(Asset.type == "audio"))
     total_audio = result.scalar()
-    result = await db.execute(select(func.count()).select_from(Asset).filter(Asset.is_favorite == True))
-    total_favorites = result.scalar()
 
     # Calculate total storage size
     size_result = await db.execute(select(Asset.size))
@@ -440,7 +422,6 @@ async def get_assets_stats(
             "audio": total_audio,
             "other": total_assets - total_images - total_videos - total_audio
         },
-        "total_favorites": total_favorites,
         "total_storage_bytes": total_storage,
         "total_storage_mb": round(total_storage / (1024 * 1024), 2)
     }
