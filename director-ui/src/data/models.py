@@ -94,13 +94,39 @@ class Character(Base):
 class Asset(Base):
     """Universal asset model - everything is an asset.
 
+    ⚠️  CRITICAL DESIGN PRINCIPLE: This model MUST remain generic, common, and NOT LEAKY!
+
+    🚫 NEVER add relationship-specific foreign keys (e.g., character_id, film_id)
+    🚫 NEVER add type-specific columns (e.g., thumbnail_url, is_favorite)
+    ✅ ALWAYS use metadata JSONB for type-specific data
+    ✅ ALWAYS use asset_relationships table for connections between assets
+
     Asset types: script, text, audio, video, image, shot, shot_take, film, character_ref, scene
 
-    This model stores all content with a minimal universal schema. Type-specific data
-    is stored in the metadata JSONB field for maximum flexibility.
+    This model stores ALL content with a minimal universal schema:
+    - Core fields: id, workspace_id, type, name
+    - Storage: url, file_path, size, duration
+    - Flexible: metadata (JSONB), tags (array)
+    - Tracking: source, generation_cost, generation_metadata
 
-    Relationships between assets (e.g., shot → character, film → shot) are stored
-    in the asset_relationships table, not as foreign keys here.
+    Type-specific data goes in metadata:
+    - image: {width, height, format, thumbnail_url}
+    - shot: {shot_number, description, camera_angle, duration_target, prompt}
+    - shot_take: {attempt_number, selected, generation_params, quality_score}
+    - character_ref: {description, attributes, consistency_prompt}
+
+    Relationships use asset_relationships table:
+    - Film → Shot: parent=film, child=shot, type='contains_shot'
+    - Shot → Character: parent=shot, child=character, type='uses_character'
+    - Shot → Take: parent=shot, child=take, type='generation_attempt'
+    - Take → Video: parent=take, child=video, type='generated_video'
+
+    This design enables:
+    ✅ Universal reusability across projects
+    ✅ Flexible schema evolution without migrations
+    ✅ Clear separation of concerns
+    ✅ Type safety through metadata validation
+    ✅ Graph-based relationships
     """
     __tablename__ = "assets"
 

@@ -12,11 +12,16 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class BotConfig:
-    """Configuration class for the Telegram bot."""
+    """Configuration class for the Director UI application.
+
+    All Telegram features are optional. The API can run standalone without Telegram.
+    """
 
     # Required settings
-    bot_token: str
     database_url: str
+
+    # Optional Telegram bot
+    bot_token: Optional[str] = None
 
     # Optional AI settings
     openrouter_api_key: Optional[str] = None
@@ -62,13 +67,15 @@ class BotConfig:
         """Create configuration from environment variables."""
 
         # Required environment variables
-        bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
         database_url = os.getenv("DATABASE_URL")
-
-        if not bot_token:
-            raise ValueError("TELEGRAM_BOT_TOKEN environment variable is required")
         if not database_url:
             raise ValueError("DATABASE_URL environment variable is required")
+
+        # Optional Telegram bot token
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+        if not bot_token:
+            logger.warning("⚠️  TELEGRAM_BOT_TOKEN not set - Telegram bot features will be disabled")
+            logger.info("    API will run standalone without Telegram integration")
 
         # Optional environment variables
         openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
@@ -144,6 +151,11 @@ class BotConfig:
         )
 
     @property
+    def has_telegram_bot(self) -> bool:
+        """Check if Telegram bot is configured."""
+        return self.bot_token is not None
+
+    @property
     def has_ai_support(self) -> bool:
         """Check if AI support is available."""
         return self.openrouter_api_key is not None
@@ -162,11 +174,11 @@ class BotConfig:
 
     def validate(self) -> None:
         """Validate configuration settings."""
-        if not self.bot_token:
-            raise ValueError("Bot token is required")
-
         if not self.database_url:
             raise ValueError("Database URL is required")
+
+        if not self.bot_token:
+            logger.info("ℹ️  Telegram bot not configured - running in API-only mode")
 
         if self.default_language not in self.supported_languages:
             raise ValueError(f"Default language '{self.default_language}' not in supported languages")
