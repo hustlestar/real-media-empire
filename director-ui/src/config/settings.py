@@ -66,10 +66,12 @@ class BotConfig:
     def from_env(cls) -> "BotConfig":
         """Create configuration from environment variables."""
 
-        # Required environment variables
+        # Database URL - fallback to aiosqlite if not set
         database_url = os.getenv("DATABASE_URL")
         if not database_url:
-            raise ValueError("DATABASE_URL environment variable is required")
+            database_url = "sqlite+aiosqlite:///./director_ui.db"
+            logger.warning("⚠️  DATABASE_URL not set - using SQLite: director_ui.db")
+            logger.info("    Set DATABASE_URL for PostgreSQL: postgresql+asyncpg://user:pass@host/db")
 
         # Optional Telegram bot token
         bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
