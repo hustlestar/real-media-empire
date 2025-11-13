@@ -75,7 +75,7 @@ export default function JobsPage() {
           </Link>
         </div>
 
-        {data && data.items.length === 0 ? (
+        {data?.items?.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <p>No jobs yet. Create a processing job from the content library!</p>
           </div>
@@ -143,7 +143,7 @@ export default function JobsPage() {
               </table>
             </div>
 
-            {data && (
+            {data?.total && (
               <div className="mt-4 flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
                   Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, data.total)} of {data.total} items
@@ -158,7 +158,7 @@ export default function JobsPage() {
                   </button>
                   <button
                     onClick={() => setPage(p => p + 1)}
-                    disabled={!data || page * 20 >= data.total}
+                    disabled={!data?.total || page * 20 >= data.total}
                     className="px-4 py-2 border rounded hover:bg-muted disabled:opacity-50"
                   >
                     Next
